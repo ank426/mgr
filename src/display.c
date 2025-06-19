@@ -1,11 +1,9 @@
-#include "display.h"
-
 #include <SDL3/SDL.h>
 #include <SDL3_image/SDL_image.h>
 
 void display_single(SDL_Texture **img_ptr, SDL_Renderer *renderer)
 {
-    int w = 0, h = 0;
+    int w, h;
     SDL_GetRenderOutputSize(renderer, &w, &h);
 
     SDL_FRect dst;
@@ -26,7 +24,7 @@ void display_single(SDL_Texture **img_ptr, SDL_Renderer *renderer)
 
 void display_book(SDL_Texture **img_ptr1, SDL_Texture **img_ptr2, SDL_Renderer *renderer)
 {
-    int w = 0, h = 0;
+    int w, h;
     SDL_GetRenderOutputSize(renderer, &w, &h);
 
     SDL_FRect dst1, dst2;
