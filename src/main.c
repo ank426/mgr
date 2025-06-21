@@ -20,29 +20,66 @@ int total_pages = 0;
 SDL_Texture *image1 = NULL;
 SDL_Texture *image2 = NULL;
 
-enum mode {
-    SINGLE,
-    BOOK,
-    STRIP,
-} mode = SINGLE;
+bool book_mode = false;
 
-bool *file_wides;
+bool *file_wides = NULL;
 
+int n_int = 0;
+struct interval {
+    int start, end;
+    bool offset;
+} *intervals, *curr_int;
+
+
+void update_intervals()
+{
+    curr_int = NULL;
+    if (intervals != NULL) free(intervals);
+    intervals = malloc(total_pages * sizeof(struct interval));
+
+    n_int = 0;
+    int s = 0;
+    bool in = false;
+    for (int i = 0; i < total_pages; i++) {
+        if (!in && !file_wides[i]) {
+            s = i;
+            in = true;
+        }
+        if (in && file_wides[i]) {
+            intervals[n_int++] = (struct interval) { s, i, false };
+            in = false;
+        }
+    }
+    if (in)
+        intervals[n_int++] = (struct interval) { s, total_pages, false };
+
+    intervals[0].offset = (intervals[0].end - intervals[0].start) % 2;
+
+    intervals = realloc(intervals, n_int * sizeof(struct interval));
+}
 
 void load_images()
 {
     SDL_DestroyTexture(image1);
     SDL_DestroyTexture(image2);
+    image1 = image2 = NULL;
 
-    if (current_page != -1)
+    assert(file_wides[current_page] || curr_int->start <= current_page && current_page < curr_int->end);
+
+    if (!book_mode || file_wides[current_page] || curr_int->end - curr_int->start == 1) {
         image1 = load_image_from_zip(path, current_page, renderer);
-    else
-        image1 = NULL;
-
-    if (current_page != total_pages - 1)
-        image2 = load_image_from_zip(path, current_page+1, renderer);
-    else
-        image2 = NULL;
+    }
+    else {
+        if ((curr_int->start - current_page) % 2 == curr_int->offset) {
+            image1 = load_image_from_zip(path, current_page, renderer);
+            if (current_page + 1 < curr_int->end)
+                image2 = load_image_from_zip(path, current_page+1, renderer);
+        } else {
+            image2 = load_image_from_zip(path, current_page, renderer);
+            if (current_page - 1 >= curr_int->start)
+                image1 = load_image_from_zip(path, --current_page, renderer);
+        }
+    }
 }
 
 
@@ -55,7 +92,9 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
 
     strncpy(path, argv[1], 256);
     total_pages = get_num_entries_from_zip(path);
-    file_wides = is_wides_from_zip(path, total_pages);
+    update_wides_from_zip(path, total_pages, &file_wides);
+    update_intervals();
+    curr_int = intervals;
     load_images();
 
     return SDL_APP_CONTINUE;
@@ -71,45 +110,39 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
                 return SDL_APP_SUCCESS;
 
             case SDL_SCANCODE_M:
-                mode = (mode + 1) % 3;
+                book_mode = !book_mode;
+                load_images();
                 break;
 
             case SDL_SCANCODE_J:
-                switch (mode) {
-                    case SINGLE:
-                        if (current_page < total_pages - 1) {
-                            current_page++;
-                            load_images();
-                        }
-                        break;
-                    case BOOK:
-                        if (current_page < total_pages - 2 + (int)file_wides[current_page]) {
-                            current_page += 2 - (int)file_wides[current_page];
-                            load_images();
-                        }
-                        break;
-                    case STRIP:
-                        break;
+                if (!book_mode) {
+                    if (current_page < total_pages - 1)
+                        current_page++;
                 }
+                else {
+                    if (current_page == total_pages - 2)
+                        current_page++;
+                    else if (current_page < total_pages - 2)
+                        current_page += 2 - (file_wides[current_page] | file_wides[current_page+1]);
+                }
+                if (!file_wides[current_page] && current_page >= curr_int->end)
+                    curr_int++;
+                load_images();
                 break;
 
             case SDL_SCANCODE_K:
-                switch (mode) {
-                    case SINGLE:
-                        if (current_page > 0) {
-                            current_page--;
-                            load_images();
-                        }
-                        break;
-                    case BOOK:
-                        if (current_page > 0) {
-                            current_page -= 2 - (int)file_wides[current_page-1];
-                            load_images();
-                        }
-                        break;
-                    case STRIP:
-                        break;
+                if (!book_mode) {
+                    if (current_page > 0)
+                        current_page--;
+                } else {
+                    if (current_page == 1)
+                        current_page--;
+                    else if (current_page > 1)
+                        current_page -= 2 - (file_wides[current_page] | file_wides[current_page-1]);
                 }
+                if (!file_wides[current_page] && current_page < curr_int->start)
+                    curr_int--;
+                load_images();
                 break;
 
             default:
@@ -122,24 +155,17 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
 
 SDL_AppResult SDL_AppIterate(void *appstate)
 {
-    switch (mode) {
-        case SINGLE:
+    if (!book_mode)
+        display_single(&image1, renderer);
+    else {
+        if (image1 == NULL && image2 == NULL)
+            return SDL_APP_FAILURE;
+        else if (image1 == NULL)
+            display_single(&image2, renderer);
+        else if (image2 == NULL)
             display_single(&image1, renderer);
-            break;
-
-        case BOOK:
-            if (file_wides[current_page])
-                display_single(&image1, renderer);
-            else if (current_page == -1)
-                display_single(&image2, renderer);
-            else if (current_page == total_pages - 1)
-                display_single(&image1, renderer);
-            else
-                display_book(&image2, &image1, renderer);
-            break;
-
-        case STRIP:
-            break;
+        else
+            display_book(&image2, &image1, renderer);
     }
 
     return SDL_APP_CONTINUE;
@@ -150,4 +176,5 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result)
     SDL_DestroyTexture(image1);
     SDL_DestroyTexture(image2);
     free(file_wides);
+    free(intervals);
 }

@@ -20,9 +20,11 @@ int get_num_entries_from_zip(const char *path)
     return num;
 }
 
-bool *is_wides_from_zip(const char *path, int n)
+void update_wides_from_zip(const char *path, int n, bool **ret)
 {
-    bool *ret = calloc(n, sizeof(bool));
+    if (*ret != NULL) free(*ret);
+    *ret = malloc(n * sizeof(bool));
+    assert(*ret != NULL);
 
     int err;
     zip_t *archive = zip_open(path, ZIP_RDONLY, &err);
@@ -42,12 +44,10 @@ bool *is_wides_from_zip(const char *path, int n)
 
         int width, height, channels;
         assert(stbi_info_from_memory(buffer, stat.size, &width, &height, &channels));
-        ret[i] = width > height;
+        (*ret)[i] = width > height;
     }
 
     zip_close(archive);
-
-    return ret;
 }
 
 SDL_Texture *load_image_from_zip(const char *path, int index, SDL_Renderer *renderer)
