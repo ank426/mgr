@@ -66,11 +66,11 @@ void load_images()
 
     assert(file_wides[current_page] || current_interval->start <= current_page && current_page < current_interval->end);
 
-    if (!book_mode || file_wides[current_page] || current_interval->end - current_interval->start == 1) {
+    if (!book_mode || file_wides[current_page]) {
         image1 = load_image_from_zip(path, current_page, renderer);
     }
     else {
-        if ((current_interval->start - current_page) % 2 == current_interval->offset) {
+        if ((current_page - current_interval->start) % 2 == current_interval->offset) {
             image1 = load_image_from_zip(path, current_page, renderer);
             if (current_page + 1 < current_interval->end)
                 image2 = load_image_from_zip(path, current_page+1, renderer);
@@ -114,13 +114,15 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
                 load_images();
                 break;
 
+            case SDL_SCANCODE_O:
+                current_interval->offset = !current_interval->offset;
+                load_images();
+                break;
+
             case SDL_SCANCODE_J:
                 if (current_page == total_pages-1) break;
 
-                if (!book_mode || current_page == total_pages-2 || file_wides[current_page] || file_wides[current_page+1])
-                    current_page++;
-                else
-                    current_page += 2;
+                current_page += 2 - (image1 == NULL || image2 == NULL || current_page == total_pages-2);
 
                 if (!file_wides[current_page] && current_page >= current_interval->end)
                     current_interval++;
@@ -131,10 +133,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
             case SDL_SCANCODE_K:
                 if (current_page == 0) break;
 
-                if (!book_mode || current_page == 1 || file_wides[current_page] || file_wides[current_page-1])
-                    current_page--;
-                else
-                    current_page -= 2;
+                current_page--;
 
                 if (!file_wides[current_page] && current_page < current_interval->start)
                     current_interval--;
@@ -152,18 +151,14 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
 
 SDL_AppResult SDL_AppIterate(void *appstate)
 {
-    if (!book_mode)
+    if (image1 == NULL && image2 == NULL)
+        return SDL_APP_FAILURE;
+    else if (image1 == NULL)
+        display_single(&image2, renderer);
+    else if (image2 == NULL)
         display_single(&image1, renderer);
-    else {
-        if (image1 == NULL && image2 == NULL)
-            return SDL_APP_FAILURE;
-        else if (image1 == NULL)
-            display_single(&image2, renderer);
-        else if (image2 == NULL)
-            display_single(&image1, renderer);
-        else
-            display_book(&image2, &image1, renderer);
-    }
+    else
+        display_book(&image2, &image1, renderer);
 
     return SDL_APP_CONTINUE;
 }
