@@ -28,12 +28,12 @@ int n_int = 0;
 struct interval {
     int start, end;
     bool offset;
-} *intervals, *curr_int;
+} *intervals, *current_interval;
 
 
 void update_intervals()
 {
-    curr_int = NULL;
+    current_interval = NULL;
     if (intervals != NULL) free(intervals);
     intervals = malloc(total_pages * sizeof(struct interval));
 
@@ -64,19 +64,19 @@ void load_images()
     SDL_DestroyTexture(image2);
     image1 = image2 = NULL;
 
-    assert(file_wides[current_page] || curr_int->start <= current_page && current_page < curr_int->end);
+    assert(file_wides[current_page] || current_interval->start <= current_page && current_page < current_interval->end);
 
-    if (!book_mode || file_wides[current_page] || curr_int->end - curr_int->start == 1) {
+    if (!book_mode || file_wides[current_page] || current_interval->end - current_interval->start == 1) {
         image1 = load_image_from_zip(path, current_page, renderer);
     }
     else {
-        if ((curr_int->start - current_page) % 2 == curr_int->offset) {
+        if ((current_interval->start - current_page) % 2 == current_interval->offset) {
             image1 = load_image_from_zip(path, current_page, renderer);
-            if (current_page + 1 < curr_int->end)
+            if (current_page + 1 < current_interval->end)
                 image2 = load_image_from_zip(path, current_page+1, renderer);
         } else {
             image2 = load_image_from_zip(path, current_page, renderer);
-            if (current_page - 1 >= curr_int->start)
+            if (current_page - 1 >= current_interval->start)
                 image1 = load_image_from_zip(path, --current_page, renderer);
         }
     }
@@ -94,7 +94,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
     total_pages = get_num_entries_from_zip(path);
     update_wides_from_zip(path, total_pages, &file_wides);
     update_intervals();
-    curr_int = intervals;
+    current_interval = intervals;
     load_images();
 
     return SDL_APP_CONTINUE;
@@ -115,33 +115,30 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
                 break;
 
             case SDL_SCANCODE_J:
-                if (!book_mode) {
-                    if (current_page < total_pages - 1)
-                        current_page++;
-                }
-                else {
-                    if (current_page == total_pages - 2)
-                        current_page++;
-                    else if (current_page < total_pages - 2)
-                        current_page += 2 - (file_wides[current_page] | file_wides[current_page+1]);
-                }
-                if (!file_wides[current_page] && current_page >= curr_int->end)
-                    curr_int++;
+                if (current_page == total_pages-1) break;
+
+                if (!book_mode || current_page == total_pages-2 || file_wides[current_page] || file_wides[current_page+1])
+                    current_page++;
+                else
+                    current_page += 2;
+
+                if (!file_wides[current_page] && current_page >= current_interval->end)
+                    current_interval++;
+
                 load_images();
                 break;
 
             case SDL_SCANCODE_K:
-                if (!book_mode) {
-                    if (current_page > 0)
-                        current_page--;
-                } else {
-                    if (current_page == 1)
-                        current_page--;
-                    else if (current_page > 1)
-                        current_page -= 2 - (file_wides[current_page] | file_wides[current_page-1]);
-                }
-                if (!file_wides[current_page] && current_page < curr_int->start)
-                    curr_int--;
+                if (current_page == 0) break;
+
+                if (!book_mode || current_page == 1 || file_wides[current_page] || file_wides[current_page-1])
+                    current_page--;
+                else
+                    current_page -= 2;
+
+                if (!file_wides[current_page] && current_page < current_interval->start)
+                    current_interval--;
+
                 load_images();
                 break;
 
