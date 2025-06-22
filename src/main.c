@@ -31,10 +31,10 @@ void load_images()
                 break;
             }
             struct interval *curr_int = get_current_interval();
-            if ((current_page - curr_int->start) % 2 == curr_int->offset) {
+            if (current_page ^ curr_int->start ^ !curr_int->offset & 1) {
                 image1 = load_image_from_zip(current_page);
                 if (current_page + 1 < curr_int->end)
-                    image2 = load_image_from_zip(current_page+1);
+                    image2 = load_image_from_zip(current_page + 1);
             } else {
                 image2 = load_image_from_zip(current_page);
                 if (current_page - 1 >= curr_int->start)
@@ -45,7 +45,7 @@ void load_images()
         case STRIP:
             image1 = load_image_from_zip(current_page);
             if (current_page < total_pages - 1)
-                image2 = load_image_from_zip(current_page+1);
+                image2 = load_image_from_zip(current_page + 1);
             break;
     }
 }
@@ -56,7 +56,7 @@ void load_images_next()
     SDL_DestroyTexture(image1);
     image1 = image2;
     if (current_page < total_pages - 1)
-        image2 = load_image_from_zip(current_page+1);
+        image2 = load_image_from_zip(current_page + 1);
     else
         image2 = NULL;
 }
@@ -106,7 +106,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
                 break;
 
             case SDL_SCANCODE_J:
-                if (current_page == total_pages-1) break;
+                if (current_page == total_pages - 1) break;
                 current_page += 2 - (mode == STRIP || image1 == NULL || image2 == NULL || current_page == total_pages-2);
                 load_images();
                 break;
@@ -123,7 +123,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
                 scroll += 0.5 * height / scale;
                 if (scroll < dims[current_page].height) break;
 
-                if (current_page == total_pages-1)
+                if (current_page == total_pages - 1)
                     scroll = dims[current_page].height;
                 else {
                     scroll -= dims[current_page++].height;
