@@ -1,13 +1,10 @@
+#include "globals.h"
 #include "display.h"
 
 #include <SDL3/SDL.h>
 #include <SDL3_image/SDL_image.h>
 
 #include <stdio.h>
-
-extern SDL_Renderer *renderer;
-extern int width, height;
-extern float scroll, scale;
 
 void display_single(SDL_Texture **img_ptr)
 {
@@ -16,7 +13,7 @@ void display_single(SDL_Texture **img_ptr)
 
     float sw = width / dst.w;
     float sh = height / dst.h;
-    float scale = sw < sh ? sw : sh;
+    scale = sw < sh ? sw : sh;
     dst.x = (width / scale - dst.w) / 2;
     dst.y = (height / scale - dst.h) / 2;
 
@@ -34,10 +31,9 @@ void display_book(SDL_Texture **img_ptr1, SDL_Texture **img_ptr2)
     SDL_GetTextureSize(*img_ptr2, &dst2.w, &dst2.h);
 
     float scale2 = dst1.h / dst2.h;
-
     float sw = width / (dst1.w + scale2 * dst2.w);
     float sh = height / dst1.h;
-    float scale = sw < sh ? sw : sh;
+    scale = sw < sh ? sw : sh;
 
     dst1.x = (width / scale - dst1.w - scale2 * dst2.w) / 2;
     dst1.y = (height / scale - dst1.h) / 2;
@@ -60,7 +56,6 @@ void display_strip(SDL_Texture **img_ptr1, SDL_Texture **img_ptr2)
     SDL_GetTextureSize(*img_ptr2, &dst2.w, &dst2.h);
 
     float scale2 = dst1.w / dst2.w;
-
     scale = 0.5 * width / dst1.w;
 
     dst1.x = (width / scale - dst1.w) / 2;

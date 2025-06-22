@@ -1,3 +1,4 @@
+#include "globals.h"
 #include "zip_handler.h"
 
 #include <SDL3/SDL.h>
@@ -8,10 +9,7 @@
 
 #include <assert.h>
 
-extern int (*dims)[2];
-extern bool *wides;
-
-int get_num_entries_from_zip(const char *path)
+int get_num_entries_from_zip()
 {
     int err;
     zip_t *archive = zip_open(path, ZIP_RDONLY, &err);
@@ -25,21 +23,17 @@ int get_num_entries_from_zip(const char *path)
     return num;
 }
 
-void update_dims_from_zip(const char *path, int n)
+void update_dims_from_zip()
 {
     if (dims != NULL) free(dims);
-    dims = malloc(n * 2 * sizeof(int));
+    dims = malloc(total_pages * sizeof(struct dim));
     assert(dims != NULL);
-
-    if (wides != NULL) free(wides);
-    wides = malloc(n * sizeof(bool));
-    assert(wides != NULL);
 
     int err;
     zip_t *archive = zip_open(path, ZIP_RDONLY, &err);
     assert(archive != NULL);
 
-    for (int i = 0; i < n; i++) {
+    for (int i = 0; i < total_pages; i++) {
         zip_stat_t stat;
         assert(zip_stat_index(archive, i, 0, &stat) == 0);
 
@@ -53,15 +47,13 @@ void update_dims_from_zip(const char *path, int n)
 
         int w, h, channels;
         assert(stbi_info_from_memory(buffer, stat.size, &w, &h, &channels));
-        dims[i][0] = w;
-        dims[i][1] = h;
-        wides[i] = w > h;
+        dims[i] = (struct dim) { w, h, w > h };
     }
 
     zip_close(archive);
 }
 
-SDL_Texture *load_image_from_zip(const char *path, int index, SDL_Renderer *renderer)
+SDL_Texture *load_image_from_zip(int index)
 {
     int err;
     zip_t *archive = zip_open(path, ZIP_RDONLY, &err);
