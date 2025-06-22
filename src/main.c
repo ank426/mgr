@@ -103,6 +103,25 @@ void load_images()
     }
 }
 
+void load_images_next()
+{
+    assert(mode == STRIP);
+    SDL_DestroyTexture(image1);
+    image1 = image2;
+    if (current_page < total_pages - 1)
+        image2 = load_image_from_zip(path, current_page+1, renderer);
+    else
+        image2 = NULL;
+}
+
+void load_images_prev()
+{
+    assert(mode == STRIP);
+    SDL_DestroyTexture(image2);
+    image2 = image1;
+    image1 = load_image_from_zip(path, current_page, renderer);
+}
+
 
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
 {
@@ -175,7 +194,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
                         if (!wides[current_page] && current_page >= current_interval->end)
                             current_interval++;
 
-                        load_images();
+                        load_images_next();
                     }
                 }
                 break;
@@ -193,7 +212,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
                         if (!wides[current_page] && current_page >= current_interval->end)
                             current_interval++;
 
-                        load_images();
+                        load_images_prev();
                     }
                 }
                 break;
