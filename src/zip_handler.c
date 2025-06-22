@@ -1,3 +1,5 @@
+#include "zip_handler.h"
+
 #include <SDL3/SDL.h>
 #include <SDL3_image/SDL_image.h>
 #define STB_IMAGE_IMPLEMENTATION
@@ -5,6 +7,9 @@
 #include <zip.h>
 
 #include <assert.h>
+
+extern int (*dims)[2];
+extern bool *wides;
 
 int get_num_entries_from_zip(const char *path)
 {
@@ -20,11 +25,15 @@ int get_num_entries_from_zip(const char *path)
     return num;
 }
 
-void update_wides_from_zip(const char *path, int n, bool **ret)
+void update_dims_from_zip(const char *path, int n)
 {
-    if (*ret != NULL) free(*ret);
-    *ret = malloc(n * sizeof(bool));
-    assert(*ret != NULL);
+    if (dims != NULL) free(dims);
+    dims = malloc(n * 2 * sizeof(int));
+    assert(dims != NULL);
+
+    if (wides != NULL) free(wides);
+    wides = malloc(n * sizeof(bool));
+    assert(wides != NULL);
 
     int err;
     zip_t *archive = zip_open(path, ZIP_RDONLY, &err);
@@ -42,9 +51,11 @@ void update_wides_from_zip(const char *path, int n, bool **ret)
 
         zip_fclose(file);
 
-        int width, height, channels;
-        assert(stbi_info_from_memory(buffer, stat.size, &width, &height, &channels));
-        (*ret)[i] = width > height;
+        int w, h, channels;
+        assert(stbi_info_from_memory(buffer, stat.size, &w, &h, &channels));
+        dims[i][0] = w;
+        dims[i][1] = h;
+        wides[i] = w > h;
     }
 
     zip_close(archive);
@@ -66,7 +77,7 @@ SDL_Texture *load_image_from_zip(const char *path, int index, SDL_Renderer *rend
     long bytes_read = zip_fread(file, buffer, stat.size);
     assert(bytes_read >= 0);
 
-    SDL_IOStream *io = SDL_IOFromMem(buffer, bytes_read);
+    SDL_IOStream *io = SDL_IOFromConstMem(buffer, bytes_read);
     assert(io != NULL);
 
     SDL_Texture *image = IMG_LoadTexture_IO(renderer, io, true);
