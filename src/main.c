@@ -1,6 +1,10 @@
 #include "globals.h"
+
 #include "display.h"
 #include "interval.h"
+#include "keybinds.h"
+#include "keybinds_impl.h"
+#include "load.h"
 #include "zip_handler.h"
 
 #define SDL_MAIN_USE_CALLBACKS 1
@@ -13,61 +17,6 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
-
-void load_images()
-{
-    SDL_DestroyTexture(image1);
-    SDL_DestroyTexture(image2);
-    image1 = image2 = NULL;
-
-    switch (mode) {
-        case SINGLE:
-            image1 = load_image_from_zip(current_page);
-            break;
-
-        case BOOK:
-            if (dims[current_page].wide) {
-                image1 = load_image_from_zip(current_page);
-                break;
-            }
-            struct interval *curr_int = get_current_interval();
-            if (current_page ^ curr_int->start ^ !curr_int->offset & 1) {
-                image1 = load_image_from_zip(current_page);
-                if (current_page + 1 < curr_int->end)
-                    image2 = load_image_from_zip(current_page + 1);
-            } else {
-                image2 = load_image_from_zip(current_page);
-                if (current_page - 1 >= curr_int->start)
-                    image1 = load_image_from_zip(--current_page);
-            }
-            break;
-
-        case STRIP:
-            image1 = load_image_from_zip(current_page);
-            if (current_page < total_pages - 1)
-                image2 = load_image_from_zip(current_page + 1);
-            break;
-    }
-}
-
-void load_images_next()
-{
-    assert(mode == STRIP);
-    SDL_DestroyTexture(image1);
-    image1 = image2;
-    if (current_page < total_pages - 1)
-        image2 = load_image_from_zip(current_page + 1);
-    else
-        image2 = NULL;
-}
-
-void load_images_prev()
-{
-    assert(mode == STRIP);
-    SDL_DestroyTexture(image2);
-    image2 = image1;
-    image1 = load_image_from_zip(current_page);
-}
 
 
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
@@ -88,66 +37,30 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
 
 SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
 {
-    if (event->type == SDL_EVENT_QUIT) return SDL_APP_SUCCESS;
+    if (event->type == SDL_EVENT_QUIT)
+        return SDL_APP_SUCCESS;
 
     if (event->type == SDL_EVENT_KEY_DOWN) {
-        switch (event->key.scancode) {
-            case SDL_SCANCODE_Q:
-                return SDL_APP_SUCCESS;
-
-            case SDL_SCANCODE_M:
-                mode = (mode + 1) % 3;
-                load_images();
+        struct bind *binds;
+        int n_binds;
+        switch(mode) {
+            case SINGLE:
+                binds = single_binds;
+                n_binds = n_single_binds;
                 break;
-
-            case SDL_SCANCODE_O:
-                get_current_interval()->offset ^= 1;
-                load_images();
+            case BOOK:
+                binds = book_binds;
+                n_binds = n_book_binds;
                 break;
-
-            case SDL_SCANCODE_J:
-                if (current_page == total_pages - 1) break;
-                current_page += 2 - (mode == STRIP || image1 == NULL || image2 == NULL || current_page == total_pages-2);
-                load_images();
-                break;
-
-            case SDL_SCANCODE_K:
-                if (current_page == 0) break;
-                current_page--;
-                load_images();
-                break;
-
-            case SDL_SCANCODE_D:
-                if (mode != STRIP) break;
-
-                scroll += 0.5 * height / scale;
-                if (scroll < dims[current_page].height) break;
-
-                if (current_page == total_pages - 1)
-                    scroll = dims[current_page].height;
-                else {
-                    scroll -= dims[current_page++].height;
-                    load_images_next();
-                }
-                break;
-
-            case SDL_SCANCODE_U:
-                if (mode != STRIP) break;
-
-                scroll -= 0.5 * height / scale;
-                if (scroll > 0) break;
-
-                if (current_page == 0)
-                    scroll = 0;
-                else {
-                    scroll += dims[--current_page].height;
-                    load_images_prev();
-                }
-                break;
-
-            default:
+            case STRIP:
+                binds = strip_binds;
+                n_binds = n_strip_binds;
                 break;
         }
+
+        for (int i = 0; i < n_binds; i++)
+            if (event->key.mod == binds[i].mod && event->key.scancode == binds[i].key)
+                binds[i].fn(binds[i].args);
     }
 
     return SDL_APP_CONTINUE;

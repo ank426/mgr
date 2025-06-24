@@ -24,7 +24,7 @@ void update_intervals()
     if (in)
         intervals[n_int++] = (struct interval) { s, total_pages, false };
 
-    intervals[0].offset = intervals[0].end ^ intervals[0].start & 1;
+    intervals[0].offset = !intervals[0].end ^ intervals[0].start & 1;
 
     intervals = realloc(intervals, n_int * sizeof(struct interval));
 }

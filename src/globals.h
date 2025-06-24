@@ -34,7 +34,7 @@ struct interval {
     bool offset;
 } extern *intervals;
 
-extern float scroll;
+extern float scrolled;
 extern float scale;
 
 #endif

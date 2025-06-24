@@ -59,9 +59,9 @@ void display_strip(SDL_Texture **img_ptr1, SDL_Texture **img_ptr2)
     scale = 0.5 * width / dst1.w;
 
     dst1.x = (width / scale - dst1.w) / 2;
-    dst1.y = -scroll;
+    dst1.y = -scrolled;
     dst2.x = (width / (scale*scale2) - dst2.w) / 2;
-    dst2.y = (-scroll + dst1.h) / scale2;
+    dst2.y = (-scrolled + dst1.h) / scale2;
 
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);

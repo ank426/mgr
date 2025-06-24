@@ -20,5 +20,5 @@ struct dim *dims;
 int n_int = 0;
 struct interval *intervals = NULL;
 
-float scroll = 0;
+float scrolled = 0;
 float scale = 0;
