@@ -1,13 +1,5 @@
+#include "headers.h"
 #include "globals.h"
-#include "keybinds_impl.h"
-#include "interval.h"
-#include "load.h"
-
-#include <SDL3/SDL.h>
-
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
 
 void quit(const char *args)
 {

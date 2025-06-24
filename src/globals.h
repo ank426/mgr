@@ -1,5 +1,4 @@
-#ifndef GLOBALS_H
-#define GLOBALS_H
+#pragma once
 
 #include <SDL3/SDL.h>
 
@@ -36,5 +35,3 @@ struct interval {
 
 extern float scrolled;
 extern float scale;
-
-#endif

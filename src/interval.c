@@ -1,7 +1,5 @@
+#include "headers.h"
 #include "globals.h"
-#include "interval.h"
-
-#include <stdlib.h>
 
 void update_intervals()
 {

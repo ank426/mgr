@@ -1,6 +1,4 @@
-#include "keybinds.h"
-#include "keybinds_impl.h"
-#include <SDL3/SDL.h>
+#include "headers.h"
 
 struct bind single_binds[] = {
     { SDL_KMOD_NONE, SDL_SCANCODE_Q, &quit, "" },

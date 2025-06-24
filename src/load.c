@@ -1,9 +1,5 @@
+#include "headers.h"
 #include "globals.h"
-#include "load.h"
-#include "interval.h"
-#include "zip_handler.h"
-#include <SDL3/SDL.h>
-#include <assert.h>
 
 void load_images()
 {

@@ -1,10 +1,5 @@
 #include "globals.h"
-#include "display.h"
-
-#include <SDL3/SDL.h>
-#include <SDL3_image/SDL_image.h>
-
-#include <stdio.h>
+#include "headers.h"
 
 void display_single(SDL_Texture **img_ptr)
 {
