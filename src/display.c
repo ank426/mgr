@@ -1,5 +1,5 @@
-#include "globals.h"
 #include "headers.h"
+#include "globals.h"
 
 void display_single(SDL_Texture **img_ptr)
 {

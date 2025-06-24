@@ -18,7 +18,7 @@ void load_images()
                 break;
             }
             struct interval *curr_int = get_current_interval();
-            if (current_page ^ curr_int->start ^ !curr_int->offset & 1) {
+            if (current_page ^ curr_int->start ^ ~curr_int->offset & 1) {
                 image1 = load_image_from_zip(current_page);
                 if (current_page + 1 < curr_int->end)
                     image2 = load_image_from_zip(current_page + 1);
@@ -39,7 +39,6 @@ void load_images()
 
 void load_images_next()
 {
-    assert(mode == STRIP);
     SDL_DestroyTexture(image1);
     image1 = image2;
     if (current_page < total_pages - 1)
@@ -50,7 +49,6 @@ void load_images_next()
 
 void load_images_prev()
 {
-    assert(mode == STRIP);
     SDL_DestroyTexture(image2);
     image2 = image1;
     image1 = load_image_from_zip(current_page);
