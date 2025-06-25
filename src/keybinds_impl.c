@@ -21,6 +21,11 @@ void set_mode(const char *args)
     load_images();
 }
 
+void toggle_fullscreen(const char *args)
+{
+    SDL_SetWindowFullscreen(window, !(SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN));
+}
+
 void toggle_offset(const char *args)
 {
     if (dims[current_page].wide)

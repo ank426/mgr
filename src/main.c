@@ -28,7 +28,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
     if (event->type == SDL_EVENT_KEY_DOWN) {
         struct bind *binds;
         int n_binds;
-        switch(mode) {
+        switch (mode) {
             case SINGLE:
                 binds = single_binds;
                 n_binds = n_single_binds;
@@ -46,6 +46,21 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
         for (int i = 0; i < n_binds; i++)
             if (event->key.mod == binds[i].mod && event->key.scancode == binds[i].key)
                 binds[i].fn(binds[i].args);
+    }
+
+    if (event->type == SDL_EVENT_FINGER_UP) {
+        if (mode == SINGLE)
+            page(event->tfinger.y > 0.5 ? "next" : "prev");
+        else if (mode == BOOK)
+            flip(event->tfinger.x < 0.5 ? "next" : "prev");
+    }
+
+    if (event->type == SDL_EVENT_FINGER_MOTION) {
+        if (mode == STRIP) {
+            char buffer[9];
+            snprintf(buffer, sizeof(buffer), "%f", -1.6 * event->tfinger.dy);
+            scroll(buffer);
+        }
     }
 
     return SDL_APP_CONTINUE;
