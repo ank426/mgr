@@ -14,7 +14,7 @@ SDL_Texture *image2 = NULL;
 
 enum modes mode = SINGLE;
 
-struct dim *dims;
+struct file *files;
 
 int n_int = 0;
 struct interval *intervals = NULL;

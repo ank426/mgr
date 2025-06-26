@@ -28,7 +28,7 @@ void toggle_fullscreen(const char *args)
 
 void toggle_offset(const char *args)
 {
-    if (dims[current_page].wide)
+    if (files[current_page].wide)
         return;
     get_current_interval()->offset ^= 1;
     load_images();
@@ -59,7 +59,7 @@ void flip(const char *args)
     if (strcmp(args, "next") == 0) {
         if (current_page == total_pages - 1)
             return;
-        if (image1 == NULL || image2 == NULL || current_page == total_pages - 1)
+        if (image1 == NULL || image2 == NULL || current_page == total_pages - 2)
             current_page++;
         else
             current_page += 2;
@@ -86,13 +86,13 @@ void scroll(const char *args)
         return;
 
     if (val > 0) {
-        if (scrolled < dims[current_page].height)
+        if (scrolled < files[current_page].height)
             return;
 
         if (current_page == total_pages - 1)
-            scrolled = dims[current_page].height;
+            scrolled = files[current_page].height;
         else {
-            scrolled -= dims[current_page++].height;
+            scrolled -= files[current_page++].height;
             load_images_next();
         }
     }
@@ -104,8 +104,20 @@ void scroll(const char *args)
         if (current_page == 0)
             scrolled = 0;
         else {
-            scrolled += dims[--current_page].height;
+            scrolled += files[--current_page].height;
             load_images_prev();
         }
     }
+}
+
+void top(const char *args)
+{
+    current_page = 0;
+    load_images();
+}
+
+void bottom(const char *args)
+{
+    current_page = total_pages - 1;
+    load_images();
 }

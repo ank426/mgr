@@ -13,7 +13,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
 
     strncpy(path, argv[1], 256);
     total_pages = get_num_entries_from_zip();
-    update_dims_from_zip();
+    update_files_from_zip();
     update_intervals();
     load_images();
 
@@ -96,6 +96,6 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result)
 {
     SDL_DestroyTexture(image1);
     SDL_DestroyTexture(image2);
-    free(dims);
+    free(files);
     free(intervals);
 }

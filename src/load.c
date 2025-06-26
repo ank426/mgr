@@ -13,12 +13,12 @@ void load_images()
             break;
 
         case BOOK:
-            if (dims[current_page].wide) {
+            if (files[current_page].wide) {
                 image1 = load_image_from_zip(current_page);
                 break;
             }
             struct interval *curr_int = get_current_interval();
-            if (current_page ^ curr_int->start ^ ~curr_int->offset & 1) {
+            if (current_page & 1 ^ curr_int->start & 1 ^ !curr_int->offset) {
                 image1 = load_image_from_zip(current_page);
                 if (current_page + 1 < curr_int->end)
                     image2 = load_image_from_zip(current_page + 1);

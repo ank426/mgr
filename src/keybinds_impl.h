@@ -5,3 +5,5 @@ void toggle_offset(const char *args);
 void page(const char *args);
 void flip(const char *args);
 void scroll(const char *args);
+void top(const char *args);
+void bottom(const char *args);

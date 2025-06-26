@@ -20,11 +20,12 @@ enum modes {
     STRIP,
 } extern mode;
 
-struct dim {
+struct file {
+    char name[256];
     int width;
     int height;
     bool wide;
-} extern *dims;
+} extern *files;
 
 extern int n_int;
 struct interval {
