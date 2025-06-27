@@ -28,7 +28,7 @@ void toggle_fullscreen(const char *args)
 
 void toggle_offset(const char *args)
 {
-    if (files[current_page].wide)
+    if (pages[current_page].wide)
         return;
     get_current_interval()->offset ^= 1;
     load_images();
@@ -86,13 +86,13 @@ void scroll(const char *args)
         return;
 
     if (val > 0) {
-        if (scrolled < files[current_page].height)
+        if (scrolled < pages[current_page].height)
             return;
 
         if (current_page == total_pages - 1)
-            scrolled = files[current_page].height;
+            scrolled = pages[current_page].height;
         else {
-            scrolled -= files[current_page++].height;
+            scrolled -= pages[current_page++].height;
             load_images_next();
         }
     }
@@ -104,7 +104,7 @@ void scroll(const char *args)
         if (current_page == 0)
             scrolled = 0;
         else {
-            scrolled += files[--current_page].height;
+            scrolled += pages[--current_page].height;
             load_images_prev();
         }
     }

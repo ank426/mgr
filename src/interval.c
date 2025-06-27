@@ -10,11 +10,11 @@ void update_intervals()
     int s = 0;
     bool in = false;
     for (int i = 0; i < total_pages; i++) {
-        if (!in && !files[i].wide) {
+        if (!in && !pages[i].wide) {
             s = i;
             in = true;
         }
-        if (in && files[i].wide) {
+        if (in && pages[i].wide) {
             intervals[n_int++] = (struct interval) { s, i, false };
             in = false;
         }

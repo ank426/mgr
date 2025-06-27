@@ -13,7 +13,7 @@ void load_images()
             break;
 
         case BOOK:
-            if (files[current_page].wide) {
+            if (pages[current_page].wide) {
                 image1 = load_image_from_zip(current_page);
                 break;
             }

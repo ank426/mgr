@@ -21,9 +21,9 @@ int get_num_entries_from_zip()
 
 void update_files_from_zip()
 {
-    if (files != NULL) free(files);
-    files = malloc(total_pages * sizeof(struct file));
-    assert(files != NULL);
+    if (pages != NULL) free(pages);
+    pages = malloc(total_pages * sizeof(struct page));
+    assert(pages != NULL);
 
     int err;
     zip_t *archive = zip_open(path, ZIP_RDONLY, &err);
@@ -42,10 +42,10 @@ void update_files_from_zip()
         int w, h, channels;
         assert(stbi_info_from_memory(buffer, stat.size, &w, &h, &channels));
 
-        strncpy(files[i].name, stat.name, 256);
-        files[i].width = w;
-        files[i].height = h;
-        files[i].wide = w > h;
+        strncpy(pages[i].name, stat.name, 256);
+        pages[i].width = w;
+        pages[i].height = h;
+        pages[i].wide = w > h;
 
         zip_fclose(file);
     }
@@ -60,9 +60,9 @@ SDL_Texture *load_image_from_zip(int index)
     assert(archive != NULL);
 
     zip_stat_t stat;
-    assert(zip_stat(archive, files[index].name, 0, &stat) == 0);
+    assert(zip_stat(archive, pages[index].name, 0, &stat) == 0);
 
-    zip_file_t *file = zip_fopen(archive, files[index].name, 0);
+    zip_file_t *file = zip_fopen(archive, pages[index].name, 0);
     assert(file != NULL);
 
     char buffer[stat.size];

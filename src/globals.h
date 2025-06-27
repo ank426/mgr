@@ -20,12 +20,12 @@ enum modes {
     STRIP,
 } extern mode;
 
-struct file {
+struct page {
     char name[256];
     int width;
     int height;
     bool wide;
-} extern *files;
+} extern *pages;
 
 extern int n_int;
 struct interval {
