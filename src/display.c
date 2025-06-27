@@ -8,14 +8,14 @@ void display_single(SDL_Texture **img_ptr)
 
     float sw = width / dst.w;
     float sh = height / dst.h;
-    scale = sw < sh ? sw : sh;
+    float scale = sw < sh ? sw : sh;
     dst.x = (width / scale - dst.w) / 2;
     dst.y = (height / scale - dst.h) / 2;
 
     SDL_SetRenderScale(renderer, scale, scale);
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
-    SDL_RenderTexture(renderer, *img_ptr, NULL, &dst);
+    SDL_RenderTexture(renderer, *img_ptr, nullptr, &dst);
     SDL_RenderPresent(renderer);
 }
 
@@ -28,7 +28,7 @@ void display_book(SDL_Texture **img_ptr1, SDL_Texture **img_ptr2)
     float scale2 = dst1.h / dst2.h;
     float sw = width / (dst1.w + scale2 * dst2.w);
     float sh = height / dst1.h;
-    scale = sw < sh ? sw : sh;
+    float scale = sw < sh ? sw : sh;
 
     dst1.x = (width / scale - dst1.w - scale2 * dst2.w) / 2;
     dst1.y = (height / scale - dst1.h) / 2;
@@ -38,9 +38,9 @@ void display_book(SDL_Texture **img_ptr1, SDL_Texture **img_ptr2)
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
     SDL_SetRenderScale(renderer, scale, scale);
-    SDL_RenderTexture(renderer, *img_ptr1, NULL, &dst1);
+    SDL_RenderTexture(renderer, *img_ptr1, nullptr, &dst1);
     SDL_SetRenderScale(renderer, scale*scale2, scale*scale2);
-    SDL_RenderTexture(renderer, *img_ptr2, NULL, &dst2);
+    SDL_RenderTexture(renderer, *img_ptr2, nullptr, &dst2);
     SDL_RenderPresent(renderer);
 }
 
@@ -51,7 +51,7 @@ void display_strip(SDL_Texture **img_ptr1, SDL_Texture **img_ptr2)
     SDL_GetTextureSize(*img_ptr2, &dst2.w, &dst2.h);
 
     float scale2 = dst1.w / dst2.w;
-    scale = 0.5 * width / dst1.w;
+    float scale = 0.5 * width / dst1.w;
 
     dst1.x = (width / scale - dst1.w) / 2;
     dst1.y = -scrolled;
@@ -61,8 +61,8 @@ void display_strip(SDL_Texture **img_ptr1, SDL_Texture **img_ptr2)
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
     SDL_SetRenderScale(renderer, scale, scale);
-    SDL_RenderTexture(renderer, *img_ptr1, NULL, &dst1);
+    SDL_RenderTexture(renderer, *img_ptr1, nullptr, &dst1);
     SDL_SetRenderScale(renderer, scale*scale2, scale*scale2);
-    SDL_RenderTexture(renderer, *img_ptr2, NULL, &dst2);
+    SDL_RenderTexture(renderer, *img_ptr2, nullptr, &dst2);
     SDL_RenderPresent(renderer);
 }

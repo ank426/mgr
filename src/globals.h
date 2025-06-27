@@ -35,4 +35,3 @@ struct interval {
 } extern *intervals;
 
 extern float scrolled;
-extern float scale;

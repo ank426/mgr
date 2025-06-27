@@ -6,7 +6,7 @@ int nat_cmp(const void *name1, const void *name2)
     const char *n1 = *(char (*)[256])name1;
     const char *n2 = *(char (*)[256])name2;
 
-    while (n1 != NULL && n2 != NULL) {
+    while (n1 != nullptr && n2 != nullptr) {
         if (*n1 < '0' || '9' < *n1 || *n2 < '0' || '9' < *n2) {
             if (*n1 == *n2) {
                 n1++;
@@ -30,9 +30,9 @@ int nat_cmp(const void *name1, const void *name2)
         return i < j ? -1 : 1;
     }
 
-    if (n1 == NULL && n2 == NULL)
+    if (n1 == nullptr && n2 == nullptr)
         return 0;
-    else if (n1 == NULL)
+    else if (n1 == nullptr)
         return -1;
     else
         return 1;

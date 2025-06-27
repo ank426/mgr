@@ -59,7 +59,7 @@ void flip(const char *args)
     if (strcmp(args, "next") == 0) {
         if (current_page == total_pages - 1)
             return;
-        if (image1 == NULL || image2 == NULL || current_page == total_pages - 2)
+        if (image1 == nullptr || image2 == nullptr || current_page == total_pages - 2)
             current_page++;
         else
             current_page += 2;
@@ -80,10 +80,14 @@ void flip(const char *args)
 void scroll(const char *args)
 {
     float val = atof(args);
-    scrolled += val * height / scale;
 
     if (val == 0)
         return;
+
+    float sx, sy;
+    assert(SDL_GetRenderScale(renderer, &sx, &sy));
+    assert(sx == sy);
+    scrolled += val * height / sx;
 
     if (val > 0) {
         if (scrolled < pages[current_page].height)

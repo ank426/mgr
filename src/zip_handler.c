@@ -9,7 +9,7 @@ int get_num_entries_from_zip()
 {
     int err;
     zip_t *archive = zip_open(path, ZIP_RDONLY, &err);
-    assert(archive != NULL);
+    assert(archive != nullptr);
 
     int num = zip_get_num_entries(archive, 0);
     assert(num >= 0);
@@ -21,20 +21,20 @@ int get_num_entries_from_zip()
 
 void update_files_from_zip()
 {
-    if (pages != NULL) free(pages);
+    if (pages != nullptr) free(pages);
     pages = malloc(total_pages * sizeof(struct page));
-    assert(pages != NULL);
+    assert(pages != nullptr);
 
     int err;
     zip_t *archive = zip_open(path, ZIP_RDONLY, &err);
-    assert(archive != NULL);
+    assert(archive != nullptr);
 
     for (int i = 0; i < total_pages; i++) {
         zip_stat_t stat;
         assert(zip_stat_index(archive, i, 0, &stat) == 0);
 
         zip_file_t *file = zip_fopen_index(archive, i, 0);
-        assert(file != NULL);
+        assert(file != nullptr);
 
         unsigned char buffer[stat.size];
         zip_int64_t bytes_read = zip_fread(file, buffer, stat.size);
@@ -57,23 +57,23 @@ SDL_Texture *load_image_from_zip(int index)
 {
     int err;
     zip_t *archive = zip_open(path, ZIP_RDONLY, &err);
-    assert(archive != NULL);
+    assert(archive != nullptr);
 
     zip_stat_t stat;
     assert(zip_stat(archive, pages[index].name, 0, &stat) == 0);
 
     zip_file_t *file = zip_fopen(archive, pages[index].name, 0);
-    assert(file != NULL);
+    assert(file != nullptr);
 
     char buffer[stat.size];
     long bytes_read = zip_fread(file, buffer, stat.size);
     assert(bytes_read >= 0);
 
     SDL_IOStream *io = SDL_IOFromConstMem(buffer, bytes_read);
-    assert(io != NULL);
+    assert(io != nullptr);
 
     SDL_Texture *image = IMG_LoadTexture_IO(renderer, io, true);
-    assert(image != NULL);
+    assert(image != nullptr);
 
     zip_fclose(file);
     zip_close(archive);

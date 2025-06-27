@@ -1,7 +1,7 @@
 #include "globals.h"
 
-SDL_Window *window = NULL;
-SDL_Renderer *renderer = NULL;
+SDL_Window *window = nullptr;
+SDL_Renderer *renderer = nullptr;
 
 int width = 0;
 int height = 0;
@@ -9,15 +9,14 @@ int height = 0;
 char path[256];
 int current_page = 0;
 int total_pages = 0;
-SDL_Texture *image1 = NULL;
-SDL_Texture *image2 = NULL;
+SDL_Texture *image1 = nullptr;
+SDL_Texture *image2 = nullptr;
 
 enum modes mode = SINGLE;
 
 struct page *pages;
 
 int n_int = 0;
-struct interval *intervals = NULL;
+struct interval *intervals = nullptr;
 
 float scrolled = 0;
-float scale = 0;

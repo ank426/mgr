@@ -5,7 +5,7 @@ void load_images()
 {
     SDL_DestroyTexture(image1);
     SDL_DestroyTexture(image2);
-    image1 = image2 = NULL;
+    image1 = image2 = nullptr;
 
     switch (mode) {
         case SINGLE:
@@ -44,7 +44,7 @@ void load_images_next()
     if (current_page < total_pages - 1)
         image2 = load_image_from_zip(current_page + 1);
     else
-        image2 = NULL;
+        image2 = nullptr;
 }
 
 void load_images_prev()

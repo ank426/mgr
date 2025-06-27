@@ -76,9 +76,9 @@ SDL_AppResult SDL_AppIterate(void *appstate)
             break;
 
         case BOOK:
-            if (image1 == NULL)
+            if (image1 == nullptr)
                 display_single(&image2);
-            else if (image2 == NULL)
+            else if (image2 == nullptr)
                 display_single(&image1);
             else
                 display_book(&image2, &image1);

@@ -3,7 +3,7 @@
 
 void update_intervals()
 {
-    if (intervals != NULL) free(intervals);
+    if (intervals != nullptr) free(intervals);
     intervals = malloc(total_pages * sizeof(struct interval));
 
     n_int = 0;
@@ -40,5 +40,5 @@ struct interval *get_current_interval()
         else
             return &intervals[m];
     }
-    return NULL;
+    return nullptr;
 }
