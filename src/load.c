@@ -8,32 +8,32 @@ void load_images()
     image1 = image2 = nullptr;
 
     switch (mode) {
-        case SINGLE:
+    case SINGLE:
+        image1 = load_image_from_zip(current_page);
+        break;
+
+    case BOOK:
+        if (pages[current_page].wide) {
             image1 = load_image_from_zip(current_page);
             break;
-
-        case BOOK:
-            if (pages[current_page].wide) {
-                image1 = load_image_from_zip(current_page);
-                break;
-            }
-            struct interval *curr_int = get_current_interval();
-            if (current_page & 1 ^ curr_int->start & 1 ^ !curr_int->offset) {
-                image1 = load_image_from_zip(current_page);
-                if (current_page + 1 < curr_int->end)
-                    image2 = load_image_from_zip(current_page + 1);
-            } else {
-                image2 = load_image_from_zip(current_page);
-                if (current_page - 1 >= curr_int->start)
-                    image1 = load_image_from_zip(--current_page);
-            }
-            break;
-
-        case STRIP:
+        }
+        struct interval *curr_int = get_current_interval();
+        if (current_page & 1 ^ curr_int->start & 1 ^ !curr_int->offset) {
             image1 = load_image_from_zip(current_page);
-            if (current_page < total_pages - 1)
+            if (current_page + 1 < curr_int->end)
                 image2 = load_image_from_zip(current_page + 1);
-            break;
+        } else {
+            image2 = load_image_from_zip(current_page);
+            if (current_page - 1 >= curr_int->start)
+                image1 = load_image_from_zip(--current_page);
+        }
+        break;
+
+    case STRIP:
+        image1 = load_image_from_zip(current_page);
+        if (current_page < total_pages - 1)
+            image2 = load_image_from_zip(current_page + 1);
+        break;
     }
 }
 

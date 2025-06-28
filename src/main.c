@@ -4,12 +4,45 @@
 #define SDL_MAIN_USE_CALLBACKS 1
 #include <SDL3/SDL_main.h>
 
+void calculate_progress()
+{
+    char string[32];
+
+    switch (mode) {
+    case SINGLE:
+        snprintf(string, 32, "%d/%d", current_page+1, total_pages);
+        break;
+
+    case BOOK:
+        if (image1 == nullptr || image2 == nullptr)
+            snprintf(string, 32, "%d/%d", current_page+1, total_pages);
+        else
+            snprintf(string, 32, "%d-%d/%d", current_page+1, current_page+2, total_pages);
+        break;
+
+    case STRIP:
+        if (pages[current_page].height - scrolled > height * pages[current_page].width / zoom / width)
+            snprintf(string, 32, "%d/%d", current_page+1, total_pages);
+        else
+            snprintf(string, 32, "%d-%d/%d", current_page+1, current_page+2, total_pages);
+        break;
+    }
+
+    TTF_SetTextString(progress_text, string, 0);
+}
+
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
 {
-    if (!SDL_CreateWindowAndRenderer("mgr", 0, 0, SDL_WINDOW_RESIZABLE, &window, &renderer)) {
-        SDL_Log("Couldn't create window and renderer: %s\n", SDL_GetError());
-        return SDL_APP_FAILURE;
-    }
+    assert(SDL_CreateWindowAndRenderer("mgr", 0, 0, SDL_WINDOW_RESIZABLE, &window, &renderer));
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+
+    assert(TTF_Init());
+    engine = TTF_CreateRendererTextEngine(renderer);
+    assert(engine != NULL);
+    progress_font = TTF_OpenFont("/usr/share/fonts/TTF/JetBrainsMonoNerdFont-Regular.ttf", 50);
+    assert(progress_font != NULL);
+    progress_text = TTF_CreateText(engine, progress_font, "", 0);
+    assert(progress_text != NULL);
 
     strncpy(path, argv[1], 256);
     total_pages = get_num_entries_from_zip();
@@ -30,18 +63,18 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
         struct bind *binds;
         int n_binds;
         switch (mode) {
-            case SINGLE:
-                binds = single_binds;
-                n_binds = n_single_binds;
-                break;
-            case BOOK:
-                binds = book_binds;
-                n_binds = n_book_binds;
-                break;
-            case STRIP:
-                binds = strip_binds;
-                n_binds = n_strip_binds;
-                break;
+        case SINGLE:
+            binds = single_binds;
+            n_binds = n_single_binds;
+            break;
+        case BOOK:
+            binds = book_binds;
+            n_binds = n_book_binds;
+            break;
+        case STRIP:
+            binds = strip_binds;
+            n_binds = n_strip_binds;
+            break;
         }
 
         for (int i = 0; i < n_binds; i++)
@@ -69,27 +102,35 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
 
 SDL_AppResult SDL_AppIterate(void *appstate)
 {
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    SDL_RenderClear(renderer);
     SDL_GetRenderOutputSize(renderer, &width, &height);
+
     switch (mode) {
-        case SINGLE:
+    case SINGLE:
+        display_single(&image1);
+        break;
+
+    case BOOK:
+        if (image1 == nullptr)
+            display_single(&image2);
+        else if (image2 == nullptr)
             display_single(&image1);
-            break;
+        else
+            display_book(&image2, &image1);
+        break;
 
-        case BOOK:
-            if (image1 == nullptr)
-                display_single(&image2);
-            else if (image2 == nullptr)
-                display_single(&image1);
-            else
-                display_book(&image2, &image1);
-            break;
-
-        case STRIP:
-            display_strip(&image1, &image2);
-            break;
-
+    case STRIP:
+        display_strip(&image1, &image2);
+        break;
     }
 
+    if (show_progress) {
+        calculate_progress();
+        display_progress();
+    }
+
+    SDL_RenderPresent(renderer);
     return SDL_APP_CONTINUE;
 }
 
@@ -97,6 +138,12 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result)
 {
     SDL_DestroyTexture(image1);
     SDL_DestroyTexture(image2);
+
+    TTF_DestroyRendererTextEngine(engine);
+    TTF_CloseFont(progress_font);
+    TTF_DestroyText(progress_text);
+    TTF_Quit();
+
     free(pages);
     free(intervals);
 }

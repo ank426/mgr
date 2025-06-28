@@ -15,12 +15,12 @@ void update_intervals()
             in = true;
         }
         if (in && pages[i].wide) {
-            intervals[n_int++] = (struct interval) { s, i, false };
+            intervals[n_int++] = (struct interval){s, i, false};
             in = false;
         }
     }
     if (in)
-        intervals[n_int++] = (struct interval) { s, total_pages, false };
+        intervals[n_int++] = (struct interval){s, total_pages, false};
 
     if (intervals[0].start == 0)
         intervals[0].offset = intervals[0].end & 1;

@@ -1,7 +1,7 @@
 all: bin/mgr
 
 bin/mgr: bin force_recompile
-	gcc -o bin/mgr src/*.c -lzip -lSDL3 -lSDL3_image -lm
+	gcc -o bin/mgr src/*.c -lm -lzip -lSDL3 -lSDL3_image -lSDL3_ttf
 
 bin:
 	mkdir bin
