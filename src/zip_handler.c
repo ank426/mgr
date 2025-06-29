@@ -5,52 +5,55 @@
 #include <stb/stb_image.h>
 #include <zip.h>
 
-int get_num_entries_from_zip()
+int update_files_from_zip()
 {
     int err;
     zip_t *archive = zip_open(path, ZIP_RDONLY, &err);
     assert(archive != nullptr);
 
-    int num = zip_get_num_entries(archive, 0);
-    assert(num >= 0);
+    int total_entries = zip_get_num_entries(archive, 0);
+    assert(total_entries >= 0);
 
-    zip_close(archive);
-
-    return num;
-}
-
-void update_files_from_zip()
-{
-    if (pages != nullptr) free(pages);
-    pages = malloc(total_pages * sizeof(struct page));
+    free(pages);
+    pages = malloc(total_entries * sizeof(struct page));
     assert(pages != nullptr);
 
-    int err;
-    zip_t *archive = zip_open(path, ZIP_RDONLY, &err);
-    assert(archive != nullptr);
+    int total_pages = 0;
 
-    for (int i = 0; i < total_pages; i++) {
+    for (int i = 0; i < total_entries; i++) {
         zip_stat_t stat;
         assert(zip_stat_index(archive, i, 0, &stat) == 0);
+
+        if (stat.size == 0) // directories
+            continue;
 
         zip_file_t *file = zip_fopen_index(archive, i, 0);
         assert(file != nullptr);
 
-        unsigned char buffer[stat.size];
+        unsigned char *buffer = malloc(stat.size); // stack can't handle large allocations
+        assert(buffer != nullptr);
+
         zip_int64_t bytes_read = zip_fread(file, buffer, stat.size);
+        assert(bytes_read >= 0);
 
         int w, h, channels;
         assert(stbi_info_from_memory(buffer, stat.size, &w, &h, &channels));
 
-        strncpy(pages[i].name, stat.name, 256);
-        pages[i].width = w;
-        pages[i].height = h;
-        pages[i].wide = w > h;
+        strncpy(pages[total_pages].name, stat.name, 256);
+        pages[total_pages].width = w;
+        pages[total_pages].height = h;
+        pages[total_pages].wide = w > h;
 
+        total_pages++;
+
+        free(buffer);
         zip_fclose(file);
     }
 
     zip_close(archive);
+
+    pages = realloc(pages, total_pages * sizeof(struct page));
+    return total_pages;
 }
 
 SDL_Texture *load_image_from_zip(int index)
@@ -65,7 +68,9 @@ SDL_Texture *load_image_from_zip(int index)
     zip_file_t *file = zip_fopen(archive, pages[index].name, 0);
     assert(file != nullptr);
 
-    char buffer[stat.size];
+    char *buffer = malloc(stat.size);
+    assert(buffer != nullptr);
+
     long bytes_read = zip_fread(file, buffer, stat.size);
     assert(bytes_read >= 0);
 
@@ -75,6 +80,7 @@ SDL_Texture *load_image_from_zip(int index)
     SDL_Texture *image = IMG_LoadTexture_IO(renderer, io, true);
     assert(image != nullptr);
 
+    free(buffer);
     zip_fclose(file);
     zip_close(archive);
 

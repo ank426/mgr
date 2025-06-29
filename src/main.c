@@ -28,7 +28,7 @@ void calculate_progress()
         break;
     }
 
-    TTF_SetTextString(progress_text, string, 0);
+    TTF_SetTextString(progress_text, string, 32);
 }
 
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
@@ -45,8 +45,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
     assert(progress_text != NULL);
 
     strncpy(path, argv[1], 256);
-    total_pages = get_num_entries_from_zip();
-    update_files_from_zip();
+    total_pages = update_files_from_zip();
     nat_sort_pages();
     update_intervals();
     load_images();
