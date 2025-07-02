@@ -9,7 +9,9 @@ extern SDL_Renderer *renderer;
 extern int width;
 extern int height;
 
-extern char path[256];
+extern char **files;
+extern int curr_file;
+
 extern int current_page;
 extern int total_pages;
 extern float scrolled;

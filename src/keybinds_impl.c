@@ -76,17 +76,43 @@ void bottom(const char *args)
     scrolled = 0;
 }
 
+void chapter(const char *args)
+{
+    if (strcmp(args, "next") == 0) {
+        if (curr_file == arrlen(files) - 1)
+            return;
+        curr_file++;
+        load_chapter();
+        current_page = 0;
+        scrolled = 0;
+    }
+
+    else if (strcmp(args, "prev") == 0) {
+        if (curr_file == 0)
+            return;
+        curr_file--;
+        load_chapter();
+        current_page = total_pages - 1;
+        scrolled = mode == STRIP ? pages[current_page].height : 0;
+    }
+
+    else
+        assert(false);
+
+    load_images();
+}
+
 void page(const char *args)
 {
     if (strcmp(args, "next") == 0) {
         if (current_page == total_pages - 1)
-            return;
+            return chapter("next");
         current_page++;
     }
 
     else if (strcmp(args, "prev") == 0) {
         if (current_page == 0)
-            return;
+            return chapter("prev");
         current_page--;
     }
 
@@ -100,8 +126,8 @@ void page(const char *args)
 void flip(const char *args)
 {
     if (strcmp(args, "next") == 0) {
-        if (current_page == total_pages - 1)
-            return;
+        if (current_page == total_pages - 1 || current_page == total_pages - 2 && image1 != nullptr && image2 != nullptr)
+            return chapter("next");
         if (image1 == nullptr || image2 == nullptr || current_page == total_pages - 2)
             current_page++;
         else
@@ -110,7 +136,7 @@ void flip(const char *args)
 
     else if (strcmp(args, "prev") == 0) {
         if (current_page == 0)
-            return;
+            return chapter("prev");
         current_page--;
     }
 
@@ -133,8 +159,10 @@ void scroll(const char *args)
         if (scrolled < pages[current_page].height)
             return;
 
-        if (current_page == total_pages - 1)
+        if (current_page == total_pages - 1) {
             scrolled = pages[current_page].height;
+            chapter("next");
+        }
         else {
             scrolled -= pages[current_page++].height;
             scrolled *= pages[current_page].width / pages[current_page-1].width;
@@ -143,11 +171,13 @@ void scroll(const char *args)
     }
 
     else {
-        if (scrolled >= 0)
+        if (scrolled > 0)
             return;
 
-        if (current_page == 0)
+        if (current_page == 0) {
             scrolled = 0;
+            chapter("prev");
+        }
         else {
             scrolled *= pages[current_page-1].width / pages[current_page].width;
             scrolled += pages[--current_page].height;

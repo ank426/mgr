@@ -1,3 +1,4 @@
+#define STB_DS_IMPLEMENTATION
 #include "headers.h"
 #include "globals.h"
 
@@ -33,21 +34,22 @@ void calculate_progress()
 
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
 {
+    get_args(argc, argv);
+    if (process_args())
+        return SDL_APP_SUCCESS;
+
     assert(SDL_CreateWindowAndRenderer("mgr", 0, 0, SDL_WINDOW_RESIZABLE, &window, &renderer));
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 
     assert(TTF_Init());
     engine = TTF_CreateRendererTextEngine(renderer);
-    assert(engine != NULL);
+    assert(engine != nullptr);
     progress_font = TTF_OpenFont("/usr/share/fonts/TTF/JetBrainsMonoNerdFont-Regular.ttf", 50);
-    assert(progress_font != NULL);
+    assert(progress_font != nullptr);
     progress_text = TTF_CreateText(engine, progress_font, "", 0);
-    assert(progress_text != NULL);
+    assert(progress_text != nullptr);
 
-    strncpy(path, argv[1], 256);
-    total_pages = update_files_from_zip();
-    nat_sort_pages();
-    update_intervals();
+    load_chapter();
     load_images();
 
     return SDL_APP_CONTINUE;
@@ -145,4 +147,8 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result)
 
     free(pages);
     free(intervals);
+
+    for (int i = 0; i < arrlen(files); i++)
+        free(files[i]);
+    arrfree(files);
 }

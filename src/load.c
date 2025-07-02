@@ -1,6 +1,16 @@
 #include "headers.h"
 #include "globals.h"
 
+void load_chapter()
+{
+    current_page = 0;
+    scrolled = 0;
+
+    total_pages = update_pages_from_zip();
+    nat_sort_pages();
+    update_intervals();
+}
+
 void load_images()
 {
     SDL_DestroyTexture(image1);

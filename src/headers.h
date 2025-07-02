@@ -1,5 +1,6 @@
 #pragma once
 
+#include "cli.h"
 #include "display.h"
 #include "interval.h"
 #include "keybinds.h"
@@ -11,6 +12,8 @@
 #include <SDL3/SDL.h>
 #include <SDL3_image/SDL_image.h>
 #include <SDL3_ttf/SDL_ttf.h>
+
+#include <stb/stb_ds.h>
 
 #include <assert.h>
 #include <string.h>

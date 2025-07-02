@@ -6,7 +6,9 @@ SDL_Renderer *renderer = nullptr;
 int width = 0;
 int height = 0;
 
-char path[256];
+char **files = nullptr;
+int curr_file = 0;
+
 int current_page = 0;
 int total_pages = 0;
 float scrolled = 0;
@@ -22,7 +24,7 @@ SDL_Texture *image2 = nullptr;
 
 enum modes mode = SINGLE;
 
-struct page *pages;
+struct page *pages = nullptr;
 
 int n_int = 0;
 struct interval *intervals = nullptr;

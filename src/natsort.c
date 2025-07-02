@@ -3,8 +3,8 @@
 
 int nat_cmp(const void *name1, const void *name2)
 {
-    const char *n1 = *(char (*)[256])name1;
-    const char *n2 = *(char (*)[256])name2;
+    const char *n1 = *(char **)name1;
+    const char *n2 = *(char **)name2;
 
     while (n1 != nullptr && n2 != nullptr) {
         if (*n1 < '0' || '9' < *n1 || *n2 < '0' || '9' < *n2) {
@@ -38,9 +38,17 @@ int nat_cmp(const void *name1, const void *name2)
         return 1;
 }
 
+void nat_sort(char **files, int n)
+{
+    qsort(files, n, sizeof(char *), nat_cmp);
+}
+
 int nat_cmp_pages(const void *page1, const void *page2)
 {
-    return nat_cmp(&((struct page *)page1)->name, &((struct page *)page2)->name);
+    // convert (char [256]) to (char *)
+    char *n1 = ((struct page *)page1)->name;
+    char *n2 = ((struct page *)page2)->name;
+    return nat_cmp(&n1, &n2);
 }
 
 void nat_sort_pages()

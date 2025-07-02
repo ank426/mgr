@@ -5,10 +5,10 @@
 #include <stb/stb_image.h>
 #include <zip.h>
 
-int update_files_from_zip()
+int update_pages_from_zip()
 {
     int err;
-    zip_t *archive = zip_open(path, ZIP_RDONLY, &err);
+    zip_t *archive = zip_open(files[curr_file], ZIP_RDONLY, &err);
     assert(archive != nullptr);
 
     int total_entries = zip_get_num_entries(archive, 0);
@@ -59,7 +59,7 @@ int update_files_from_zip()
 SDL_Texture *load_image_from_zip(int index)
 {
     int err;
-    zip_t *archive = zip_open(path, ZIP_RDONLY, &err);
+    zip_t *archive = zip_open(files[curr_file], ZIP_RDONLY, &err);
     assert(archive != nullptr);
 
     zip_stat_t stat;
