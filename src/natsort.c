@@ -1,5 +1,7 @@
 #include "headers.h"
-#include "globals.h"
+#include "structs.h"
+
+extern struct page * const pages;
 
 int nat_cmp(const void *name1, const void *name2)
 {
@@ -53,5 +55,5 @@ int nat_cmp_pages(const void *page1, const void *page2)
 
 void nat_sort_pages()
 {
-    qsort(pages, total_pages, sizeof(struct page), nat_cmp_pages);
+    qsort(pages, arrlen(pages), sizeof(struct page), nat_cmp_pages);
 }

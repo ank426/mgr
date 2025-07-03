@@ -1,36 +1,26 @@
 #define STB_DS_IMPLEMENTATION
 #include "headers.h"
-#include "globals.h"
+#include "structs.h"
 
 #define SDL_MAIN_USE_CALLBACKS 1
 #include <SDL3/SDL_main.h>
 
-void calculate_progress()
-{
-    char string[32];
 
-    switch (mode) {
-    case SINGLE:
-        snprintf(string, 32, "%d/%d", current_page+1, total_pages);
-        break;
+SDL_Window *window = nullptr;
+SDL_Renderer *renderer = nullptr;
+int width = 0, height = 0;
 
-    case BOOK:
-        if (image1 == nullptr || image2 == nullptr)
-            snprintf(string, 32, "%d/%d", current_page+1, total_pages);
-        else
-            snprintf(string, 32, "%d-%d/%d", current_page+1, current_page+2, total_pages);
-        break;
+char **files = nullptr;
+int curr_file = 0;
 
-    case STRIP:
-        if (pages[current_page].height - scrolled > height * pages[current_page].width / zoom / width)
-            snprintf(string, 32, "%d/%d", current_page+1, total_pages);
-        else
-            snprintf(string, 32, "%d-%d/%d", current_page+1, current_page+2, total_pages);
-        break;
-    }
+struct page *pages = nullptr;
+int curr_page = 0;
 
-    TTF_SetTextString(progress_text, string, 32);
-}
+enum modes mode = SINGLE;
+float scrolled = 0;
+float zoom = 0.5;
+bool show_progress = false;
+
 
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
 {
@@ -41,16 +31,10 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
     assert(SDL_CreateWindowAndRenderer("mgr", 0, 0, SDL_WINDOW_RESIZABLE, &window, &renderer));
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 
-    assert(TTF_Init());
-    engine = TTF_CreateRendererTextEngine(renderer);
-    assert(engine != nullptr);
-    progress_font = TTF_OpenFont("/usr/share/fonts/TTF/JetBrainsMonoNerdFont-Regular.ttf", 50);
-    assert(progress_font != nullptr);
-    progress_text = TTF_CreateText(engine, progress_font, "", 0);
-    assert(progress_text != nullptr);
+    init_text();
 
-    load_chapter();
-    load_images();
+    load_chapter(files[curr_file]);
+    load_images(files[curr_file]);
 
     return SDL_APP_CONTINUE;
 }
@@ -107,22 +91,24 @@ SDL_AppResult SDL_AppIterate(void *appstate)
     SDL_RenderClear(renderer);
     SDL_GetRenderOutputSize(renderer, &width, &height);
 
+    extern SDL_Texture *image1, *image2;
+
     switch (mode) {
     case SINGLE:
-        display_single(&image1);
+        display_single(image1);
         break;
 
     case BOOK:
         if (image1 == nullptr)
-            display_single(&image2);
+            display_single(image2);
         else if (image2 == nullptr)
-            display_single(&image1);
+            display_single(image1);
         else
-            display_book(&image2, &image1);
+            display_book(image2, image1);
         break;
 
     case STRIP:
-        display_strip(&image1, &image2);
+        display_strip(image1, image2);
         break;
     }
 
@@ -137,16 +123,13 @@ SDL_AppResult SDL_AppIterate(void *appstate)
 
 void SDL_AppQuit(void *appstate, SDL_AppResult result)
 {
-    SDL_DestroyTexture(image1);
-    SDL_DestroyTexture(image2);
+    free_images();
+    free_intervals();
+    free_text();
 
-    TTF_DestroyRendererTextEngine(engine);
-    TTF_CloseFont(progress_font);
-    TTF_DestroyText(progress_text);
-    TTF_Quit();
-
-    free(pages);
-    free(intervals);
+    for (int i = 0; i < arrlen(pages); i++)
+        free(pages[i].name);
+    arrfree(pages);
 
     for (int i = 0; i < arrlen(files); i++)
         free(files[i]);

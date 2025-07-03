@@ -1,5 +1,21 @@
 #include "headers.h"
-#include "globals.h"
+#include "structs.h"
+
+extern SDL_Window *window;
+
+extern int width, height;
+
+extern char **files;
+extern int curr_file;
+
+extern struct page *pages;
+extern int curr_page;
+
+extern enum modes mode;
+extern float scrolled;
+extern float zoom;
+extern bool show_progress;
+
 
 void quit(const char *args)
 {
@@ -18,7 +34,7 @@ void set_mode(const char *args)
         mode = STRIP;
     else
         assert(false);
-    load_images();
+    load_images(files[curr_file]);
 }
 
 void fullscreen(const char *args)
@@ -35,7 +51,7 @@ void fullscreen(const char *args)
 
 void offset(const char *args)
 {
-    if (pages[current_page].wide)
+    if (pages[curr_page].wide)
         return;
 
     if (strcmp(args, "true") == 0)
@@ -47,7 +63,7 @@ void offset(const char *args)
     else
         assert(false);
 
-    load_images();
+    load_images(files[curr_file]);
 }
 
 void progress(const char *args)
@@ -64,15 +80,15 @@ void progress(const char *args)
 
 void top(const char *args)
 {
-    current_page = 0;
-    load_images();
+    curr_page = 0;
+    load_images(files[curr_file]);
     scrolled = 0;
 }
 
 void bottom(const char *args)
 {
-    current_page = total_pages - 1;
-    load_images();
+    curr_page = arrlen(pages) - 1;
+    load_images(files[curr_file]);
     scrolled = 0;
 }
 
@@ -82,8 +98,8 @@ void chapter(const char *args)
         if (curr_file == arrlen(files) - 1)
             return;
         curr_file++;
-        load_chapter();
-        current_page = 0;
+        load_chapter(files[curr_file]);
+        curr_page = 0;
         scrolled = 0;
     }
 
@@ -91,59 +107,59 @@ void chapter(const char *args)
         if (curr_file == 0)
             return;
         curr_file--;
-        load_chapter();
-        current_page = total_pages - 1;
-        scrolled = mode == STRIP ? pages[current_page].height : 0;
+        load_chapter(files[curr_file]);
+        curr_page = arrlen(pages) - 1;
+        scrolled = mode == STRIP ? pages[curr_page].height : 0;
     }
 
     else
         assert(false);
 
-    load_images();
+    load_images(files[curr_file]);
 }
 
 void page(const char *args)
 {
     if (strcmp(args, "next") == 0) {
-        if (current_page == total_pages - 1)
+        if (curr_page == arrlen(pages) - 1)
             return chapter("next");
-        current_page++;
+        curr_page++;
     }
 
     else if (strcmp(args, "prev") == 0) {
-        if (current_page == 0)
+        if (curr_page == 0)
             return chapter("prev");
-        current_page--;
+        curr_page--;
     }
 
     else
         assert(false);
 
-    load_images();
+    load_images(files[curr_file]);
     scrolled = 0;
 }
 
 void flip(const char *args)
 {
     if (strcmp(args, "next") == 0) {
-        if (current_page == total_pages - 1 || current_page == total_pages - 2 && image1 != nullptr && image2 != nullptr)
+        if (curr_page == arrlen(pages) - 1 || curr_page == arrlen(pages) - 2 && num_images() == 2)
             return chapter("next");
-        if (image1 == nullptr || image2 == nullptr || current_page == total_pages - 2)
-            current_page++;
+        if (num_images() == 1 || curr_page == arrlen(pages) - 2)
+            curr_page++;
         else
-            current_page += 2;
+            curr_page += 2;
     }
 
     else if (strcmp(args, "prev") == 0) {
-        if (current_page == 0)
+        if (curr_page == 0)
             return chapter("prev");
-        current_page--;
+        curr_page--;
     }
 
     else
         assert(false);
 
-    load_images();
+    load_images(files[curr_file]);
     scrolled = 0;
 }
 
@@ -153,20 +169,20 @@ void scroll(const char *args)
     if (val == 0)
         return;
 
-    scrolled += val * height * pages[current_page].width / zoom / width;
+    scrolled += val * height * pages[curr_page].width / zoom / width;
 
     if (val > 0) {
-        if (scrolled < pages[current_page].height)
+        if (scrolled < pages[curr_page].height)
             return;
 
-        if (current_page == total_pages - 1) {
-            scrolled = pages[current_page].height;
+        if (curr_page == arrlen(pages) - 1) {
+            scrolled = pages[curr_page].height;
             chapter("next");
         }
         else {
-            scrolled -= pages[current_page++].height;
-            scrolled *= pages[current_page].width / pages[current_page-1].width;
-            load_images_next();
+            scrolled -= pages[curr_page++].height;
+            scrolled *= pages[curr_page].width / pages[curr_page-1].width;
+            load_images_next(files[curr_file]);
         }
     }
 
@@ -174,14 +190,14 @@ void scroll(const char *args)
         if (scrolled > 0)
             return;
 
-        if (current_page == 0) {
+        if (curr_page == 0) {
             scrolled = 0;
             chapter("prev");
         }
         else {
-            scrolled *= pages[current_page-1].width / pages[current_page].width;
-            scrolled += pages[--current_page].height;
-            load_images_prev();
+            scrolled *= pages[curr_page-1].width / pages[curr_page].width;
+            scrolled += pages[--curr_page].height;
+            load_images_prev(files[curr_file]);
         }
     }
 }

@@ -1,10 +1,16 @@
 #include "headers.h"
-#include "globals.h"
 
-void display_single(SDL_Texture **img_ptr)
+extern SDL_Renderer *renderer;
+extern const int width, height;
+extern const float scrolled;
+extern const float zoom;
+extern const int progress_font_size;
+extern TTF_Text * const progress_text;
+
+void display_single(SDL_Texture *image)
 {
     SDL_FRect dst;
-    SDL_GetTextureSize(*img_ptr, &dst.w, &dst.h);
+    SDL_GetTextureSize(image, &dst.w, &dst.h);
 
     float sw = width / dst.w;
     float sh = height / dst.h;
@@ -13,14 +19,14 @@ void display_single(SDL_Texture **img_ptr)
     dst.y = (height / scale - dst.h) / 2;
 
     SDL_SetRenderScale(renderer, scale, scale);
-    SDL_RenderTexture(renderer, *img_ptr, nullptr, &dst);
+    SDL_RenderTexture(renderer, image, nullptr, &dst);
 }
 
-void display_book(SDL_Texture **img_ptr1, SDL_Texture **img_ptr2)
+void display_book(SDL_Texture *image1, SDL_Texture *image2)
 {
     SDL_FRect dst1, dst2;
-    SDL_GetTextureSize(*img_ptr1, &dst1.w, &dst1.h);
-    SDL_GetTextureSize(*img_ptr2, &dst2.w, &dst2.h);
+    SDL_GetTextureSize(image1, &dst1.w, &dst1.h);
+    SDL_GetTextureSize(image2, &dst2.w, &dst2.h);
 
     float scale2 = dst1.h / dst2.h;
     float sw = width / (dst1.w + scale2 * dst2.w);
@@ -33,16 +39,16 @@ void display_book(SDL_Texture **img_ptr1, SDL_Texture **img_ptr2)
     dst2.y = (height / (scale*scale2) - dst2.h) / 2;
 
     SDL_SetRenderScale(renderer, scale, scale);
-    SDL_RenderTexture(renderer, *img_ptr1, nullptr, &dst1);
+    SDL_RenderTexture(renderer, image1, nullptr, &dst1);
     SDL_SetRenderScale(renderer, scale*scale2, scale*scale2);
-    SDL_RenderTexture(renderer, *img_ptr2, nullptr, &dst2);
+    SDL_RenderTexture(renderer, image2, nullptr, &dst2);
 }
 
-void display_strip(SDL_Texture **img_ptr1, SDL_Texture **img_ptr2)
+void display_strip(SDL_Texture *image1, SDL_Texture *image2)
 {
     SDL_FRect dst1, dst2;
-    SDL_GetTextureSize(*img_ptr1, &dst1.w, &dst1.h);
-    SDL_GetTextureSize(*img_ptr2, &dst2.w, &dst2.h);
+    SDL_GetTextureSize(image1, &dst1.w, &dst1.h);
+    SDL_GetTextureSize(image2, &dst2.w, &dst2.h);
 
     float scale = zoom * width / dst1.w;
     float scale2 = dst1.w / dst2.w;
@@ -53,9 +59,9 @@ void display_strip(SDL_Texture **img_ptr1, SDL_Texture **img_ptr2)
     dst2.y = (-scrolled + dst1.h) / scale2;
 
     SDL_SetRenderScale(renderer, scale, scale);
-    SDL_RenderTexture(renderer, *img_ptr1, nullptr, &dst1);
+    SDL_RenderTexture(renderer, image1, nullptr, &dst1);
     SDL_SetRenderScale(renderer, scale*scale2, scale*scale2);
-    SDL_RenderTexture(renderer, *img_ptr2, nullptr, &dst2);
+    SDL_RenderTexture(renderer, image2, nullptr, &dst2);
 }
 
 void display_progress()
@@ -66,7 +72,7 @@ void display_progress()
     int x = (width - w) / 2;
     int y = (height - h) / 2;
 
-    int mx = 0.3 * TTF_GetFontSize(progress_font);
+    int mx = 0.3 * progress_font_size;
     int my = 0.1 * h;
 
     SDL_SetRenderScale(renderer, 1, 1);

@@ -1,24 +1,23 @@
 #include "headers.h"
-#include "globals.h"
+#include "structs.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
 #include <zip.h>
 
-int update_pages_from_zip()
+extern struct page *pages;
+extern SDL_Renderer *renderer;
+
+void update_pages_from_zip(const char * const path)
 {
     int err;
-    zip_t *archive = zip_open(files[curr_file], ZIP_RDONLY, &err);
+    zip_t *archive = zip_open(path, ZIP_RDONLY, &err);
     assert(archive != nullptr);
 
     int total_entries = zip_get_num_entries(archive, 0);
     assert(total_entries >= 0);
 
-    free(pages);
-    pages = malloc(total_entries * sizeof(struct page));
-    assert(pages != nullptr);
-
-    int total_pages = 0;
+    arrfree(pages);
 
     for (int i = 0; i < total_entries; i++) {
         zip_stat_t stat;
@@ -39,27 +38,19 @@ int update_pages_from_zip()
         int w, h, channels;
         assert(stbi_info_from_memory(buffer, stat.size, &w, &h, &channels));
 
-        strncpy(pages[total_pages].name, stat.name, 256);
-        pages[total_pages].width = w;
-        pages[total_pages].height = h;
-        pages[total_pages].wide = w > h;
-
-        total_pages++;
+        arrput(pages, ((struct page){strdup(stat.name), w, h, w>h}));
 
         free(buffer);
         zip_fclose(file);
     }
 
     zip_close(archive);
-
-    pages = realloc(pages, total_pages * sizeof(struct page));
-    return total_pages;
 }
 
-SDL_Texture *load_image_from_zip(int index)
+SDL_Texture *load_image_from_zip(const int index, const char * const path)
 {
     int err;
-    zip_t *archive = zip_open(files[curr_file], ZIP_RDONLY, &err);
+    zip_t *archive = zip_open(path, ZIP_RDONLY, &err);
     assert(archive != nullptr);
 
     zip_stat_t stat;

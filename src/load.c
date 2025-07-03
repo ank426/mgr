@@ -1,17 +1,20 @@
 #include "headers.h"
-#include "globals.h"
+#include "structs.h"
 
-void load_chapter()
+extern const enum modes mode;
+extern const struct page * const pages;
+extern int curr_page;
+
+SDL_Texture *image1 = nullptr;
+SDL_Texture *image2 = nullptr;
+
+
+int num_images()
 {
-    current_page = 0;
-    scrolled = 0;
-
-    total_pages = update_pages_from_zip();
-    nat_sort_pages();
-    update_intervals();
+    return (image1 != nullptr) + (image2 != nullptr);
 }
 
-void load_images()
+void load_images(const char * const path)
 {
     SDL_DestroyTexture(image1);
     SDL_DestroyTexture(image2);
@@ -19,47 +22,53 @@ void load_images()
 
     switch (mode) {
     case SINGLE:
-        image1 = load_image_from_zip(current_page);
+        image1 = load_image_from_zip(curr_page, path);
         break;
 
     case BOOK:
-        if (pages[current_page].wide) {
-            image1 = load_image_from_zip(current_page);
+        if (pages[curr_page].wide) {
+            image1 = load_image_from_zip(curr_page, path);
             break;
         }
         struct interval *curr_int = get_current_interval();
-        if (current_page & 1 ^ curr_int->start & 1 ^ !curr_int->offset) {
-            image1 = load_image_from_zip(current_page);
-            if (current_page + 1 < curr_int->end)
-                image2 = load_image_from_zip(current_page + 1);
+        if (curr_page & 1 ^ curr_int->start & 1 ^ !curr_int->offset) {
+            image1 = load_image_from_zip(curr_page, path);
+            if (curr_page + 1 < curr_int->end)
+                image2 = load_image_from_zip(curr_page + 1, path);
         } else {
-            image2 = load_image_from_zip(current_page);
-            if (current_page - 1 >= curr_int->start)
-                image1 = load_image_from_zip(--current_page);
+            image2 = load_image_from_zip(curr_page, path);
+            if (curr_page - 1 >= curr_int->start)
+                image1 = load_image_from_zip(--curr_page, path);
         }
         break;
 
     case STRIP:
-        image1 = load_image_from_zip(current_page);
-        if (current_page < total_pages - 1)
-            image2 = load_image_from_zip(current_page + 1);
+        image1 = load_image_from_zip(curr_page, path);
+        if (curr_page < arrlen(pages) - 1)
+            image2 = load_image_from_zip(curr_page + 1, path);
         break;
     }
 }
 
-void load_images_next()
+void load_images_next(const char * const path)
 {
     SDL_DestroyTexture(image1);
     image1 = image2;
-    if (current_page < total_pages - 1)
-        image2 = load_image_from_zip(current_page + 1);
+    if (curr_page < arrlen(pages) - 1)
+        image2 = load_image_from_zip(curr_page + 1, path);
     else
         image2 = nullptr;
 }
 
-void load_images_prev()
+void load_images_prev(const char * const path)
 {
     SDL_DestroyTexture(image2);
     image2 = image1;
-    image1 = load_image_from_zip(current_page);
+    image1 = load_image_from_zip(curr_page, path);
+}
+
+void free_images()
+{
+    SDL_DestroyTexture(image1);
+    SDL_DestroyTexture(image2);
 }

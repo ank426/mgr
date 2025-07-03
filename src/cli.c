@@ -1,5 +1,6 @@
 #include "headers.h"
-#include "globals.h"
+
+extern char **files;
 
 static char **opts;
 static char **args;
