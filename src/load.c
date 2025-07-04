@@ -1,9 +1,9 @@
 #include "headers.h"
 #include "structs.h"
 
-extern const enum modes mode;
-extern const struct page * const pages;
+extern const struct page *const pages;
 extern int curr_page;
+extern const enum modes mode;
 
 SDL_Texture *image1 = nullptr;
 SDL_Texture *image2 = nullptr;
@@ -14,7 +14,7 @@ int num_images()
     return (image1 != nullptr) + (image2 != nullptr);
 }
 
-void load_images(const char * const path)
+void load_images(const char *const path)
 {
     SDL_DestroyTexture(image1);
     SDL_DestroyTexture(image2);
@@ -30,7 +30,7 @@ void load_images(const char * const path)
             image1 = load_image_from_zip(curr_page, path);
             break;
         }
-        struct interval *curr_int = get_current_interval();
+        struct interval *curr_int = get_interval(curr_page);
         if (curr_page & 1 ^ curr_int->start & 1 ^ !curr_int->offset) {
             image1 = load_image_from_zip(curr_page, path);
             if (curr_page + 1 < curr_int->end)
@@ -50,7 +50,7 @@ void load_images(const char * const path)
     }
 }
 
-void load_images_next(const char * const path)
+void load_images_next(const char *const path)
 {
     SDL_DestroyTexture(image1);
     image1 = image2;
@@ -60,7 +60,7 @@ void load_images_next(const char * const path)
         image2 = nullptr;
 }
 
-void load_images_prev(const char * const path)
+void load_images_prev(const char *const path)
 {
     SDL_DestroyTexture(image2);
     image2 = image1;

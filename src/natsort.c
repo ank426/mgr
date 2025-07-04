@@ -1,8 +1,6 @@
 #include "headers.h"
 #include "structs.h"
 
-extern struct page * const pages;
-
 int nat_cmp(const void *name1, const void *name2)
 {
     const char *n1 = *(char **)name1;
@@ -47,13 +45,10 @@ void nat_sort(char **files, int n)
 
 int nat_cmp_pages(const void *page1, const void *page2)
 {
-    // convert (char [256]) to (char *)
-    char *n1 = ((struct page *)page1)->name;
-    char *n2 = ((struct page *)page2)->name;
-    return nat_cmp(&n1, &n2);
+    return nat_cmp(&((const struct page *)page1)->name, &((const struct page *)page2)->name);
 }
 
-void nat_sort_pages()
+void nat_sort_pages(struct page *const pages)
 {
     qsort(pages, arrlen(pages), sizeof(struct page), nat_cmp_pages);
 }

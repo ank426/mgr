@@ -2,19 +2,19 @@
 #include "structs.h"
 
 extern const int width, height;
-extern const struct page * const pages;
+extern struct page *const pages;
 extern const int curr_page;
 extern const enum modes mode;
 extern const float scrolled;
 extern const float zoom;
-extern TTF_Text * const progress_text;
+extern TTF_Text *const progress_text;
 
 
-void load_chapter(const char * const path)
+void load_chapter(const char *const path)
 {
     update_pages_from_zip(path);
-    nat_sort_pages();
-    update_intervals();
+    nat_sort_pages(pages);
+    update_intervals(pages);
 }
 
 void calculate_progress()

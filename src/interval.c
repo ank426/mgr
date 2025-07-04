@@ -1,12 +1,9 @@
 #include "headers.h"
 #include "structs.h"
 
-extern const struct page * const pages;
-extern const int curr_page;
-
 static struct interval *intervals = nullptr;
 
-void update_intervals()
+void update_intervals(const struct page *const pages)
 {
     arrfree(intervals);
 
@@ -29,14 +26,14 @@ void update_intervals()
         intervals[0].offset = intervals[0].end & 1;
 }
 
-struct interval *get_current_interval()
+struct interval *get_interval(const int page)
 {
     int l = 0, r = arrlen(intervals);
     while (l < r) {
         int m = (l + r) / 2;
-        if (curr_page < intervals[m].start)
+        if (page < intervals[m].start)
             r = m;
-        else if (intervals[m].end <= curr_page)
+        else if (intervals[m].end <= page)
             l = m + 1;
         else
             return &intervals[m];

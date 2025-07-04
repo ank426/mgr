@@ -5,7 +5,7 @@ extern const int width, height;
 extern const float scrolled;
 extern const float zoom;
 extern const int progress_font_size;
-extern TTF_Text * const progress_text;
+extern TTF_Text *const progress_text;
 
 void display_single(SDL_Texture *image)
 {

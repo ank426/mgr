@@ -24,8 +24,7 @@ bool show_progress = false;
 
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
 {
-    get_args(argc, argv);
-    if (process_args())
+    if (cli(argc, argv))
         return SDL_APP_SUCCESS;
 
     assert(SDL_CreateWindowAndRenderer("mgr", 0, 0, SDL_WINDOW_RESIZABLE, &window, &renderer));

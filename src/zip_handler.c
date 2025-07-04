@@ -8,7 +8,7 @@
 extern struct page *pages;
 extern SDL_Renderer *renderer;
 
-void update_pages_from_zip(const char * const path)
+void update_pages_from_zip(const char *const path)
 {
     int err;
     zip_t *archive = zip_open(path, ZIP_RDONLY, &err);
@@ -47,7 +47,7 @@ void update_pages_from_zip(const char * const path)
     zip_close(archive);
 }
 
-SDL_Texture *load_image_from_zip(const int index, const char * const path)
+SDL_Texture *load_image_from_zip(const int index, const char *const path)
 {
     int err;
     zip_t *archive = zip_open(path, ZIP_RDONLY, &err);

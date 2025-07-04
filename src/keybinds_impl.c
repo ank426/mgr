@@ -2,7 +2,6 @@
 #include "structs.h"
 
 extern SDL_Window *window;
-
 extern int width, height;
 
 extern char **files;
@@ -55,11 +54,11 @@ void offset(const char *args)
         return;
 
     if (strcmp(args, "true") == 0)
-        get_current_interval()->offset = true;
+        get_interval(curr_page)->offset = true;
     else if (strcmp(args, "false") == 0)
-        get_current_interval()->offset = false;
+        get_interval(curr_page)->offset = false;
     else if (strcmp(args, "toggle") == 0)
-        get_current_interval()->offset ^= 1;
+        get_interval(curr_page)->offset ^= 1;
     else
         assert(false);
 
