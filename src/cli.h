@@ -1,1 +1,1 @@
-bool cli(int argc, char **argv);
+void cli(int argc, char *const *argv);

@@ -10,13 +10,15 @@ SDL_Window *window = nullptr;
 SDL_Renderer *renderer = nullptr;
 int width = 0, height = 0;
 
+bool playlist = false;
+
 char **files = nullptr;
 int curr_file = 0;
 
 struct page *pages = nullptr;
 int curr_page = 0;
 
-enum modes mode = SINGLE;
+enum modes mode = BOOK;
 float scrolled = 0;
 float zoom = 0.5;
 bool show_progress = false;
@@ -24,11 +26,11 @@ bool show_progress = false;
 
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
 {
-    if (cli(argc, argv))
-        return SDL_APP_SUCCESS;
+    cli(argc, argv);
 
     assert(SDL_CreateWindowAndRenderer("mgr", 0, 0, SDL_WINDOW_RESIZABLE, &window, &renderer));
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+    fullscreen("true");
 
     init_text();
 
@@ -70,7 +72,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
         if (mode == SINGLE)
             page(event->tfinger.y > 0.5 ? "next" : "prev");
         else if (mode == BOOK)
-            flip(event->tfinger.x < 0.5 ? "next" : "prev");
+            flip(event->tfinger.y > 0.3 ? "next" : "prev");
     }
 
     if (event->type == SDL_EVENT_FINGER_MOTION) {
