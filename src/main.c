@@ -10,7 +10,7 @@ SDL_Window *window = nullptr;
 SDL_Renderer *renderer = nullptr;
 int width = 0, height = 0;
 
-bool playlist = false;
+bool readlist = false;
 
 char **files = nullptr;
 int curr_file = 0;
@@ -66,6 +66,9 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
         for (int i = 0; i < n_binds; i++)
             if (event->key.mod == binds[i].mod && event->key.scancode == binds[i].key)
                 binds[i].fn(binds[i].args);
+
+        if (readlist)
+            update_readlist();
     }
 
     if (event->type == SDL_EVENT_FINGER_UP) {
@@ -127,6 +130,7 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result)
     free_images();
     free_intervals();
     free_text();
+    free_path();
 
     for (int i = 0; i < arrlen(pages); i++)
         free(pages[i].name);

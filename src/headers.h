@@ -8,6 +8,7 @@
 #include "keybinds_impl.h"
 #include "load.h"
 #include "natsort.h"
+#include "readlist.h"
 #include "text.h"
 #include "zip_handler.h"
 
