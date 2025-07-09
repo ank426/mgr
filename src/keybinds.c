@@ -1,38 +1,44 @@
 #include "headers.h"
 
 struct bind single_binds[] = {
-    { SDL_KMOD_NONE,   SDL_SCANCODE_Q, &quit,       "" },
-    { SDL_KMOD_NONE,   SDL_SCANCODE_M, &set_mode,   "book" },
-    { SDL_KMOD_NONE,   SDL_SCANCODE_F, &fullscreen, "toggle" },
-    { SDL_KMOD_NONE,   SDL_SCANCODE_S, &progress,   "toggle" },
-    { SDL_KMOD_NONE,   SDL_SCANCODE_G, &top,        "" },
-    { SDL_KMOD_LSHIFT, SDL_SCANCODE_G, &bottom,     "" },
-    { SDL_KMOD_NONE,   SDL_SCANCODE_J, &page,       "next" },
-    { SDL_KMOD_NONE,   SDL_SCANCODE_K, &page,       "prev" },
+    { SDL_KMOD_NONE,   SDL_SCANCODE_Q,      &quit,       ""       },
+    { SDL_KMOD_NONE,   SDL_SCANCODE_M,      &set_mode,   "book"   },
+    { SDL_KMOD_NONE,   SDL_SCANCODE_F,      &fullscreen, "toggle" },
+    { SDL_KMOD_NONE,   SDL_SCANCODE_S,      &progress,   "toggle" },
+    { SDL_KMOD_NONE,   SDL_SCANCODE_G,      &top,        ""       },
+    { SDL_KMOD_LSHIFT, SDL_SCANCODE_G,      &bottom,     ""       },
+    { SDL_KMOD_NONE,   SDL_SCANCODE_J,      &page,       "next"   },
+    { SDL_KMOD_NONE,   SDL_SCANCODE_K,      &page,       "prev"   },
+    { SDL_KMOD_NONE,   SDL_SCANCODE_MINUS,  &set_zoom,   "-0.1"   },
+    { SDL_KMOD_NONE,   SDL_SCANCODE_EQUALS, &set_zoom,   "+0.1"   },
 };
 int n_single_binds = sizeof(single_binds) / sizeof(struct bind);
 
 struct bind book_binds[] = {
-    { SDL_KMOD_NONE,   SDL_SCANCODE_Q, &quit,       "" },
-    { SDL_KMOD_NONE,   SDL_SCANCODE_M, &set_mode,   "strip" },
-    { SDL_KMOD_NONE,   SDL_SCANCODE_F, &fullscreen, "toggle" },
-    { SDL_KMOD_NONE,   SDL_SCANCODE_S, &progress,   "toggle" },
-    { SDL_KMOD_NONE,   SDL_SCANCODE_O, &offset,     "toggle" },
-    { SDL_KMOD_NONE,   SDL_SCANCODE_G, &top,        "" },
-    { SDL_KMOD_LSHIFT, SDL_SCANCODE_G, &bottom,     "" },
-    { SDL_KMOD_NONE,   SDL_SCANCODE_J, &flip,       "next" },
-    { SDL_KMOD_NONE,   SDL_SCANCODE_K, &flip,       "prev" },
+    { SDL_KMOD_NONE,   SDL_SCANCODE_Q,      &quit,       ""       },
+    { SDL_KMOD_NONE,   SDL_SCANCODE_M,      &set_mode,   "strip"  },
+    { SDL_KMOD_NONE,   SDL_SCANCODE_F,      &fullscreen, "toggle" },
+    { SDL_KMOD_NONE,   SDL_SCANCODE_S,      &progress,   "toggle" },
+    { SDL_KMOD_NONE,   SDL_SCANCODE_O,      &offset,     "toggle" },
+    { SDL_KMOD_NONE,   SDL_SCANCODE_G,      &top,        ""       },
+    { SDL_KMOD_LSHIFT, SDL_SCANCODE_G,      &bottom,     ""       },
+    { SDL_KMOD_NONE,   SDL_SCANCODE_J,      &flip,       "next"   },
+    { SDL_KMOD_NONE,   SDL_SCANCODE_K,      &flip,       "prev"   },
+    { SDL_KMOD_NONE,   SDL_SCANCODE_MINUS,  &set_zoom,   "-0.1"   },
+    { SDL_KMOD_NONE,   SDL_SCANCODE_EQUALS, &set_zoom,   "+0.1"   },
 };
 int n_book_binds = sizeof(book_binds) / sizeof(struct bind);
 
 struct bind strip_binds[] = {
-    { SDL_KMOD_NONE,   SDL_SCANCODE_Q, &quit,       "" },
-    { SDL_KMOD_NONE,   SDL_SCANCODE_M, &set_mode,   "single" },
-    { SDL_KMOD_NONE,   SDL_SCANCODE_F, &fullscreen, "toggle" },
-    { SDL_KMOD_NONE,   SDL_SCANCODE_S, &progress,   "toggle" },
-    { SDL_KMOD_NONE,   SDL_SCANCODE_G, &top,        "" },
-    { SDL_KMOD_LSHIFT, SDL_SCANCODE_G, &bottom,     "" },
-    { SDL_KMOD_NONE,   SDL_SCANCODE_J, &scroll,     "+0.5" },
-    { SDL_KMOD_NONE,   SDL_SCANCODE_K, &scroll,     "-0.5" },
+    { SDL_KMOD_NONE,   SDL_SCANCODE_Q,      &quit,       ""       },
+    { SDL_KMOD_NONE,   SDL_SCANCODE_M,      &set_mode,   "single" },
+    { SDL_KMOD_NONE,   SDL_SCANCODE_F,      &fullscreen, "toggle" },
+    { SDL_KMOD_NONE,   SDL_SCANCODE_S,      &progress,   "toggle" },
+    { SDL_KMOD_NONE,   SDL_SCANCODE_G,      &top,        ""       },
+    { SDL_KMOD_LSHIFT, SDL_SCANCODE_G,      &bottom,     ""       },
+    { SDL_KMOD_NONE,   SDL_SCANCODE_J,      &scroll,     "+0.5"   },
+    { SDL_KMOD_NONE,   SDL_SCANCODE_K,      &scroll,     "-0.5"   },
+    { SDL_KMOD_NONE,   SDL_SCANCODE_MINUS,  &set_zoom,   "-0.1"   },
+    { SDL_KMOD_NONE,   SDL_SCANCODE_EQUALS, &set_zoom,   "+0.1"   },
 };
 int n_strip_binds = sizeof(strip_binds) / sizeof(struct bind);

@@ -205,3 +205,13 @@ void scroll(const char *args)
         }
     }
 }
+
+void set_zoom(const char *args)
+{
+    if (args[0] == '+')
+        zoom += atof(args + 1);
+    else if (args[0] == '-')
+        zoom -= atof(args + 1);
+    else
+        zoom = atof(args);
+}
