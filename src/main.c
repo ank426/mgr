@@ -18,7 +18,8 @@ int curr_file = 0;
 struct page *pages = nullptr;
 int curr_page = 0;
 
-enum modes mode = BOOK;
+bool automode = true;
+enum modes mode = SINGLE;
 float scrolled = 0;
 float zoom = 0.5;
 bool show_progress = false;

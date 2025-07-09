@@ -4,7 +4,8 @@
 extern const int width, height;
 extern struct page *const pages;
 extern const int curr_page;
-extern const enum modes mode;
+extern const bool automode;
+extern enum modes mode;
 extern const float scrolled;
 extern const float zoom;
 extern TTF_Text *const progress_text;
@@ -15,6 +16,8 @@ void load_chapter(const char *const path)
     update_pages_from_zip(path);
     nat_sort_pages(pages);
     update_intervals(pages);
+    if (automode)
+        set_mode_auto();
 }
 
 void calculate_progress()
@@ -42,4 +45,13 @@ void calculate_progress()
     }
 
     TTF_SetTextString(progress_text, string, 32);
+}
+
+void set_mode_auto()
+{
+    int n = 0;
+    for (int i = 0; i < arrlen(pages); i++)
+        if (pages[i].height > 2 * pages[i].width)
+            n++;
+    mode = n > arrlen(pages) / 2 ? STRIP : BOOK;
 }

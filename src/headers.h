@@ -1,7 +1,7 @@
 #pragma once
 
+#include "calc.h"
 #include "cli.h"
-#include "chapter.h"
 #include "display.h"
 #include "interval.h"
 #include "keybinds.h"

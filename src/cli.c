@@ -4,6 +4,7 @@
 
 extern bool readlist;
 extern char **files;
+extern bool automode;
 extern enum modes mode;
 
 bool gen = false;
@@ -34,6 +35,7 @@ void get_args(const int argc, char *const *const argv)
                 mode = STRIP;
             else
                 assert(false);
+            automode = strcmp(optarg, "auto") == 0;
             break;
 
         case 'h':

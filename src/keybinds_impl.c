@@ -10,6 +10,7 @@ extern int curr_file;
 extern struct page *pages;
 extern int curr_page;
 
+extern bool automode;
 extern enum modes mode;
 extern float scrolled;
 extern float zoom;
@@ -25,13 +26,17 @@ void quit(const char *args)
 
 void set_mode(const char *args)
 {
+    automode = false;
     if (strcmp(args, "single") == 0)
         mode = SINGLE;
     else if (strcmp(args, "book") == 0)
         mode = BOOK;
     else if (strcmp(args, "strip") == 0)
         mode = STRIP;
-    else
+    else if (strcmp(args, "auto") == 0) {
+        automode = true;
+        set_mode_auto();
+    } else
         assert(false);
     load_images(files[curr_file]);
 }
