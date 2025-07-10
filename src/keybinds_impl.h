@@ -8,4 +8,6 @@ void flip(const char *args);
 void scroll(const char *args);
 void top(const char *args);
 void bottom(const char *args);
+void rotate(const char *args);
 void set_zoom(const char *args);
+void set_hzoom(const char *args);

@@ -20,8 +20,12 @@ int curr_page = 0;
 
 bool automode = true;
 enum modes mode = SINGLE;
+
 float scrolled = 0;
+bool rotated = false;
 float zoom = 0.5;
+float hzoom = 0.7;
+
 bool show_progress = false;
 
 
@@ -113,7 +117,7 @@ SDL_AppResult SDL_AppIterate(void *appstate)
         break;
 
     case STRIP:
-        display_strip(image1, image2);
+        rotated ? display_strip_rotated(image1, image2) : display_strip(image1, image2);
         break;
     }
 

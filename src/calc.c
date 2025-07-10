@@ -6,8 +6,10 @@ extern struct page *const pages;
 extern const int curr_page;
 extern const bool automode;
 extern enum modes mode;
+extern const bool rotated;
 extern const float scrolled;
 extern const float zoom;
+extern const float hzoom;
 extern TTF_Text *const progress_text;
 
 
@@ -37,7 +39,11 @@ void calculate_progress()
         break;
 
     case STRIP:
-        if (pages[curr_page].height - scrolled > height * pages[curr_page].width / zoom / width)
+        if (pages[curr_page].height - scrolled > (
+                rotated
+                ? width * pages[curr_page].width / hzoom / height
+                : height * pages[curr_page].width / zoom / width
+            ))
             snprintf(string, 32, "%d/%d", curr_page+1, arrlen(pages));
         else
             snprintf(string, 32, "%d-%d/%d", curr_page+1, curr_page+2, arrlen(pages));

@@ -12,8 +12,12 @@ extern int curr_page;
 
 extern bool automode;
 extern enum modes mode;
+
+extern bool rotated;
 extern float scrolled;
 extern float zoom;
+extern float hzoom;
+
 extern bool show_progress;
 
 
@@ -206,6 +210,18 @@ void scroll(const char *args)
     }
 }
 
+void rotate(const char *args)
+{
+    if (strcmp(args, "true") == 0)
+        rotated = true;
+    else if (strcmp(args, "false") == 0)
+        rotated = false;
+    else if (strcmp(args, "toggle") == 0)
+        rotated ^= 1;
+    else
+        assert(false);
+}
+
 void set_zoom(const char *args)
 {
     if (args[0] == '+')
@@ -214,4 +230,14 @@ void set_zoom(const char *args)
         zoom -= atof(args + 1);
     else
         zoom = atof(args);
+}
+
+void set_hzoom(const char *args)
+{
+    if (args[0] == '+')
+        hzoom += atof(args + 1);
+    else if (args[0] == '-')
+        hzoom -= atof(args + 1);
+    else
+        hzoom = atof(args);
 }
