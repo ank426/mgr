@@ -86,7 +86,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
     if (event->type == SDL_EVENT_FINGER_MOTION) {
         if (mode == STRIP) {
             char buffer[9];
-            snprintf(buffer, sizeof(buffer), "%f", -1.6 * event->tfinger.dy);
+            snprintf(buffer, sizeof(buffer), "%f", -1.6 * 5 * event->tfinger.dy);
             scroll(buffer);
         }
     }
@@ -100,7 +100,7 @@ SDL_AppResult SDL_AppIterate(void *appstate)
     SDL_RenderClear(renderer);
     SDL_GetRenderOutputSize(renderer, &width, &height);
 
-    extern SDL_Texture *image1, *image2;
+    extern SDL_Texture *image1, *image2, *image3;
 
     switch (mode) {
     case SINGLE:
@@ -117,7 +117,7 @@ SDL_AppResult SDL_AppIterate(void *appstate)
         break;
 
     case STRIP:
-        rotated ? display_strip_rotated(image1, image2) : display_strip(image1, image2);
+        rotated ? display_strip_rotated(image1, image2, image3) : display_strip(image1, image2, image3);
         break;
     }
 

@@ -7,18 +7,20 @@ extern const enum modes mode;
 
 SDL_Texture *image1 = nullptr;
 SDL_Texture *image2 = nullptr;
+SDL_Texture *image3 = nullptr;
 
 
 int num_images()
 {
-    return (image1 != nullptr) + (image2 != nullptr);
+    return (image1 != nullptr) + (image2 != nullptr) + (image3 != nullptr);
 }
 
 void load_images(const char *const path)
 {
     SDL_DestroyTexture(image1);
     SDL_DestroyTexture(image2);
-    image1 = image2 = nullptr;
+    SDL_DestroyTexture(image3);
+    image1 = image2 = image3 = nullptr;
 
     switch (mode) {
     case SINGLE:
@@ -46,6 +48,8 @@ void load_images(const char *const path)
         image1 = load_image_from_zip(curr_page, path);
         if (curr_page < arrlen(pages) - 1)
             image2 = load_image_from_zip(curr_page + 1, path);
+        if (curr_page < arrlen(pages) - 2)
+            image3 = load_image_from_zip(curr_page + 2, path);
         break;
     }
 }
@@ -54,15 +58,17 @@ void load_images_next(const char *const path)
 {
     SDL_DestroyTexture(image1);
     image1 = image2;
-    if (curr_page < arrlen(pages) - 1)
-        image2 = load_image_from_zip(curr_page + 1, path);
+    image2 = image3;
+    if (curr_page < arrlen(pages) - 2)
+        image3 = load_image_from_zip(curr_page + 2, path);
     else
-        image2 = nullptr;
+        image3 = nullptr;
 }
 
 void load_images_prev(const char *const path)
 {
-    SDL_DestroyTexture(image2);
+    SDL_DestroyTexture(image3);
+    image3 = image2;
     image2 = image1;
     image1 = load_image_from_zip(curr_page, path);
 }
@@ -71,4 +77,5 @@ void free_images()
 {
     SDL_DestroyTexture(image1);
     SDL_DestroyTexture(image2);
+    SDL_DestroyTexture(image3);
 }

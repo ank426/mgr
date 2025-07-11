@@ -39,14 +39,14 @@ void calculate_progress()
         break;
 
     case STRIP:
-        if (pages[curr_page].height - scrolled > (
-                rotated
-                ? width * pages[curr_page].width / hzoom / height
-                : height * pages[curr_page].width / zoom / width
-            ))
+        int d = rotated ? width / hzoom / height : height / zoom / width;
+        int d1 = (pages[curr_page].height - scrolled) / pages[curr_page].width;
+        if (curr_page == arrlen(pages)-1 || d1 > d)
             snprintf(string, 32, "%d/%d", curr_page+1, arrlen(pages));
-        else
+        else if (curr_page == arrlen(pages)-2 || d1 + pages[curr_page+1].height / pages[curr_page+1].width > d)
             snprintf(string, 32, "%d-%d/%d", curr_page+1, curr_page+2, arrlen(pages));
+        else
+            snprintf(string, 32, "%d-%d/%d", curr_page+1, curr_page+3, arrlen(pages));
         break;
     }
 
