@@ -35,9 +35,9 @@ struct bind strip_binds[] = {
     { SDL_KMOD_NONE,   SDL_SCANCODE_J,      &scroll,     "+0.5"   },
     { SDL_KMOD_NONE,   SDL_SCANCODE_K,      &scroll,     "-0.5"   },
     { SDL_KMOD_NONE,   SDL_SCANCODE_R,      &rotate,     "toggle" },
-    { SDL_KMOD_NONE,   SDL_SCANCODE_MINUS,  &set_zoom,   "-0.1"   },
-    { SDL_KMOD_NONE,   SDL_SCANCODE_EQUALS, &set_zoom,   "+0.1"   },
-    { SDL_KMOD_LSHIFT, SDL_SCANCODE_MINUS,  &set_hzoom,  "-0.1"   },
-    { SDL_KMOD_LSHIFT, SDL_SCANCODE_EQUALS, &set_hzoom,  "+0.1"   },
+    { SDL_KMOD_NONE,   SDL_SCANCODE_MINUS,  &set_zoom,   "-0.05"   },
+    { SDL_KMOD_NONE,   SDL_SCANCODE_EQUALS, &set_zoom,   "+0.05"   },
+    { SDL_KMOD_LSHIFT, SDL_SCANCODE_MINUS,  &set_hzoom,  "-0.05"   },
+    { SDL_KMOD_LSHIFT, SDL_SCANCODE_EQUALS, &set_hzoom,  "+0.05"   },
 };
 int n_strip_binds = sizeof(strip_binds) / sizeof(struct bind);

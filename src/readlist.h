@@ -1,4 +1,4 @@
-void update_readlist(void);
-void generate_readlist(const char *const path);
-void read_readlist(const char *const path);
+void update_readlist(struct appstate *s);
+void generate_readlist(const char *path, struct appstate *s);
+void read_readlist(const char *path, struct appstate *s);
 void free_path(void);

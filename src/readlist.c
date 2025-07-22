@@ -1,14 +1,11 @@
 #include "headers.h"
 
 extern char **files;
-extern int curr_file;
-extern int curr_page;
-extern float scrolled;
 extern bool gen;
 
 static char *path = nullptr;
 
-void update_readlist()
+void update_readlist(struct appstate *s)
 {
     char *file_path = malloc(strlen(path) + strlen("/.mgr") + 1);
     sprintf(file_path, "%s/.mgr", path);
@@ -16,9 +13,9 @@ void update_readlist()
     FILE *const fh = fopen(file_path, "w");
     assert(fh != nullptr);
 
-    fprintf(fh, "current file: %s\n", files[curr_file] + (gen ? 0 : strlen(path) + 1));
-    fprintf(fh, "current page: %d\n", curr_page + 1);
-    fprintf(fh, "current scroll: %f\n", scrolled);
+    fprintf(fh, "current file: %s\n", files[s->file] + (gen ? 0 : strlen(path) + 1));
+    fprintf(fh, "current page: %d\n", s->page + 1);
+    fprintf(fh, "current scroll: %f\n", s->scroll);
 
     fputc('\n', fh);
     fputs("readlist:\n", fh);
@@ -29,7 +26,7 @@ void update_readlist()
     free(file_path);
 }
 
-void generate_readlist(const char *const _path)
+void generate_readlist(const char *const _path, struct appstate *s)
 {
     path = strdup(_path);
 
@@ -38,16 +35,16 @@ void generate_readlist(const char *const _path)
     assert(files != nullptr);
     nat_sort(files, n);
 
-    curr_page = 0;
-    scrolled = 0;
+    s->page = 0;
+    s->scroll = 0;
 
-    update_readlist();
+    update_readlist(s);
 
     free(files);
     free_path();
 }
 
-void read_readlist(const char *const _path)
+void read_readlist(const char *const _path, struct appstate *s)
 {
     path = strdup(_path);
 
@@ -61,16 +58,16 @@ void read_readlist(const char *const _path)
 
     fscanf(fh, " ");
     assert(fscanf(fh, "current file: %[^\n] ", filename) == 1);
-    assert(fscanf(fh, "current page: %d ", &curr_page) == 1);
-    assert(fscanf(fh, "current scroll: %f ", &scrolled) == 1);
-    curr_page--;
-    assert(strlen(filename) != 0 && curr_page >= 0 && scrolled >= 0);
+    assert(fscanf(fh, "current page: %d ", &s->page) == 1);
+    assert(fscanf(fh, "current scroll: %f ", &s->scroll) == 1);
+    s->page--;
+    assert(strlen(filename) != 0 && s->page >= 0 && s->scroll >= 0);
 
     int n = -1;
     fscanf(fh, "readlist:%n ", &n);
     assert(n == strlen("readlist:"));
 
-    curr_file = -1;
+    s->file = -1;
     int i = 0;
     char line[4096];
     while (fgets(line, sizeof(line), fh) != nullptr) {
@@ -80,12 +77,12 @@ void read_readlist(const char *const _path)
         arrput(files, file);
 
         if (strcmp(line, filename) == 0) {
-            assert(curr_file == -1);
-            curr_file = i;
+            assert(s->file == -1);
+            s->file = i;
         }
         i++;
     }
-    assert(curr_file >= 0);
+    assert(s->file >= 0);
 
     fclose(fh);
     free(file_path);

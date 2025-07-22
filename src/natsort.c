@@ -1,5 +1,4 @@
 #include "headers.h"
-#include "structs.h"
 
 int nat_cmp(const void *name1, const void *name2)
 {

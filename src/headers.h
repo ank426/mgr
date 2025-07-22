@@ -1,5 +1,7 @@
 #pragma once
 
+#include "structs.h"
+
 #include "calc.h"
 #include "cli.h"
 #include "display.h"

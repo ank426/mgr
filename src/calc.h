@@ -1,3 +1,3 @@
-void load_chapter(const char *path);
-void calculate_progress(void);
-void set_mode_auto(void);
+void load_chapter(char *path, struct appstate *s);
+void calculate_progress(struct appstate *s);
+void set_mode_auto(struct appstate *s);

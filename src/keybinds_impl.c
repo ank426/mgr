@@ -1,51 +1,36 @@
 #include "headers.h"
-#include "structs.h"
 
 extern SDL_Window *window;
 extern int width, height;
 
 extern char **files;
-extern int curr_file;
-
-extern struct page *pages;
-extern int curr_page;
-
-extern bool automode;
-extern enum modes mode;
-
-extern bool rotated;
-extern float scrolled;
-extern float zoom;
-extern float hzoom;
-
-extern bool show_progress;
 
 
-void quit(const char *args)
+void quit(const char *args, struct appstate *s)
 {
     SDL_Event *quit_event = malloc(sizeof(SDL_Event));
     *quit_event = (SDL_Event){SDL_EVENT_QUIT};
     SDL_PushEvent(quit_event);
 }
 
-void set_mode(const char *args)
+void set_mode(const char *args, struct appstate *s)
 {
-    automode = false;
+    s->automode = false;
     if (strcmp(args, "single") == 0)
-        mode = SINGLE;
+        s->mode = SINGLE;
     else if (strcmp(args, "book") == 0)
-        mode = BOOK;
+        s->mode = BOOK;
     else if (strcmp(args, "strip") == 0)
-        mode = STRIP;
+        s->mode = STRIP;
     else if (strcmp(args, "auto") == 0) {
-        automode = true;
-        set_mode_auto();
+        s->automode = true;
+        set_mode_auto(s);
     } else
         assert(false);
-    load_images(files[curr_file]);
+    load_images(files[s->file], s);
 }
 
-void fullscreen(const char *args)
+void fullscreen(const char *args, struct appstate *s)
 {
     if (strcmp(args, "true") == 0)
         SDL_SetWindowFullscreen(window, true);
@@ -57,187 +42,187 @@ void fullscreen(const char *args)
         assert(false);
 }
 
-void offset(const char *args)
+void offset(const char *args, struct appstate *s)
 {
-    if (pages[curr_page].wide)
+    if (s->pages[s->page].wide)
         return;
 
     if (strcmp(args, "true") == 0)
-        get_interval(curr_page)->offset = true;
+        get_interval(s->page)->offset = true;
     else if (strcmp(args, "false") == 0)
-        get_interval(curr_page)->offset = false;
+        get_interval(s->page)->offset = false;
     else if (strcmp(args, "toggle") == 0)
-        get_interval(curr_page)->offset ^= 1;
+        get_interval(s->page)->offset ^= 1;
     else
         assert(false);
 
-    load_images(files[curr_file]);
+    load_images(files[s->file], s);
 }
 
-void progress(const char *args)
+void progress(const char *args, struct appstate *s)
 {
     if (strcmp(args, "true") == 0)
-        show_progress = true;
+        s->show_progress = true;
     else if (strcmp(args, "false") == 0)
-        show_progress = false;
+        s->show_progress = false;
     else if (strcmp(args, "toggle") == 0)
-        show_progress ^= 1;
+        s->show_progress ^= 1;
     else
         assert(false);
 }
 
-void top(const char *args)
+void top(const char *args, struct appstate *s)
 {
-    curr_page = 0;
-    load_images(files[curr_file]);
-    scrolled = 0;
+    s->page = 0;
+    load_images(files[s->file], s);
+    s->scroll = 0;
 }
 
-void bottom(const char *args)
+void bottom(const char *args, struct appstate *s)
 {
-    curr_page = arrlen(pages) - 1;
-    load_images(files[curr_file]);
-    scrolled = 0;
+    s->page = arrlen(s->pages) - 1;
+    load_images(files[s->file], s);
+    s->scroll = 0;
 }
 
-void chapter(const char *args)
+void chapter(const char *args, struct appstate *s)
 {
     if (strcmp(args, "next") == 0) {
-        if (curr_file == arrlen(files) - 1)
+        if (s->file == arrlen(files) - 1)
             return;
-        curr_file++;
-        load_chapter(files[curr_file]);
-        curr_page = 0;
-        scrolled = 0;
+        s->file++;
+        load_chapter(files[s->file], s);
+        s->page = 0;
+        s->scroll = 0;
     }
 
     else if (strcmp(args, "prev") == 0) {
-        if (curr_file == 0)
+        if (s->file == 0)
             return;
-        curr_file--;
-        load_chapter(files[curr_file]);
-        curr_page = arrlen(pages) - 1;
-        scrolled = mode == STRIP ? pages[curr_page].height : 0;
+        s->file--;
+        load_chapter(files[s->file], s);
+        s->page = arrlen(s->pages) - 1;
+        s->scroll = s->mode == STRIP ? s->pages[s->page].height : 0;
     }
 
     else
         assert(false);
 
-    load_images(files[curr_file]);
+    load_images(files[s->file], s);
 }
 
-void page(const char *args)
+void page(const char *args, struct appstate *s)
 {
     if (strcmp(args, "next") == 0) {
-        if (curr_page == arrlen(pages) - 1)
-            return chapter("next");
-        curr_page++;
+        if (s->page == arrlen(s->pages) - 1)
+            return chapter("next", s);
+        s->page++;
     }
 
     else if (strcmp(args, "prev") == 0) {
-        if (curr_page == 0)
-            return chapter("prev");
-        curr_page--;
+        if (s->page == 0)
+            return chapter("prev", s);
+        s->page--;
     }
 
     else
         assert(false);
 
-    load_images(files[curr_file]);
-    scrolled = 0;
+    load_images(files[s->file], s);
+    s->scroll = 0;
 }
 
-void flip(const char *args)
+void flip(const char *args, struct appstate *s)
 {
     if (strcmp(args, "next") == 0) {
-        if (curr_page == arrlen(pages) - 1 || curr_page == arrlen(pages) - 2 && num_images() == 2)
-            return chapter("next");
-        if (num_images() == 1 || curr_page == arrlen(pages) - 2)
-            curr_page++;
+        if (s->page == arrlen(s->pages) - 1 || s->page == arrlen(s->pages) - 2 && num_images() == 2)
+            return chapter("next", s);
+        if (num_images() == 1 || s->page == arrlen(s->pages) - 2)
+            s->page++;
         else
-            curr_page += 2;
+            s->page += 2;
     }
 
     else if (strcmp(args, "prev") == 0) {
-        if (curr_page == 0)
-            return chapter("prev");
-        curr_page--;
+        if (s->page == 0)
+            return chapter("prev", s);
+        s->page--;
     }
 
     else
         assert(false);
 
-    load_images(files[curr_file]);
-    scrolled = 0;
+    load_images(files[s->file], s);
+    s->scroll = 0;
 }
 
-void scroll(const char *args)
+void scroll(const char *args, struct appstate *s)
 {
     float val = atof(args);
     if (val == 0)
         return;
 
-    scrolled += val * height * pages[curr_page].width / zoom / width;
+    s->scroll += val * height * s->pages[s->page].width / s->zoom / width;
 
     if (val > 0) {
-        if (scrolled < pages[curr_page].height)
+        if (s->scroll < s->pages[s->page].height)
             return;
 
-        if (curr_page == arrlen(pages) - 1) {
-            scrolled = pages[curr_page].height;
-            chapter("next");
+        if (s->page == arrlen(s->pages) - 1) {
+            s->scroll = s->pages[s->page].height;
+            chapter("next", s);
         }
         else {
-            scrolled -= pages[curr_page++].height;
-            scrolled *= pages[curr_page].width / pages[curr_page-1].width;
-            load_images_next(files[curr_file]);
+            s->scroll -= s->pages[s->page++].height;
+            s->scroll *= s->pages[s->page].width / s->pages[s->page-1].width;
+            load_images_next(files[s->file], s);
         }
     }
 
     else {
-        if (scrolled > 0)
+        if (s->scroll > 0)
             return;
 
-        if (curr_page == 0) {
-            scrolled = 0;
-            chapter("prev");
+        if (s->page == 0) {
+            s->scroll = 0;
+            chapter("prev", s);
         }
         else {
-            scrolled *= pages[curr_page-1].width / pages[curr_page].width;
-            scrolled += pages[--curr_page].height;
-            load_images_prev(files[curr_file]);
+            s->scroll *= s->pages[s->page-1].width / s->pages[s->page].width;
+            s->scroll += s->pages[--s->page].height;
+            load_images_prev(files[s->file], s);
         }
     }
 }
 
-void rotate(const char *args)
+void rotate(const char *args, struct appstate *s)
 {
     if (strcmp(args, "true") == 0)
-        rotated = true;
+        s->rotated = true;
     else if (strcmp(args, "false") == 0)
-        rotated = false;
+        s->rotated = false;
     else if (strcmp(args, "toggle") == 0)
-        rotated ^= 1;
+        s->rotated ^= 1;
     else
         assert(false);
 }
 
-void set_zoom(const char *args)
+void set_zoom(const char *args, struct appstate *s)
 {
     if (args[0] == '+')
-        zoom += atof(args + 1);
+        s->zoom += atof(args + 1);
     else if (args[0] == '-')
-        zoom -= atof(args + 1);
+        s->zoom -= atof(args + 1);
     else
-        zoom = atof(args);
+        s->zoom = atof(args);
 }
 
-void set_hzoom(const char *args)
+void set_hzoom(const char *args, struct appstate *s)
 {
     if (args[0] == '+')
-        hzoom += atof(args + 1);
+        s->hzoom += atof(args + 1);
     else if (args[0] == '-')
-        hzoom -= atof(args + 1);
+        s->hzoom -= atof(args + 1);
     else
-        hzoom = atof(args);
+        s->hzoom = atof(args);
 }

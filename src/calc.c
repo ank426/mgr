@@ -1,63 +1,55 @@
 #include "headers.h"
-#include "structs.h"
 
 extern const int width, height;
-extern struct page *const pages;
-extern const int curr_page;
-extern const bool automode;
-extern enum modes mode;
-extern const bool rotated;
-extern const float scrolled;
-extern const float zoom;
-extern const float hzoom;
+extern const char *const *const files;
 extern TTF_Text *const progress_text;
 
 
-void load_chapter(const char *const path)
+void load_chapter(char *const path, struct appstate *s)
 {
-    update_pages_from_zip(path);
-    nat_sort_pages(pages);
-    update_intervals(pages);
-    if (automode)
-        set_mode_auto();
+    update_pages_from_zip(&s->pages, path);
+    nat_sort_pages(s->pages);
+    update_intervals(s->pages);
+    if (s->automode)
+        set_mode_auto(s);
 }
 
-void calculate_progress()
+void calculate_progress(struct appstate *s)
 {
     char string[32];
 
-    switch (mode) {
+    switch (s->mode) {
     case SINGLE:
-        snprintf(string, 32, "%d/%d", curr_page+1, arrlen(pages));
+        snprintf(string, 32, "%d/%d", s->page+1, arrlen(s->pages));
         break;
 
     case BOOK:
         if (num_images() == 1)
-            snprintf(string, 32, "%d/%d", curr_page+1, arrlen(pages));
+            snprintf(string, 32, "%d/%d", s->page+1, arrlen(s->pages));
         else
-            snprintf(string, 32, "%d-%d/%d", curr_page+1, curr_page+2, arrlen(pages));
+            snprintf(string, 32, "%d-%d/%d", s->page+1, s->page+2, arrlen(s->pages));
         break;
 
     case STRIP:
-        int d = rotated ? width / hzoom / height : height / zoom / width;
-        int d1 = (pages[curr_page].height - scrolled) / pages[curr_page].width;
-        if (curr_page == arrlen(pages)-1 || d1 > d)
-            snprintf(string, 32, "%d/%d", curr_page+1, arrlen(pages));
-        else if (curr_page == arrlen(pages)-2 || d1 + pages[curr_page+1].height / pages[curr_page+1].width > d)
-            snprintf(string, 32, "%d-%d/%d", curr_page+1, curr_page+2, arrlen(pages));
+        int d = s->rotated ? width / s->hzoom / height : height / s->zoom / width;
+        int d1 = (s->pages[s->page].height - s->scroll) / s->pages[s->page].width;
+        if (s->page == arrlen(s->pages)-1 || d1 > d)
+            snprintf(string, 32, "%d/%d", s->page+1, arrlen(s->pages));
+        else if (s->page == arrlen(s->pages)-2 || d1 + s->pages[s->page+1].height / s->pages[s->page+1].width > d)
+            snprintf(string, 32, "%d-%d/%d", s->page+1, s->page+2, arrlen(s->pages));
         else
-            snprintf(string, 32, "%d-%d/%d", curr_page+1, curr_page+3, arrlen(pages));
+            snprintf(string, 32, "%d-%d/%d", s->page+1, s->page+3, arrlen(s->pages));
         break;
     }
 
     TTF_SetTextString(progress_text, string, 32);
 }
 
-void set_mode_auto()
+void set_mode_auto(struct appstate *s)
 {
     int n = 0;
-    for (int i = 0; i < arrlen(pages); i++)
-        if (pages[i].height > 2 * pages[i].width)
+    for (int i = 0; i < arrlen(s->pages); i++)
+        if (s->pages[i].height > 2 * s->pages[i].width)
             n++;
-    mode = n > arrlen(pages) / 2 ? STRIP : BOOK;
+    s->mode = n > arrlen(s->pages) / 2 ? STRIP : BOOK;
 }
