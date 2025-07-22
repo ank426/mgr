@@ -2,16 +2,16 @@
 
 #include "structs.h"
 
-#include "calc.h"
 #include "cli.h"
 #include "display.h"
+#include "image.h"
 #include "interval.h"
 #include "keybinds.h"
 #include "keybinds_impl.h"
-#include "load.h"
 #include "natsort.h"
 #include "readlist.h"
 #include "text.h"
+#include "utils.h"
 #include "zip_handler.h"
 
 #include <SDL3/SDL.h>

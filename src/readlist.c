@@ -5,7 +5,7 @@ extern bool gen;
 
 static char *path = nullptr;
 
-void update_readlist(struct appstate *s)
+void update_readlist(int file, int page, float scroll)
 {
     char *file_path = malloc(strlen(path) + strlen("/.mgr") + 1);
     sprintf(file_path, "%s/.mgr", path);
@@ -13,9 +13,9 @@ void update_readlist(struct appstate *s)
     FILE *const fh = fopen(file_path, "w");
     assert(fh != nullptr);
 
-    fprintf(fh, "current file: %s\n", files[s->file] + (gen ? 0 : strlen(path) + 1));
-    fprintf(fh, "current page: %d\n", s->page + 1);
-    fprintf(fh, "current scroll: %f\n", s->scroll);
+    fprintf(fh, "current file: %s\n", files[file] + (gen ? 0 : strlen(path) + 1));
+    fprintf(fh, "current page: %d\n", page + 1);
+    fprintf(fh, "current scroll: %f\n", scroll);
 
     fputc('\n', fh);
     fputs("readlist:\n", fh);
@@ -26,7 +26,7 @@ void update_readlist(struct appstate *s)
     free(file_path);
 }
 
-void generate_readlist(const char *const _path, struct appstate *s)
+void generate_readlist(const char *const _path)
 {
     path = strdup(_path);
 
@@ -35,10 +35,7 @@ void generate_readlist(const char *const _path, struct appstate *s)
     assert(files != nullptr);
     nat_sort(files, n);
 
-    s->page = 0;
-    s->scroll = 0;
-
-    update_readlist(s);
+    update_readlist(0, 0, 0);
 
     free(files);
     free_path();

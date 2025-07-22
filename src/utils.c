@@ -1,20 +1,29 @@
 #include "headers.h"
 
 extern const int width, height;
-extern const char *const *const files;
+extern char **const files;
 extern TTF_Text *const progress_text;
 
 
-void load_chapter(char *const path, struct appstate *s)
+void load_file(char *const path, struct appstate *s)
 {
     update_pages_from_zip(&s->pages, path);
     nat_sort_pages(s->pages);
     update_intervals(s->pages);
     if (s->automode)
-        set_mode_auto(s);
+        s->mode = calc_mode(s->pages);
 }
 
-void calculate_progress(struct appstate *s)
+enum modes calc_mode(struct page *pages)
+{
+    int n = 0;
+    for (int i = 0; i < arrlen(pages); i++)
+        if (pages[i].height > 2 * pages[i].width)
+            n++;
+    return n > arrlen(pages) / 2 ? STRIP : BOOK;
+}
+
+void calc_progress(struct appstate *s)
 {
     char string[32];
 
@@ -43,13 +52,4 @@ void calculate_progress(struct appstate *s)
     }
 
     TTF_SetTextString(progress_text, string, 32);
-}
-
-void set_mode_auto(struct appstate *s)
-{
-    int n = 0;
-    for (int i = 0; i < arrlen(s->pages); i++)
-        if (s->pages[i].height > 2 * s->pages[i].width)
-            n++;
-    s->mode = n > arrlen(s->pages) / 2 ? STRIP : BOOK;
 }

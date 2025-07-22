@@ -9,8 +9,8 @@ SDL_Window *window = nullptr;
 SDL_Renderer *renderer = nullptr;
 int width = 0, height = 0;
 
-bool readlist = false;
 char **files = nullptr;
+bool readlist = false;
 struct config conf;
 
 
@@ -33,7 +33,7 @@ void init_state(struct appstate *s)
         .page = 0,
         .automode = conf.automode,
         .mode = conf.mode,
-        .scroll = 0,
+        .scroll = 0.0,
         .rotated = false,
         .zoom = conf.zoom,
         .hzoom = conf.hzoom,
@@ -57,7 +57,7 @@ SDL_AppResult SDL_AppInit(void **ptr_appstate, int argc, char *argv[])
 
     init_text();
 
-    load_chapter(files[s->file], s);
+    load_file(files[s->file], s);
     load_images(files[s->file], s);
 
     return SDL_APP_CONTINUE;
@@ -93,7 +93,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
                 binds[i].fn(binds[i].args, s);
 
         if (readlist)
-            update_readlist(s);
+            update_readlist(s->file, s->page, s->scroll);
     }
 
     if (event->type == SDL_EVENT_FINGER_UP) {
@@ -144,7 +144,7 @@ SDL_AppResult SDL_AppIterate(void *appstate)
     }
 
     if (s->show_progress) {
-        calculate_progress(s);
+        calc_progress(s);
         display_progress();
     }
 

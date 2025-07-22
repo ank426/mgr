@@ -24,7 +24,7 @@ void set_mode(const char *args, struct appstate *s)
         s->mode = STRIP;
     else if (strcmp(args, "auto") == 0) {
         s->automode = true;
-        set_mode_auto(s);
+        s->mode = calc_mode(s->pages);
     } else
         assert(false);
     load_images(files[s->file], s);
@@ -85,13 +85,13 @@ void bottom(const char *args, struct appstate *s)
     s->scroll = 0;
 }
 
-void chapter(const char *args, struct appstate *s)
+void file(const char *args, struct appstate *s)
 {
     if (strcmp(args, "next") == 0) {
         if (s->file == arrlen(files) - 1)
             return;
         s->file++;
-        load_chapter(files[s->file], s);
+        load_file(files[s->file], s);
         s->page = 0;
         s->scroll = 0;
     }
@@ -100,7 +100,7 @@ void chapter(const char *args, struct appstate *s)
         if (s->file == 0)
             return;
         s->file--;
-        load_chapter(files[s->file], s);
+        load_file(files[s->file], s);
         s->page = arrlen(s->pages) - 1;
         s->scroll = s->mode == STRIP ? s->pages[s->page].height : 0;
     }
@@ -115,13 +115,13 @@ void page(const char *args, struct appstate *s)
 {
     if (strcmp(args, "next") == 0) {
         if (s->page == arrlen(s->pages) - 1)
-            return chapter("next", s);
+            return file("next", s);
         s->page++;
     }
 
     else if (strcmp(args, "prev") == 0) {
         if (s->page == 0)
-            return chapter("prev", s);
+            return file("prev", s);
         s->page--;
     }
 
@@ -136,7 +136,7 @@ void flip(const char *args, struct appstate *s)
 {
     if (strcmp(args, "next") == 0) {
         if (s->page == arrlen(s->pages) - 1 || s->page == arrlen(s->pages) - 2 && num_images() == 2)
-            return chapter("next", s);
+            return file("next", s);
         if (num_images() == 1 || s->page == arrlen(s->pages) - 2)
             s->page++;
         else
@@ -145,7 +145,7 @@ void flip(const char *args, struct appstate *s)
 
     else if (strcmp(args, "prev") == 0) {
         if (s->page == 0)
-            return chapter("prev", s);
+            return file("prev", s);
         s->page--;
     }
 
@@ -170,7 +170,7 @@ void scroll(const char *args, struct appstate *s)
 
         if (s->page == arrlen(s->pages) - 1) {
             s->scroll = s->pages[s->page].height;
-            chapter("next", s);
+            file("next", s);
         }
         else {
             s->scroll -= s->pages[s->page++].height;
@@ -185,7 +185,7 @@ void scroll(const char *args, struct appstate *s)
 
         if (s->page == 0) {
             s->scroll = 0;
-            chapter("prev", s);
+            file("prev", s);
         }
         else {
             s->scroll *= s->pages[s->page-1].width / s->pages[s->page].width;

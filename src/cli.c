@@ -69,7 +69,7 @@ void get_args(const int argc, char *const *const argv)
 void process_args(struct appstate *s)
 {
     if (gen) {
-        generate_readlist(args[0], s);
+        generate_readlist(args[0]);
         cleanup();
         exit(EXIT_SUCCESS);
     }
