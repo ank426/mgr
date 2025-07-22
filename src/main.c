@@ -160,9 +160,8 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result)
     free_images();
     free_intervals();
     free_text();
-    free_path();
 
-    // free(dirpath);
+    free(dirpath);
 
     for (int i = 0; i < arrlen(s->pages); i++)
         free(s->pages[i].name);

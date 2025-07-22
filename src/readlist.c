@@ -34,7 +34,6 @@ void generate_readlist()
     update_readlist(0, 0, 0);
 
     free(files);
-    free_path();
 }
 
 void read_readlist(struct appstate *s)
@@ -75,9 +74,4 @@ void read_readlist(struct appstate *s)
 
     fclose(fh);
     free(filepath);
-}
-
-void free_path()
-{
-    free(dirpath);
 }
