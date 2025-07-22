@@ -4,14 +4,17 @@ SDL_Texture *image1 = nullptr;
 SDL_Texture *image2 = nullptr;
 SDL_Texture *image3 = nullptr;
 
+extern char *dirpath;
 
 int num_images()
 {
     return (image1 != nullptr) + (image2 != nullptr) + (image3 != nullptr);
 }
 
-SDL_Texture *load_img(int idx, const char *path, struct appstate *s)
+SDL_Texture *load_img(int idx, const char *relpath, struct appstate *s)
 {
+    char *path = malloc(strlen(dirpath) + 1 + strlen(relpath) + 1);
+    sprintf(path, "%s/%s", dirpath, relpath);
     return load_image_from_zip(s->pages[idx].name, path);
 }
 

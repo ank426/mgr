@@ -9,6 +9,7 @@ SDL_Window *window = nullptr;
 SDL_Renderer *renderer = nullptr;
 int width = 0, height = 0;
 
+char *dirpath = nullptr;
 char **files = nullptr;
 bool readlist = false;
 struct config conf;
@@ -160,6 +161,8 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result)
     free_intervals();
     free_text();
     free_path();
+
+    // free(dirpath);
 
     for (int i = 0; i < arrlen(s->pages); i++)
         free(s->pages[i].name);

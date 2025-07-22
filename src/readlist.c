@@ -1,37 +1,33 @@
 #include "headers.h"
 
+extern char *dirpath;
 extern char **files;
-extern bool gen;
-
-static char *path = nullptr;
 
 void update_readlist(int file, int page, float scroll)
 {
-    char *file_path = malloc(strlen(path) + strlen("/.mgr") + 1);
-    sprintf(file_path, "%s/.mgr", path);
+    char *filepath = malloc(strlen(dirpath) + strlen("/.mgr") + 1);
+    sprintf(filepath, "%s/.mgr", dirpath);
 
-    FILE *const fh = fopen(file_path, "w");
+    FILE *const fh = fopen(filepath, "w");
     assert(fh != nullptr);
 
-    fprintf(fh, "current file: %s\n", files[file] + (gen ? 0 : strlen(path) + 1));
+    fprintf(fh, "current file: %s\n", files[file]);
     fprintf(fh, "current page: %d\n", page + 1);
     fprintf(fh, "current scroll: %f\n", scroll);
 
     fputc('\n', fh);
     fputs("readlist:\n", fh);
     for (char **t = files; *t != nullptr; t++)
-        fprintf(fh, "%s\n", *t + (gen ? 0 : strlen(path) + 1));
+        fprintf(fh, "%s\n", *t);
 
     fclose(fh);
-    free(file_path);
+    free(filepath);
 }
 
-void generate_readlist(const char *const _path)
+void generate_readlist()
 {
-    path = strdup(_path);
-
     int n;
-    files = SDL_GlobDirectory(path, "*.cbz", 0, &n);
+    files = SDL_GlobDirectory(dirpath, "*.cbz", 0, &n);
     assert(files != nullptr);
     nat_sort(files, n);
 
@@ -41,14 +37,12 @@ void generate_readlist(const char *const _path)
     free_path();
 }
 
-void read_readlist(const char *const _path, struct appstate *s)
+void read_readlist(struct appstate *s)
 {
-    path = strdup(_path);
+    char *filepath = malloc(strlen(dirpath) + strlen("/.mgr") + 1);
+    sprintf(filepath, "%s/.mgr", dirpath);
 
-    char *file_path = malloc(strlen(path) + strlen("/.mgr") + 1);
-    sprintf(file_path, "%s/.mgr", path);
-
-    FILE *const fh = fopen(file_path, "r");
+    FILE *const fh = fopen(filepath, "r");
     assert(fh != nullptr);
 
     char filename[4096];
@@ -69,9 +63,7 @@ void read_readlist(const char *const _path, struct appstate *s)
     char line[4096];
     while (fgets(line, sizeof(line), fh) != nullptr) {
         line[strlen(line) - 1] = '\0';
-        char *file = malloc(strlen(path) + 1 + strlen(line) + 1);
-        sprintf(file, "%s/%s", path, line);
-        arrput(files, file);
+        arrput(files, strdup(line));
 
         if (strcmp(line, filename) == 0) {
             assert(s->file == -1);
@@ -82,10 +74,10 @@ void read_readlist(const char *const _path, struct appstate *s)
     assert(s->file >= 0);
 
     fclose(fh);
-    free(file_path);
+    free(filepath);
 }
 
 void free_path()
 {
-    free(path);
+    free(dirpath);
 }

@@ -2,8 +2,9 @@
 
 #include <getopt.h>
 
-extern bool readlist;
+extern char *dirpath;
 extern char **files;
+extern bool readlist;
 extern struct config conf;
 
 bool gen = false;
@@ -69,7 +70,8 @@ void get_args(const int argc, char *const *const argv)
 void process_args(struct appstate *s)
 {
     if (gen) {
-        generate_readlist(args[0]);
+        dirpath = strdup(args[0]);
+        generate_readlist();
         cleanup();
         exit(EXIT_SUCCESS);
     }
@@ -79,17 +81,23 @@ void process_args(struct appstate *s)
         SDL_GetPathInfo(args[0], &info);
 
         if (info.type == SDL_PATHTYPE_DIRECTORY) {
-            read_readlist(args[0], s);
+            dirpath = strdup(args[0]);
+            read_readlist(s);
             readlist = true;
-        } else if (info.type == SDL_PATHTYPE_FILE)
+        }
+        else if (info.type == SDL_PATHTYPE_FILE) {
+            dirpath = strdup(".");
             arrput(files, strdup(args[0]));
+        }
         else
             assert(false);
     }
 
-    else
+    else {
+        dirpath = strdup(".");
         for (int i = 0; i < arrlen(args); i++)
             arrput(files, strdup(args[i]));
+    }
 
     cleanup();
 }
