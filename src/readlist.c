@@ -3,15 +3,25 @@
 extern char *dirpath;
 extern char **files;
 
-void update_readlist(int file, int page, float scroll)
-{
-    char *filepath = malloc(strlen(dirpath) + strlen("/.mgr") + 1);
-    sprintf(filepath, "%s/.mgr", dirpath);
+static char *filepath;
 
+void calc_filepath()
+{
+    filepath = malloc(strlen(dirpath) + strlen("/.mgr") + 1);
+    sprintf(filepath, "%s/.mgr", dirpath);
+}
+
+void free_filepath()
+{
+    free(filepath);
+}
+
+void write_readlist(char *filename, int page, float scroll)
+{
     FILE *const fh = fopen(filepath, "w");
     assert(fh != nullptr);
 
-    fprintf(fh, "current file: %s\n", files[file]);
+    fprintf(fh, "current file: %s\n", filename);
     fprintf(fh, "current page: %d\n", page + 1);
     fprintf(fh, "current scroll: %f\n", scroll);
 
@@ -21,25 +31,34 @@ void update_readlist(int file, int page, float scroll)
         fprintf(fh, "%s\n", *t);
 
     fclose(fh);
-    free(filepath);
 }
 
-void generate_readlist()
+void generate_readlist(struct appstate *s)
 {
+    calc_filepath();
+
+    char *filename = nullptr;
+
+    FILE *fh;
+    if ((fh = fopen(filepath, "r")) != nullptr) {
+        fclose(fh);
+        read_readlist(s);
+        filename = files[s->file];
+    }
+
     int n;
     files = SDL_GlobDirectory(dirpath, "*.cbz", 0, &n);
     assert(files != nullptr);
     nat_sort(files, n);
 
-    update_readlist(0, 0, 0);
+    write_readlist(filename != nullptr ? filename : files[0], s->page, s->scroll);
 
     free(files);
 }
 
 void read_readlist(struct appstate *s)
 {
-    char *filepath = malloc(strlen(dirpath) + strlen("/.mgr") + 1);
-    sprintf(filepath, "%s/.mgr", dirpath);
+    calc_filepath();
 
     FILE *const fh = fopen(filepath, "r");
     assert(fh != nullptr);
@@ -73,5 +92,4 @@ void read_readlist(struct appstate *s)
     assert(s->file >= 0);
 
     fclose(fh);
-    free(filepath);
 }

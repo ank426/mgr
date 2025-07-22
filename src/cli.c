@@ -71,7 +71,7 @@ void process_args(struct appstate *s)
 {
     if (gen) {
         dirpath = strdup(args[0]);
-        generate_readlist();
+        generate_readlist(s);
         cleanup();
         exit(EXIT_SUCCESS);
     }

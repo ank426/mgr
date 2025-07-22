@@ -94,7 +94,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
                 binds[i].fn(binds[i].args, s);
 
         if (readlist)
-            update_readlist(s->file, s->page, s->scroll);
+            write_readlist(files[s->file], s->page, s->scroll);
     }
 
     if (event->type == SDL_EVENT_FINGER_UP) {

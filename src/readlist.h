@@ -1,3 +1,3 @@
-void update_readlist(int file, int page, float scroll);
-void generate_readlist();
+void write_readlist(char *filename, int page, float scroll);
+void generate_readlist(struct appstate *s);
 void read_readlist(struct appstate *s);
