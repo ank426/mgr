@@ -7,7 +7,7 @@
 
 SDL_Window *window = nullptr;
 SDL_Renderer *renderer = nullptr;
-float width = 0, height = 0;
+int width = 0, height = 0;
 
 char *dirpath = nullptr;
 char **files = nullptr;
@@ -33,6 +33,7 @@ void init_state(struct appstate *s)
         .pages = nullptr,
         .start = 0,
         .end = 0,
+        .images = nullptr,
         .automode = conf.automode,
         .mode = conf.mode,
         .scroll = 0.0,
@@ -52,10 +53,10 @@ SDL_AppResult SDL_AppInit(void **ptr_appstate, int argc, char *argv[])
     init_state(s);
     process_args(s);
 
-    assert(SDL_CreateWindowAndRenderer("mgr", 0, 0, SDL_WINDOW_RESIZABLE, &window, &renderer));
+    SDL_WindowFlags flags = SDL_WINDOW_RESIZABLE | (conf.start_fullscreen ? SDL_WINDOW_FULLSCREEN : 0);
+    assert(SDL_CreateWindowAndRenderer("mgr", 0, 0, flags, &window, &renderer));
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-    if (conf.start_fullscreen)
-        fullscreen("true", s);
+    SDL_GetRenderOutputSize(renderer, &width, &height);
 
     init_text();
 
@@ -123,10 +124,7 @@ SDL_AppResult SDL_AppIterate(void *appstate)
 
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
-
-    int w, h;
-    SDL_GetRenderOutputSize(renderer, &w, &h);
-    width = w, height = h;
+    SDL_GetRenderOutputSize(renderer, &width, &height);
 
     switch (s->mode) {
     case SINGLE:

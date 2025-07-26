@@ -1,6 +1,6 @@
 #include "headers.h"
 
-extern const float width, height;
+extern const int width, height;
 extern char **const files;
 extern TTF_Text *const progress_text;
 

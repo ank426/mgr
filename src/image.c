@@ -2,7 +2,7 @@
 
 extern char *const dirpath;
 extern char **const files;
-extern const float width, height;
+extern const int width, height;
 
 SDL_Texture *load_img(int idx, struct appstate *s)
 {
@@ -34,12 +34,13 @@ void fix_page(struct appstate *s)
         break;
 
     case STRIP:
-        float d = !s->rotated ? height / width / s->zoom : width / height / s->hzoom;
+        float d = !s->rotated ? height / s->zoom / width : width / s->hzoom / height;
         d += s->scroll / s->pages[s->end].width;
-        while (d > 0) {
+        while (d > 0 && s->end < arrlen(s->pages)) {
             d -= s->pages[s->end].height / s->pages[s->end].width;
             s->end++;
         }
+        s->end--;
         break;
     }
 }

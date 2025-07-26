@@ -1,7 +1,7 @@
 #include "headers.h"
 
 extern SDL_Renderer *renderer;
-extern const float width, height;
+extern const int width, height;
 extern const int progress_font_size;
 extern TTF_Text *const progress_text;
 
