@@ -51,7 +51,7 @@ void generate_readlist(struct appstate *s)
     assert(files != nullptr);
     nat_sort(files, n);
 
-    write_readlist(filename != nullptr ? filename : files[0], s->page, s->scroll);
+    write_readlist(filename != nullptr ? filename : files[0], s->start, s->scroll);
 
     free(files);
 }
@@ -67,10 +67,10 @@ void read_readlist(struct appstate *s)
 
     fscanf(fh, " ");
     assert(fscanf(fh, "current file: %[^\n] ", filename) == 1);
-    assert(fscanf(fh, "current page: %d ", &s->page) == 1);
+    assert(fscanf(fh, "current page: %d ", &s->start) == 1);
     assert(fscanf(fh, "current scroll: %f ", &s->scroll) == 1);
-    s->page--;
-    assert(strlen(filename) != 0 && s->page >= 0 && s->scroll >= 0);
+    s->start--;
+    assert(strlen(filename) != 0 && s->start >= 0 && s->scroll >= 0);
 
     int n = -1;
     fscanf(fh, "readlist:%n ", &n);

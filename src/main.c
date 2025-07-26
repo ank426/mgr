@@ -7,7 +7,7 @@
 
 SDL_Window *window = nullptr;
 SDL_Renderer *renderer = nullptr;
-int width = 0, height = 0;
+float width = 0, height = 0;
 
 char *dirpath = nullptr;
 char **files = nullptr;
@@ -20,7 +20,7 @@ void init_conf()
     conf = (struct config){
         .automode = true,
         .mode = SINGLE,
-        .zoom = 0.5,
+        .zoom = 0.45,
         .hzoom = 0.7,
         .start_fullscreen = true,
     };
@@ -31,7 +31,8 @@ void init_state(struct appstate *s)
     *s = (struct appstate){
         .file = 0,
         .pages = nullptr,
-        .page = 0,
+        .start = 0,
+        .end = 0,
         .automode = conf.automode,
         .mode = conf.mode,
         .scroll = 0.0,
@@ -59,7 +60,8 @@ SDL_AppResult SDL_AppInit(void **ptr_appstate, int argc, char *argv[])
     init_text();
 
     load_file(files[s->file], s);
-    load_images(files[s->file], s);
+    fix_page(s);
+    update_images(s);
 
     return SDL_APP_CONTINUE;
 }
@@ -94,7 +96,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
                 binds[i].fn(binds[i].args, s);
 
         if (readlist)
-            write_readlist(files[s->file], s->page, s->scroll);
+            write_readlist(files[s->file], s->start, s->scroll);
     }
 
     if (event->type == SDL_EVENT_FINGER_UP) {
@@ -121,26 +123,25 @@ SDL_AppResult SDL_AppIterate(void *appstate)
 
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
-    SDL_GetRenderOutputSize(renderer, &width, &height);
 
-    extern SDL_Texture *image1, *image2, *image3;
+    int w, h;
+    SDL_GetRenderOutputSize(renderer, &w, &h);
+    width = w, height = h;
 
     switch (s->mode) {
     case SINGLE:
-        display_single(image1);
+        display_single(s->images[0]);
         break;
 
     case BOOK:
-        if (image1 == nullptr)
-            display_single(image2);
-        else if (image2 == nullptr)
-            display_single(image1);
+        if (s->start == s->end)
+            display_single(s->images[0]);
         else
-            display_book(image2, image1);
+            display_book(s->images[1], s->images[0]);
         break;
 
     case STRIP:
-        s->rotated ? display_strip_rotated(image1, image2, image3, s) : display_strip(image1, image2, image3, s);
+        !s->rotated ? display_strip(s) : display_strip_rotated(s);
         break;
     }
 
@@ -157,11 +158,14 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result)
 {
     struct appstate *s = appstate;
 
-    free_images();
     free_intervals();
     free_text();
 
     free(dirpath);
+
+    for (int i = 0; i < arrlen(s->images); i++)
+        SDL_DestroyTexture(s->images[i]);
+    arrfree(s->images);
 
     for (int i = 0; i < arrlen(s->pages); i++)
         free(s->pages[i].name);

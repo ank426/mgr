@@ -1,6 +1,6 @@
 #include "headers.h"
 
-extern const int width, height;
+extern const float width, height;
 extern char **const files;
 extern TTF_Text *const progress_text;
 
@@ -26,30 +26,10 @@ enum modes calc_mode(struct page *pages)
 void calc_progress(struct appstate *s)
 {
     char string[32];
-
-    switch (s->mode) {
-    case SINGLE:
-        snprintf(string, 32, "%d/%d", s->page+1, arrlen(s->pages));
-        break;
-
-    case BOOK:
-        if (num_images() == 1)
-            snprintf(string, 32, "%d/%d", s->page+1, arrlen(s->pages));
-        else
-            snprintf(string, 32, "%d-%d/%d", s->page+1, s->page+2, arrlen(s->pages));
-        break;
-
-    case STRIP:
-        int d = s->rotated ? width / s->hzoom / height : height / s->zoom / width;
-        int d1 = (s->pages[s->page].height - s->scroll) / s->pages[s->page].width;
-        if (s->page == arrlen(s->pages)-1 || d1 > d)
-            snprintf(string, 32, "%d/%d", s->page+1, arrlen(s->pages));
-        else if (s->page == arrlen(s->pages)-2 || d1 + s->pages[s->page+1].height / s->pages[s->page+1].width > d)
-            snprintf(string, 32, "%d-%d/%d", s->page+1, s->page+2, arrlen(s->pages));
-        else
-            snprintf(string, 32, "%d-%d/%d", s->page+1, s->page+3, arrlen(s->pages));
-        break;
-    }
+    if (s->start == s->end)
+        snprintf(string, 32, "%d/%d", s->start+1, arrlen(s->pages));
+    else
+        snprintf(string, 32, "%d-%d/%d", s->start+1, s->end+1, arrlen(s->pages));
 
     TTF_SetTextString(progress_text, string, 32);
 }
