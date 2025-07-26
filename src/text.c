@@ -23,6 +23,17 @@ void init_text()
     assert(progress_text != nullptr);
 }
 
+void update_progress_text(struct appstate *s)
+{
+    char string[32];
+    if (s->start == s->end)
+        snprintf(string, 32, "%d/%d", s->start+1, arrlen(s->pages));
+    else
+        snprintf(string, 32, "%d-%d/%d", s->start+1, s->end+1, arrlen(s->pages));
+
+    TTF_SetTextString(progress_text, string, 32);
+}
+
 void free_text()
 {
     TTF_DestroyRendererTextEngine(engine);

@@ -2,7 +2,6 @@
 
 extern const int width, height;
 extern char **const files;
-extern TTF_Text *const progress_text;
 
 
 void load_file(char *const path, struct appstate *s)
@@ -23,13 +22,35 @@ enum modes calc_mode(struct page *pages)
     return n > arrlen(pages) / 2 ? STRIP : BOOK;
 }
 
-void calc_progress(struct appstate *s)
+void fix_page(struct appstate *s)
 {
-    char string[32];
-    if (s->start == s->end)
-        snprintf(string, 32, "%d/%d", s->start+1, arrlen(s->pages));
-    else
-        snprintf(string, 32, "%d-%d/%d", s->start+1, s->end+1, arrlen(s->pages));
+    s->end = s->start;
 
-    TTF_SetTextString(progress_text, string, 32);
+    switch (s->mode) {
+    case SINGLE:
+        break;
+
+    case BOOK:
+        if (s->pages[s->start].wide)
+            break;
+        struct interval *curr_int = get_interval(s->start);
+        if (s->start & 1 ^ curr_int->start & 1 ^ !curr_int->offset) {
+            if (s->start + 1 < curr_int->end)
+                s->end++;
+        } else {
+            if (s->start - 1 >= curr_int->start)
+                s->start--;
+        }
+        break;
+
+    case STRIP:
+        float d = !s->rotated ? height / s->zoom / width : width / s->hzoom / height;
+        d += s->scroll / s->pages[s->end].width;
+        while (d > 0 && s->end < arrlen(s->pages)) {
+            d -= s->pages[s->end].height / s->pages[s->end].width;
+            s->end++;
+        }
+        s->end--;
+        break;
+    }
 }

@@ -144,7 +144,7 @@ SDL_AppResult SDL_AppIterate(void *appstate)
     }
 
     if (s->show_progress) {
-        calc_progress(s);
+        update_progress_text(s);
         display_progress();
     }
 
