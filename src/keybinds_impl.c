@@ -8,9 +8,7 @@ extern char **files;
 
 void quit(const char *args, struct appstate *s)
 {
-    SDL_Event *quit_event = malloc(sizeof(SDL_Event));
-    *quit_event = (SDL_Event){SDL_EVENT_QUIT};
-    SDL_PushEvent(quit_event);
+    SDL_PushEvent(&(SDL_Event){SDL_EVENT_QUIT});
 }
 
 void set_mode(const char *args, struct appstate *s)
