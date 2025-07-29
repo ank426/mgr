@@ -148,6 +148,7 @@ SDL_AppResult SDL_AppIterate(void *appstate)
         display_progress();
     }
 
+    SDL_Delay(16);
     SDL_RenderPresent(renderer);
     return SDL_APP_CONTINUE;
 }

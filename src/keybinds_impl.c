@@ -100,16 +100,20 @@ void bottom(const char *args, struct appstate *s)
 void file(const char *args, struct appstate *s)
 {
     if (strcmp(args, "next") == 0) {
-        if (s->file == arrlen(files) - 1)
+        if (s->file == arrlen(files) - 1) {
+            s->scroll = s->mode == STRIP ? s->pages[s->start].height : 0;
             return;
+        }
         load_file(files[++s->file], s);
         s->start = 0;
         s->scroll = 0;
     }
 
     else if (strcmp(args, "prev") == 0) {
-        if (s->file == 0)
+        if (s->file == 0) {
+            s->scroll = 0;
             return;
+        }
         load_file(files[--s->file], s);
         s->start = arrlen(s->pages) - 1;
         s->scroll = s->mode == STRIP ? s->pages[s->start].height : 0;
