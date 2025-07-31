@@ -19,28 +19,29 @@ enum modes {
     STRIP,
 };
 
-struct appstate {
-    int file;
-    struct page *pages;
-
-    int start, end;
-    SDL_Texture **images;
-
-    bool automode;
-    enum modes mode;
-
-    float scroll;
-    bool rotated;
-    float zoom, hzoom;
-
-    bool show_progress;
-};
-
 struct config {
     bool automode;
     enum modes mode;
-
-    float zoom, hzoom;
-
+    float wzoom, hzoom;
     bool start_fullscreen;
+};
+
+struct appstate {
+    int width, height;
+    int file;
+    struct page *pages;
+    int start, end;
+    bool automode;
+    enum modes mode;
+    bool rotated;
+    float scroll;
+    float wzoom, hzoom;
+    bool show_progress;
+};
+
+struct bind {
+    SDL_Keymod mod;
+    SDL_Scancode key;
+    void (*fn)(const char *args, struct appstate *s);
+    const char *args;
 };

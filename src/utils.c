@@ -1,6 +1,5 @@
 #include "headers.h"
 
-extern const int width, height;
 extern char **const files;
 
 
@@ -44,7 +43,7 @@ void fix_page(struct appstate *s)
         break;
 
     case STRIP:
-        float d = !s->rotated ? height / s->zoom / width : width / s->hzoom / height;
+        float d = !s->rotated ? s->height / s->wzoom / s->width : s->width / s->hzoom / s->height;
         d += s->scroll / s->pages[s->end].width;
         while (d > 0 && s->end < arrlen(s->pages)) {
             d -= s->pages[s->end].height / s->pages[s->end].width;

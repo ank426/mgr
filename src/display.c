@@ -1,11 +1,10 @@
 #include "headers.h"
 
-extern SDL_Renderer *renderer;
-extern const int width, height;
+extern SDL_Renderer *const renderer;
 extern const int progress_font_size;
 extern TTF_Text *const progress_text;
 
-void display_single(SDL_Texture *image)
+void display_single(SDL_Texture *image, int width, int height)
 {
     SDL_FRect dst;
     SDL_GetTextureSize(image, &dst.w, &dst.h);
@@ -20,7 +19,7 @@ void display_single(SDL_Texture *image)
     SDL_RenderTexture(renderer, image, nullptr, &dst);
 }
 
-void display_book(SDL_Texture *image1, SDL_Texture *image2)
+void display_book(SDL_Texture *image1, SDL_Texture *image2, int width, int height)
 {
     SDL_FRect dst1, dst2;
     SDL_GetTextureSize(image1, &dst1.w, &dst1.h);
@@ -43,19 +42,19 @@ void display_book(SDL_Texture *image1, SDL_Texture *image2)
     SDL_RenderTexture(renderer, image2, nullptr, &dst2);
 }
 
-void display_strip(struct appstate *s)
+void display_strip(SDL_Texture **images, int num, float scroll, float zoom, int width, int height)
 {
     float w;
-    SDL_GetTextureSize(s->images[0], &w, nullptr);
-    float distance = -s->scroll * s->zoom * width / w;
+    SDL_GetTextureSize(images[0], &w, nullptr);
+    float distance = -scroll * zoom * width / w;
 
-    for (int i = 0; i < arrlen(s->images); i++) {
-        SDL_Texture *image = s->images[i];
+    for (int i = 0; i < num; i++) {
+        SDL_Texture *image = images[i];
 
         SDL_FRect dst;
         SDL_GetTextureSize(image, &dst.w, &dst.h);
 
-        float scale = s->zoom * width / dst.w;
+        float scale = zoom * width / dst.w;
         dst.x = (width / scale - dst.w) / 2;
         dst.y = distance / scale;
         distance += dst.h * scale;
@@ -65,19 +64,19 @@ void display_strip(struct appstate *s)
     }
 }
 
-void display_strip_rotated(struct appstate *s)
+void display_strip_rotated(SDL_Texture **images, int num, float scroll, float hzoom, int width, int height)
 {
     float w;
-    SDL_GetTextureSize(s->images[0], &w, nullptr);
-    float distance = width + s->scroll * s->hzoom * height / w;
+    SDL_GetTextureSize(images[0], &w, nullptr);
+    float distance = width + scroll * hzoom * height / w;
 
-    for (int i = 0; i < arrlen(s->images); i++) {
-        SDL_Texture *image = s->images[i];
+    for (int i = 0; i < num; i++) {
+        SDL_Texture *image = images[i];
 
         SDL_FRect dst;
         SDL_GetTextureSize(image, &dst.w, &dst.h);
 
-        float scale = s->hzoom * height / dst.w;
+        float scale = hzoom * height / dst.w;
         dst.x = distance / scale - (dst.w + dst.h) / 2;
         dst.y = (height / scale - dst.h) / 2;
         distance -= dst.h * scale;
@@ -87,7 +86,7 @@ void display_strip_rotated(struct appstate *s)
     }
 }
 
-void display_progress()
+void display_progress(int width, int height)
 {
     int w, h;
     TTF_GetTextSize(progress_text, &w, &h);
@@ -102,4 +101,42 @@ void display_progress()
     SDL_SetRenderDrawColorFloat(renderer, 0, 0, 0, 0.7);
     SDL_RenderFillRect(renderer, &(SDL_FRect){x - mx, y - my, w + 2*mx, h + 2*my});
     TTF_DrawRendererText(progress_text, x, y);
+}
+
+void display(struct appstate *s)
+{
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    SDL_RenderClear(renderer);
+
+    int num = s->end - s->start + 1;
+    SDL_Texture *images[num];
+    for (int i = 0; i < num; i++)
+        images[i] = get_image(s->start + i, s);
+
+    switch (s->mode) {
+    case SINGLE:
+        display_single(images[0], s->width, s->height);
+        break;
+
+    case BOOK:
+        if (s->start == s->end)
+            display_single(images[0], s->width, s->height);
+        else
+            display_book(images[1], images[0], s->width, s->height);
+        break;
+
+    case STRIP:
+        if (!s->rotated)
+            display_strip(images, num, s->scroll, s->wzoom, s->width, s->height);
+        else
+            display_strip_rotated(images, num, s->scroll, s->hzoom, s->width, s->height);
+        break;
+    }
+
+    if (s->show_progress) {
+        update_progress_text(s);
+        display_progress(s->width, s->height);
+    }
+
+    SDL_RenderPresent(renderer);
 }

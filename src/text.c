@@ -1,6 +1,6 @@
 #include "headers.h"
 
-extern SDL_Renderer *renderer;
+extern SDL_Renderer *const renderer;
 
 static TTF_TextEngine *engine = nullptr;
 static TTF_Font *progress_font = nullptr;

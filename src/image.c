@@ -5,7 +5,6 @@
 
 extern char *const dirpath;
 extern char **const files;
-extern const int width, height;
 
 static const int load_before = 2;
 static const int load_after = 4;
@@ -52,8 +51,10 @@ void update_images(struct appstate *s)
         while (lstart + arrlen(loaded) <= end)
             arrput(loaded, load_img(lstart + arrlen(loaded), s));
     }
+}
 
-    arrfree(s->images);
-    for (int i = s->start; i <= s->end; i++)
-        arrput(s->images, loaded[i-lstart]);
+SDL_Texture *get_image(int idx, struct appstate *s)
+{
+    update_images(s);
+    return loaded[idx - lstart];
 }
