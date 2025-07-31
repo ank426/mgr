@@ -81,7 +81,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
 
 SDL_AppResult SDL_AppIterate(void *appstate)
 {
-    SDL_Delay(1000 / 240);
+    SDL_Delay(1000 / 60);
     return SDL_APP_CONTINUE;
 }
 
