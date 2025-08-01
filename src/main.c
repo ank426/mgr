@@ -37,7 +37,7 @@ void init_state(struct appstate *s)
         .automode = conf.automode,
         .mode = conf.mode,
         .rotated = false,
-        .scroll = 0.0,
+        .scroll = 0.,
         .wzoom = conf.wzoom,
         .hzoom = conf.hzoom,
         .show_progress = false,

@@ -4,49 +4,65 @@ extern SDL_Renderer *const renderer;
 extern const int progress_font_size;
 extern TTF_Text *const progress_text;
 
-void display_single(SDL_Texture *image, int width, int height)
+void display_single(SDL_Texture *image, double rotation, int width, int height)
 {
     SDL_FRect dst;
     SDL_GetTextureSize(image, &dst.w, &dst.h);
 
-    float sw = width / dst.w;
-    float sh = height / dst.h;
-    float scale = sw < sh ? sw : sh;
+    double c = fabs(cospi(rotation/180)), s = fabs(sinpi(rotation/180));
+    double nw = dst.w * c + dst.h * s;
+    double nh = dst.w * s + dst.h * c;
+    float scale = fminf(width / nw, height / nh);
+
     dst.x = (width / scale - dst.w) / 2;
     dst.y = (height / scale - dst.h) / 2;
 
     SDL_SetRenderScale(renderer, scale, scale);
-    SDL_RenderTexture(renderer, image, nullptr, &dst);
+    SDL_RenderTextureRotated(renderer, image, nullptr, &dst, rotation, nullptr, SDL_FLIP_NONE);
 }
 
-void display_book(SDL_Texture *image1, SDL_Texture *image2, int width, int height)
+void display_book(SDL_Texture *image1, SDL_Texture *image2, double rotation, int width, int height)
 {
     SDL_FRect dst1, dst2;
     SDL_GetTextureSize(image1, &dst1.w, &dst1.h);
     SDL_GetTextureSize(image2, &dst2.w, &dst2.h);
 
     float s2_s1 = dst1.h / dst2.h;
-    float sw = width / (dst1.w + s2_s1 * dst2.w);
-    float sh = height / dst1.h;
-    float scale1 = sw < sh ? sw : sh;
+    double w = dst1.w + dst2.w * s2_s1;
+    double c = fabs(cospi(rotation/180)), s = fabs(sinpi(rotation/180));
+    double nw = w * c + dst1.h * s;
+    double nh = w * s + dst1.h * c;
+    float scale1 = fminf(width / nw, height / nh);
     float scale2 = scale1 * s2_s1;
 
-    dst1.x = ((width - scale2 * dst2.w) / scale1 - dst1.w) / 2;
+    dst1.x = (width / scale1 - dst1.w - dst2.w * s2_s1) / 2;
+    dst2.x = (width / scale2 - dst2.w + dst1.w / s2_s1) / 2;
     dst1.y = (height / scale1 - dst1.h) / 2;
-    dst2.x = ((width + scale1 * dst1.w) / scale2 - dst2.w) / 2;
     dst2.y = (height / scale2 - dst2.h) / 2;
 
+    SDL_FPoint center1 = {(dst1.w + dst2.w * s2_s1) / 2, dst1.h / 2};
+    SDL_FPoint center2 = {(dst2.w - dst1.w / s2_s1) / 2, dst2.h / 2};
+
     SDL_SetRenderScale(renderer, scale1, scale1);
-    SDL_RenderTexture(renderer, image1, nullptr, &dst1);
+    SDL_RenderTextureRotated(renderer, image1, nullptr, &dst1, rotation, &center1, SDL_FLIP_NONE);
     SDL_SetRenderScale(renderer, scale2, scale2);
-    SDL_RenderTexture(renderer, image2, nullptr, &dst2);
+    SDL_RenderTextureRotated(renderer, image2, nullptr, &dst2, rotation, &center2, SDL_FLIP_NONE);
 }
 
-void display_strip(SDL_Texture **images, int num, float scroll, float zoom, int width, int height)
+void display_strip(int num, SDL_Texture *images[num], double rotation, float scroll,
+                   float wzoom, float hzoom, int width, int height)
 {
+    double c = fabs(cospi(rotation/180)), s = fabs(sinpi(rotation/180));
+
+    double wh = wzoom * width * c * c + hzoom * height * s * s;
+
     float w;
     SDL_GetTextureSize(images[0], &w, nullptr);
-    float distance = -scroll * zoom * width / w;
+
+    double tip_x = ((wh * c - width) / s + height) / 2;
+    double tip_y = ((wh * s - height) / c + height) / 2;
+
+    float distance = -scroll * wh / w + fmax(tip_x, tip_y);
 
     for (int i = 0; i < num; i++) {
         SDL_Texture *image = images[i];
@@ -54,7 +70,32 @@ void display_strip(SDL_Texture **images, int num, float scroll, float zoom, int 
         SDL_FRect dst;
         SDL_GetTextureSize(image, &dst.w, &dst.h);
 
-        float scale = zoom * width / dst.w;
+        float scale = wh / dst.w;
+        dst.x = (width / scale - dst.w) / 2;
+        dst.y = distance / scale;
+
+        SDL_FPoint center = {dst.w / 2, (height / 2. - distance) / scale};
+
+        SDL_SetRenderScale(renderer, scale, scale);
+        SDL_RenderTextureRotated(renderer, image, nullptr, &dst, rotation, &center, SDL_FLIP_NONE);
+
+        distance += dst.h * scale;
+    }
+}
+
+void old_display_strip(SDL_Texture **images, int num, float scroll, float wzoom, int width, int height)
+{
+    float w;
+    SDL_GetTextureSize(images[0], &w, nullptr);
+    float distance = -scroll * wzoom * width / w;
+
+    for (int i = 0; i < num; i++) {
+        SDL_Texture *image = images[i];
+
+        SDL_FRect dst;
+        SDL_GetTextureSize(image, &dst.w, &dst.h);
+
+        float scale = wzoom * width / dst.w;
         dst.x = (width / scale - dst.w) / 2;
         dst.y = distance / scale;
         distance += dst.h * scale;
@@ -113,23 +154,26 @@ void display(struct appstate *s)
     for (int i = 0; i < num; i++)
         images[i] = get_image(s->start + i, s);
 
+    double rotation = 0;
+
     switch (s->mode) {
     case SINGLE:
-        display_single(images[0], s->width, s->height);
+        display_single(images[0], rotation, s->width, s->height);
         break;
 
     case BOOK:
         if (s->start == s->end)
-            display_single(images[0], s->width, s->height);
+            display_single(images[0], rotation, s->width, s->height);
         else
-            display_book(images[1], images[0], s->width, s->height);
+            display_book(images[1], images[0], rotation, s->width, s->height);
         break;
 
     case STRIP:
-        if (!s->rotated)
-            display_strip(images, num, s->scroll, s->wzoom, s->width, s->height);
-        else
-            display_strip_rotated(images, num, s->scroll, s->hzoom, s->width, s->height);
+        display_strip(num, images, rotation, s->scroll, s->wzoom, s->hzoom, s->width, s->height);
+        // if (!s->rotated)
+        //     display_strip(images, num, s->scroll, s->wzoom, s->width, s->height);
+        // else
+        //     display_strip_rotated(images, num, s->scroll, s->hzoom, s->width, s->height);
         break;
     }
 

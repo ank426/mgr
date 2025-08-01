@@ -21,6 +21,7 @@
 #include <stb/stb_ds.h>
 
 #include <assert.h>
+#include <math.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
