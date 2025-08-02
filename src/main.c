@@ -70,10 +70,13 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
 {
     struct appstate *s = appstate;
 
-    if (event->type == SDL_EVENT_QUIT)
-        return SDL_APP_SUCCESS;
+    SDL_AppResult res = handle_event(event, s);
+    if (res != SDL_APP_CONTINUE)
+        return res;
 
-    handle_event(event, s);
+    fix_page(s);
+    if (readlist)
+        write_readlist(files[s->file], s->start, s->scroll);
     display(s);
 
     return SDL_APP_CONTINUE;

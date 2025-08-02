@@ -1,6 +1,6 @@
 #include "headers.h"
 
-struct bind single_binds[] = {
+static struct bind single_binds[] = {
     { SDL_KMOD_NONE,   SDL_SCANCODE_Q, &quit,       ""       },
     { SDL_KMOD_NONE,   SDL_SCANCODE_M, &set_mode,   "book"   },
     { SDL_KMOD_NONE,   SDL_SCANCODE_F, &fullscreen, "toggle" },
@@ -14,9 +14,8 @@ struct bind single_binds[] = {
     { SDL_KMOD_NONE,   SDL_SCANCODE_J, &page,       "next"   },
     { SDL_KMOD_NONE,   SDL_SCANCODE_K, &page,       "prev"   },
 };
-int n_single_binds = sizeof(single_binds) / sizeof(struct bind);
 
-struct bind book_binds[] = {
+static struct bind book_binds[] = {
     { SDL_KMOD_NONE,   SDL_SCANCODE_Q, &quit,       ""       },
     { SDL_KMOD_NONE,   SDL_SCANCODE_M, &set_mode,   "strip"  },
     { SDL_KMOD_NONE,   SDL_SCANCODE_F, &fullscreen, "toggle" },
@@ -31,9 +30,8 @@ struct bind book_binds[] = {
     { SDL_KMOD_NONE,   SDL_SCANCODE_J, &flip,       "next"   },
     { SDL_KMOD_NONE,   SDL_SCANCODE_K, &flip,       "prev"   },
 };
-int n_book_binds = sizeof(book_binds) / sizeof(struct bind);
 
-struct bind strip_binds[] = {
+static struct bind strip_binds[] = {
     { SDL_KMOD_NONE,   SDL_SCANCODE_Q,      &quit,       ""       },
     { SDL_KMOD_NONE,   SDL_SCANCODE_M,      &set_mode,   "single" },
     { SDL_KMOD_NONE,   SDL_SCANCODE_F,      &fullscreen, "toggle" },
@@ -51,4 +49,26 @@ struct bind strip_binds[] = {
     { SDL_KMOD_LSHIFT, SDL_SCANCODE_MINUS,  &set_hzoom,  "-0.05"  },
     { SDL_KMOD_LSHIFT, SDL_SCANCODE_EQUALS, &set_hzoom,  "+0.05"  },
 };
-int n_strip_binds = sizeof(strip_binds) / sizeof(struct bind);
+
+
+struct bind *get_binds(enum modes mode) {
+    switch (mode) {
+    case SINGLE:
+        return single_binds;
+    case BOOK:
+        return book_binds;
+    case STRIP:
+        return strip_binds;
+    }
+}
+
+int get_num_binds(enum modes mode) {
+    switch (mode) {
+    case SINGLE:
+        return sizeof(single_binds)/sizeof(struct bind);
+    case BOOK:
+        return sizeof(book_binds)/sizeof(struct bind);
+    case STRIP:
+        return sizeof(strip_binds)/sizeof(struct bind);
+    }
+}

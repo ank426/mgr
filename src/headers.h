@@ -7,6 +7,7 @@
 #include "event.h"
 #include "image.h"
 #include "interval.h"
+#include "keybinds.h"
 #include "keybinds_impl.h"
 #include "natsort.h"
 #include "readlist.h"
