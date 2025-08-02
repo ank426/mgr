@@ -37,7 +37,7 @@ int nat_cmp(const void *name1, const void *name2)
         return 1;
 }
 
-void nat_sort(char **files, int n)
+void nat_sort(int n, char **const files)
 {
     qsort(files, n, sizeof(char *), nat_cmp);
 }

@@ -49,7 +49,7 @@ void generate_readlist(struct appstate *s)
     int n;
     files = SDL_GlobDirectory(dirpath, "*.cbz", 0, &n);
     assert(files != nullptr);
-    nat_sort(files, n);
+    nat_sort(n, files);
 
     write_readlist(filename != nullptr ? filename : files[0], s->start, s->scroll);
 

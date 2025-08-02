@@ -18,7 +18,7 @@ void cleanup()
     arrfree(args);
 }
 
-void get_args(const int argc, char *const *const argv)
+void get_args(const int argc, char *const argv[])
 {
     struct option longopts[] = {
         {"generate", no_argument,       nullptr, 'g'},

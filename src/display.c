@@ -79,50 +79,6 @@ void display_strip(int num, SDL_Texture *images[num], double rotation, float scr
     }
 }
 
-void old_display_strip(SDL_Texture **images, int num, float scroll, float wzoom, int width, int height)
-{
-    float w;
-    SDL_GetTextureSize(images[0], &w, nullptr);
-    float distance = -scroll * wzoom * width / w;
-
-    for (int i = 0; i < num; i++) {
-        SDL_Texture *image = images[i];
-
-        SDL_FRect dst;
-        SDL_GetTextureSize(image, &dst.w, &dst.h);
-
-        float scale = wzoom * width / dst.w;
-        dst.x = (width / scale - dst.w) / 2;
-        dst.y = distance / scale;
-        distance += dst.h * scale;
-
-        SDL_SetRenderScale(renderer, scale, scale);
-        SDL_RenderTexture(renderer, image, nullptr, &dst);
-    }
-}
-
-void display_strip_rotated(SDL_Texture **images, int num, float scroll, float hzoom, int width, int height)
-{
-    float w;
-    SDL_GetTextureSize(images[0], &w, nullptr);
-    float distance = width + scroll * hzoom * height / w;
-
-    for (int i = 0; i < num; i++) {
-        SDL_Texture *image = images[i];
-
-        SDL_FRect dst;
-        SDL_GetTextureSize(image, &dst.w, &dst.h);
-
-        float scale = hzoom * height / dst.w;
-        dst.x = distance / scale - (dst.w + dst.h) / 2;
-        dst.y = (height / scale - dst.h) / 2;
-        distance -= dst.h * scale;
-
-        SDL_SetRenderScale(renderer, scale, scale);
-        SDL_RenderTextureRotated(renderer, image, nullptr, &dst, 90, nullptr, SDL_FLIP_NONE);
-    }
-}
-
 void display_progress(int width, int height)
 {
     int w, h;
