@@ -9,11 +9,11 @@ void update_intervals(const struct page *const pages)
     int s = 0;
     bool in = false;
     for (int i = 0; i < arrlen(pages); i++) {
-        if (!in && !pages[i].wide) {
+        if (!in && pages[i].inv_ar >= 1) {
             s = i;
             in = true;
         }
-        if (in && pages[i].wide) {
+        if (in && pages[i].inv_ar < 1) {
             arrput(intervals, ((struct interval){s, i, false}));
             in = false;
         }

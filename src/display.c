@@ -56,13 +56,9 @@ void display_strip(int num, SDL_Texture *images[num], double rotation, float scr
 
     double wh = wzoom * width * c * c + hzoom * height * s * s;
 
-    float w;
-    SDL_GetTextureSize(images[0], &w, nullptr);
-
     double tip_x = ((wh * c - width) / s + height) / 2;
     double tip_y = ((wh * s - height) / c + height) / 2;
-
-    float distance = -scroll * wh / w + fmax(tip_x, tip_y);
+    float distance = -scroll * wh + fmax(tip_x, tip_y);
 
     for (int i = 0; i < num; i++) {
         SDL_Texture *image = images[i];
@@ -154,26 +150,20 @@ void display(struct appstate *s)
     for (int i = 0; i < num; i++)
         images[i] = get_image(s->start + i, s);
 
-    double rotation = 0;
-
     switch (s->mode) {
     case SINGLE:
-        display_single(images[0], rotation, s->width, s->height);
+        display_single(images[0], s->rotation, s->width, s->height);
         break;
 
     case BOOK:
         if (s->start == s->end)
-            display_single(images[0], rotation, s->width, s->height);
+            display_single(images[0], s->rotation, s->width, s->height);
         else
-            display_book(images[1], images[0], rotation, s->width, s->height);
+            display_book(images[1], images[0], s->rotation, s->width, s->height);
         break;
 
     case STRIP:
-        display_strip(num, images, rotation, s->scroll, s->wzoom, s->hzoom, s->width, s->height);
-        // if (!s->rotated)
-        //     display_strip(images, num, s->scroll, s->wzoom, s->width, s->height);
-        // else
-        //     display_strip_rotated(images, num, s->scroll, s->hzoom, s->width, s->height);
+        display_strip(num, images, s->rotation, s->scroll, s->wzoom, s->hzoom, s->width, s->height);
         break;
     }
 

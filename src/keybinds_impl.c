@@ -45,7 +45,7 @@ void fullscreen(const char *args, struct appstate *s)
 
 void offset(const char *args, struct appstate *s)
 {
-    if (s->pages[s->start].wide)
+    if (s->pages[s->start].inv_ar < 1)
         return;
 
     if (strcmp(args, "true") == 0)
@@ -86,7 +86,7 @@ void bottom(const char *args, struct appstate *s)
         s->scroll = 0;
         fix_page(s);
     } else {
-        s->scroll = arrlast(s->pages).height;
+        s->scroll = arrlast(s->pages).inv_ar - 1e-6;
         scroll("-1", s);
     }
 }
@@ -95,24 +95,22 @@ void file(const char *args, struct appstate *s)
 {
     if (strcmp(args, "next") == 0) {
         if (s->file == arrlen(files) - 1) {
-            s->scroll = s->mode == STRIP ? s->pages[s->start].height : 0;
-            return;
+            s->scroll = s->mode == STRIP ? s->pages[s->start].inv_ar - 1e-6 : 0;
+            return fix_page(s);
         }
         load_file(files[++s->file], s);
         s->start = 0;
         s->scroll = 0;
     }
-
     else if (strcmp(args, "prev") == 0) {
         if (s->file == 0) {
             s->scroll = 0;
-            return;
+            return fix_page(s);
         }
         load_file(files[--s->file], s);
         s->start = arrlen(s->pages) - 1;
-        s->scroll = s->mode == STRIP ? s->pages[s->start].height : 0;
+        s->scroll = s->mode == STRIP ? s->pages[s->start].inv_ar - 1e-6 : 0;
     }
-
     else
         assert(false);
 
@@ -126,13 +124,11 @@ void page(const char *args, struct appstate *s)
             return file("next", s);
         s->start++;
     }
-
     else if (strcmp(args, "prev") == 0) {
         if (s->start == 0)
             return file("prev", s);
         s->start--;
     }
-
     else
         assert(false);
 
@@ -161,43 +157,21 @@ void flip(const char *args, struct appstate *s)
 
 void scroll(const char *args, struct appstate *s)
 {
-    s->scroll += atof(args) * s->height * s->pages[s->start].width / s->wzoom / s->width;
-
-    while (true)
-        if (s->scroll >= s->pages[s->start].height) {
-            if (s->start == arrlen(s->pages) - 1)
-                return file("next", s);
-            s->scroll -= s->pages[s->start++].height;
-            s->scroll *= s->pages[s->start].width / s->pages[s->start-1].width;
-        }
-
-        else if (s->scroll < 0) {
-            if (s->start == 0)
-                return file("prev", s);
-            s->scroll *= s->pages[s->start-1].width / s->pages[s->start].width;
-            s->scroll += s->pages[--s->start].height;
-        }
-
-        else
-            break;
-
+    s->scroll += atof(args) * s->height / s->wzoom / s->width;
     fix_page(s);
 }
 
 void rotate(const char *args, struct appstate *s)
 {
-    if (strcmp(args, "true") == 0)
-        s->rotated = true;
-    else if (strcmp(args, "false") == 0)
-        s->rotated = false;
-    else if (strcmp(args, "toggle") == 0)
-        s->rotated ^= 1;
-    else
-        assert(false);
+    s->rotation += (long double)atof(args);
+    if (s->rotation > 180)
+        s->rotation -= 360;
+    if (s->rotation <= -180)
+        s->rotation += 360;
     fix_page(s);
 }
 
-void set_zoom(const char *args, struct appstate *s)
+void set_wzoom(const char *args, struct appstate *s)
 {
     if (args[0] == '+')
         s->wzoom += atof(args + 1);

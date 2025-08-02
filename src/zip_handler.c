@@ -36,7 +36,7 @@ void update_pages_from_zip(struct page **ptr_pages, const char *const path)
         int w, h, channels;
         assert(stbi_info_from_memory(buffer, stat.size, &w, &h, &channels));
 
-        arrput(*ptr_pages, ((struct page){strdup(stat.name), w, h, w>h}));
+        arrput(*ptr_pages, ((struct page){strdup(stat.name), w, h, (float)h/w}));
 
         free(buffer);
         zip_fclose(file);

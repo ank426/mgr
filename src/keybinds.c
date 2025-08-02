@@ -7,6 +7,8 @@ struct bind single_binds[] = {
     { SDL_KMOD_NONE,   SDL_SCANCODE_S, &progress,   "toggle" },
     { SDL_KMOD_NONE,   SDL_SCANCODE_G, &top,        ""       },
     { SDL_KMOD_LSHIFT, SDL_SCANCODE_G, &bottom,     ""       },
+    { SDL_KMOD_NONE,   SDL_SCANCODE_R, &rotate,     "+15"    },
+    { SDL_KMOD_NONE,   SDL_SCANCODE_E, &rotate,     "-15"    },
     { SDL_KMOD_NONE,   SDL_SCANCODE_J, &page,       "next"   },
     { SDL_KMOD_NONE,   SDL_SCANCODE_K, &page,       "prev"   },
 };
@@ -20,6 +22,8 @@ struct bind book_binds[] = {
     { SDL_KMOD_NONE,   SDL_SCANCODE_O, &offset,     "toggle" },
     { SDL_KMOD_NONE,   SDL_SCANCODE_G, &top,        ""       },
     { SDL_KMOD_LSHIFT, SDL_SCANCODE_G, &bottom,     ""       },
+    { SDL_KMOD_NONE,   SDL_SCANCODE_R, &rotate,     "+15"    },
+    { SDL_KMOD_NONE,   SDL_SCANCODE_E, &rotate,     "-15"    },
     { SDL_KMOD_NONE,   SDL_SCANCODE_J, &flip,       "next"   },
     { SDL_KMOD_NONE,   SDL_SCANCODE_K, &flip,       "prev"   },
 };
@@ -32,12 +36,13 @@ struct bind strip_binds[] = {
     { SDL_KMOD_NONE,   SDL_SCANCODE_S,      &progress,   "toggle" },
     { SDL_KMOD_NONE,   SDL_SCANCODE_G,      &top,        ""       },
     { SDL_KMOD_LSHIFT, SDL_SCANCODE_G,      &bottom,     ""       },
+    { SDL_KMOD_NONE,   SDL_SCANCODE_R,      &rotate,     "+15"    },
+    { SDL_KMOD_NONE,   SDL_SCANCODE_E,      &rotate,     "-15"    },
     { SDL_KMOD_NONE,   SDL_SCANCODE_J,      &scroll,     "+0.5"   },
     { SDL_KMOD_NONE,   SDL_SCANCODE_K,      &scroll,     "-0.5"   },
-    { SDL_KMOD_NONE,   SDL_SCANCODE_R,      &rotate,     "toggle" },
-    { SDL_KMOD_NONE,   SDL_SCANCODE_MINUS,  &set_zoom,   "-0.05"   },
-    { SDL_KMOD_NONE,   SDL_SCANCODE_EQUALS, &set_zoom,   "+0.05"   },
-    { SDL_KMOD_LSHIFT, SDL_SCANCODE_MINUS,  &set_hzoom,  "-0.05"   },
-    { SDL_KMOD_LSHIFT, SDL_SCANCODE_EQUALS, &set_hzoom,  "+0.05"   },
+    { SDL_KMOD_NONE,   SDL_SCANCODE_MINUS,  &set_wzoom,  "-0.05"  },
+    { SDL_KMOD_NONE,   SDL_SCANCODE_EQUALS, &set_wzoom,  "+0.05"  },
+    { SDL_KMOD_LSHIFT, SDL_SCANCODE_MINUS,  &set_hzoom,  "-0.05"  },
+    { SDL_KMOD_LSHIFT, SDL_SCANCODE_EQUALS, &set_hzoom,  "+0.05"  },
 };
 int n_strip_binds = sizeof(strip_binds) / sizeof(struct bind);

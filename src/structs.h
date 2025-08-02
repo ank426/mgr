@@ -5,7 +5,7 @@
 struct page {
     char *name;
     float width, height;
-    bool wide;
+    float inv_ar;
 };
 
 struct interval {
@@ -33,7 +33,7 @@ struct appstate {
     int start, end;
     bool automode;
     enum modes mode;
-    bool rotated;
+    double rotation;
     float scroll;
     float wzoom, hzoom;
     bool show_progress;
