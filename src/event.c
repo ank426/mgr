@@ -54,4 +54,6 @@ void handle_event(SDL_Event *event, struct appstate *s)
             scroll(buffer, s);
         }
     }
+
+    fix_page(s);
 }

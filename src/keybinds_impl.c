@@ -25,8 +25,6 @@ void set_mode(const char *args, struct appstate *s)
         s->mode = calc_mode(s->pages);
     } else
         assert(false);
-
-    fix_page(s);
 }
 
 void fullscreen(const char *args, struct appstate *s)
@@ -39,8 +37,6 @@ void fullscreen(const char *args, struct appstate *s)
         SDL_SetWindowFullscreen(window, !(SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN));
     else
         assert(false);
-
-    fix_page(s);
 }
 
 void offset(const char *args, struct appstate *s)
@@ -56,8 +52,6 @@ void offset(const char *args, struct appstate *s)
         get_interval(s->start)->offset ^= 1;
     else
         assert(false);
-
-    fix_page(s);
 }
 
 void progress(const char *args, struct appstate *s)
@@ -76,16 +70,14 @@ void top(const char *args, struct appstate *s)
 {
     s->start = 0;
     s->scroll = 0;
-    fix_page(s);
 }
 
 void bottom(const char *args, struct appstate *s)
 {
     s->start = arrlen(s->pages) - 1;
-    if (s->mode != STRIP) {
+    if (s->mode != STRIP)
         s->scroll = 0;
-        fix_page(s);
-    } else {
+    else {
         s->scroll = arrlast(s->pages).inv_ar - 1e-6;
         scroll("-1", s);
     }
@@ -96,7 +88,7 @@ void file(const char *args, struct appstate *s)
     if (strcmp(args, "next") == 0) {
         if (s->file == arrlen(files) - 1) {
             s->scroll = s->mode == STRIP ? s->pages[s->start].inv_ar - 1e-6 : 0;
-            return fix_page(s);
+            return;
         }
         load_file(files[++s->file], s);
         s->start = 0;
@@ -105,7 +97,7 @@ void file(const char *args, struct appstate *s)
     else if (strcmp(args, "prev") == 0) {
         if (s->file == 0) {
             s->scroll = 0;
-            return fix_page(s);
+            return;
         }
         load_file(files[--s->file], s);
         s->start = arrlen(s->pages) - 1;
@@ -113,8 +105,6 @@ void file(const char *args, struct appstate *s)
     }
     else
         assert(false);
-
-    fix_page(s);
 }
 
 void page(const char *args, struct appstate *s)
@@ -133,7 +123,6 @@ void page(const char *args, struct appstate *s)
         assert(false);
 
     s->scroll = 0;
-    fix_page(s);
 }
 
 void flip(const char *args, struct appstate *s)
@@ -152,23 +141,26 @@ void flip(const char *args, struct appstate *s)
         assert(false);
 
     s->scroll = 0;
-    fix_page(s);
 }
 
 void scroll(const char *args, struct appstate *s)
 {
     s->scroll += atof(args) * s->height / s->wzoom / s->width;
-    fix_page(s);
 }
 
 void rotate(const char *args, struct appstate *s)
 {
-    s->rotation += (long double)atof(args);
+    if (strncmp(args, "set", sizeof("set") - 1) == 0)
+        s->rotation = atof(args + sizeof("set"));
+    else if (strncmp(args, "toggle", sizeof("toggle") - 1) == 0)
+        s->rotation = s->rotation == 0 ? atof(args + sizeof("toggle")) : 0;
+    else
+        s->rotation += strtold(args, nullptr);
+
     if (s->rotation > 180)
-        s->rotation -= 360;
+        s->rotation -= 360 * (int)((s->rotation + 180) / 360 - 1e-6);
     if (s->rotation <= -180)
-        s->rotation += 360;
-    fix_page(s);
+        s->rotation += 360 * (int)(-(s->rotation - 180) / 360);
 }
 
 void set_wzoom(const char *args, struct appstate *s)
@@ -179,7 +171,6 @@ void set_wzoom(const char *args, struct appstate *s)
         s->wzoom -= atof(args + 1);
     else
         s->wzoom = atof(args);
-    fix_page(s);
 }
 
 void set_hzoom(const char *args, struct appstate *s)
@@ -190,5 +181,4 @@ void set_hzoom(const char *args, struct appstate *s)
         s->hzoom -= atof(args + 1);
     else
         s->hzoom = atof(args);
-    fix_page(s);
 }
