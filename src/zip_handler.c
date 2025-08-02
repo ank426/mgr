@@ -4,15 +4,13 @@
 #include <stb/stb_image.h>
 #include <zip.h>
 
-extern SDL_Renderer *renderer;
-
-void update_pages_from_zip(struct page **ptr_pages, const char *const path)
+void update_pages_from_zip(struct page **const ptr_pages, const char *const path)
 {
     int err;
     zip_t *archive = zip_open(path, ZIP_RDONLY, &err);
     assert(archive != nullptr);
 
-    int total_entries = zip_get_num_entries(archive, 0);
+    zip_int64_t total_entries = zip_get_num_entries(archive, 0);
     assert(total_entries >= 0);
 
     arrfree(*ptr_pages);
@@ -45,7 +43,7 @@ void update_pages_from_zip(struct page **ptr_pages, const char *const path)
     zip_close(archive);
 }
 
-SDL_Texture *load_image_from_zip(char *pagename, const char *const path)
+SDL_Surface *load_image_from_zip(char *const pagename, const char *const path)
 {
     int err;
     zip_t *archive = zip_open(path, ZIP_RDONLY, &err);
@@ -60,13 +58,13 @@ SDL_Texture *load_image_from_zip(char *pagename, const char *const path)
     char *buffer = malloc(stat.size);
     assert(buffer != nullptr);
 
-    long bytes_read = zip_fread(file, buffer, stat.size);
+    zip_int64_t bytes_read = zip_fread(file, buffer, stat.size);
     assert(bytes_read >= 0);
 
     SDL_IOStream *io = SDL_IOFromConstMem(buffer, bytes_read);
     assert(io != nullptr);
 
-    SDL_Texture *image = IMG_LoadTexture_IO(renderer, io, true);
+    SDL_Surface *image = IMG_Load_IO(io, true);
     assert(image != nullptr);
 
     free(buffer);

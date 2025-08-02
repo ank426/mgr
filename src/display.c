@@ -49,7 +49,7 @@ void display_book(SDL_Texture *image1, SDL_Texture *image2, double rotation, int
     SDL_RenderTextureRotated(renderer, image2, nullptr, &dst2, rotation, &center2, SDL_FLIP_NONE);
 }
 
-void display_strip(int num, SDL_Texture *images[num], double rotation, float scroll,
+void display_strip(SDL_Texture **images, double rotation, float scroll,
                    float wzoom, float hzoom, int width, int height)
 {
     double c = fabs(cospi(rotation/180)), s = fabs(sinpi(rotation/180));
@@ -60,7 +60,7 @@ void display_strip(int num, SDL_Texture *images[num], double rotation, float scr
     double tip_y = ((wh * s - height) / c + height) / 2;
     float distance = -scroll * wh + fmax(tip_x, tip_y);
 
-    for (int i = 0; i < num; i++) {
+    for (int i = 0; i < arrlen(images); i++) {
         SDL_Texture *image = images[i];
 
         SDL_FRect dst;
@@ -101,10 +101,7 @@ void display(struct appstate *s)
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
 
-    int num = s->end - s->start + 1;
-    SDL_Texture *images[num];
-    for (int i = 0; i < num; i++)
-        images[i] = get_image(s->start + i, s);
+    SDL_Texture **images = get_images(s);
 
     switch (s->mode) {
     case SINGLE:
@@ -119,7 +116,7 @@ void display(struct appstate *s)
         break;
 
     case STRIP:
-        display_strip(num, images, s->rotation, s->scroll, s->wzoom, s->hzoom, s->width, s->height);
+        display_strip(images, s->rotation, s->scroll, s->wzoom, s->hzoom, s->width, s->height);
         break;
     }
 

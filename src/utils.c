@@ -5,6 +5,8 @@ extern char **const files;
 
 void load_file(char *const path, struct appstate *s)
 {
+    free_surfaces();
+    free_textures();
     update_pages_from_zip(&s->pages, path);
     nat_sort_pages(s->pages);
     update_intervals(s->pages);
@@ -53,14 +55,18 @@ void fix_page(struct appstate *s)
         double cr = fabs(cospi(s->rotation/180)), sr = fabs(sinpi(s->rotation/180));
 
         while (s->scroll >= s->pages[s->start].inv_ar) {
-            if (s->start == arrlen(s->pages) - 1)
-                return file("next", s);
+            if (s->start == arrlen(s->pages) - 1) {
+                file("next", s);
+                break;
+            }
             s->scroll -= s->pages[s->start++].inv_ar;
         }
 
         while (s->scroll < (s->start == 0 ? 0 : sr)) {
-            if (s->start == 0)
-                return file("prev", s);
+            if (s->start == 0) {
+                file("prev", s);
+                break;
+            }
             s->scroll += s->pages[--s->start].inv_ar;
         }
 
