@@ -1,8 +1,6 @@
 #include "headers.h"
 
 extern SDL_Renderer *renderer;
-extern char *const dirpath;
-extern char **const files;
 
 static bool *blank = nullptr;
 static SDL_Texture **textures = nullptr;
