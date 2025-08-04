@@ -8,15 +8,14 @@ static bool *blank = nullptr;
 static SDL_Texture **textures = nullptr;
 static int tex_start = 0;
 
-SDL_Texture *make_texture(SDL_Surface *surf, int width, int height)
+SDL_Texture *make_texture(int width, int height)
 {
-    SDL_Texture *ret = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_TARGET, width, height);
-    SDL_Texture *target = SDL_GetRenderTarget(renderer);
-    SDL_SetRenderTarget(renderer, ret);
+    SDL_Texture *texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_TARGET, width, height);
+    SDL_SetRenderTarget(renderer, texture);
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
-    SDL_SetRenderTarget(renderer, target);
-    return ret;
+    SDL_SetRenderTarget(renderer, nullptr);
+    return texture;
 }
 
 void update_textures(int start, int end, struct page *pages)
@@ -54,7 +53,7 @@ void update_textures(int start, int end, struct page *pages)
             arrins(textures, 0, SDL_CreateTextureFromSurface(renderer, surf));
             arrins(blank, 0, false);
         } else {
-            arrins(textures, 0, make_texture(surf, pages[tex_start].width, pages[tex_start].height));
+            arrins(textures, 0, make_texture(pages[tex_start].width, pages[tex_start].height));
             arrins(blank, 0, true);
         }
     }
@@ -65,7 +64,7 @@ void update_textures(int start, int end, struct page *pages)
             arrput(textures, SDL_CreateTextureFromSurface(renderer, surf));
             arrput(blank, false);
         } else {
-            arrput(textures, make_texture(surf, pages[tex_start + arrlen(textures)].width, pages[tex_start + arrlen(textures)].height));
+            arrput(textures, make_texture(pages[tex_start + arrlen(textures)].width, pages[tex_start + arrlen(textures)].height));
             arrput(blank, true);
         }
     }

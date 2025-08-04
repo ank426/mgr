@@ -49,8 +49,7 @@ void display_book(SDL_Texture *image1, SDL_Texture *image2, double rotation, int
     SDL_RenderTextureRotated(renderer, image2, nullptr, &dst2, rotation, &center2, SDL_FLIP_NONE);
 }
 
-void display_strip(SDL_Texture **images, double rotation, float scroll,
-                   float wzoom, float hzoom, int width, int height)
+void display_strip(SDL_Texture **images, double rotation, float scroll, float wzoom, float hzoom, int width, int height)
 {
     double c = fabs(cospi(rotation/180)), s = fabs(sinpi(rotation/180));
 
