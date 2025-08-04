@@ -13,6 +13,8 @@ void update_pages_from_zip(struct page **const ptr_pages, const char *const path
     zip_int64_t total_entries = zip_get_num_entries(archive, 0);
     assert(total_entries >= 0);
 
+    for (int i = 0; i < arrlen(*ptr_pages); i++)
+        free((*ptr_pages)[i].name);
     arrfree(*ptr_pages);
 
     for (int i = 0; i < total_entries; i++) {

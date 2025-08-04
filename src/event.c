@@ -17,7 +17,8 @@ SDL_AppResult handle_event(SDL_Event *event, struct appstate *s)
 
     case SDL_EVENT_KEY_DOWN:
         struct bind *binds = get_binds(s->mode);
-        for (int i = 0; i < get_num_binds(s->mode); i++)
+        int num_binds = get_num_binds(s->mode);
+        for (int i = 0; i < num_binds; i++)
             if (event->key.mod == binds[i].mod && event->key.scancode == binds[i].key)
                 binds[i].fn(binds[i].args, s);
         break;

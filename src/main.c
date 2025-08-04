@@ -98,6 +98,8 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result)
 
     free_intervals();
     free_text();
+    free_textures();
+    threads_free();
 
     free(dirpath);
 
