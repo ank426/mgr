@@ -12,6 +12,7 @@
 #include "natsort.h"
 #include "readlist.h"
 #include "text.h"
+#include "threading.h"
 #include "utils.h"
 #include "zip_handler.h"
 

@@ -13,6 +13,8 @@ char **files = nullptr;
 bool readlist = false;
 struct config conf;
 
+SDL_Event event_refresh;
+
 
 void init_conf()
 {
@@ -47,6 +49,8 @@ void init_state(struct appstate *s)
 SDL_AppResult SDL_AppInit(void **ptr_appstate, int argc, char *argv[])
 {
     struct appstate *s = *ptr_appstate = malloc(sizeof(struct appstate));
+
+    event_refresh.type = SDL_RegisterEvents(1);
 
     init_conf();
     get_args(argc, argv);

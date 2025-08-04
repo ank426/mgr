@@ -5,8 +5,9 @@ extern char **const files;
 
 void load_file(char *const path, struct appstate *s)
 {
-    free_surfaces();
     free_textures();
+    threads_free();
+    threads_init(s);
     update_pages_from_zip(&s->pages, path);
     nat_sort_pages(s->pages);
     update_intervals(s->pages);
