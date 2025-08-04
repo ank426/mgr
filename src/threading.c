@@ -49,9 +49,10 @@ void *job(void *arg)
         free(path);
 
         pthread_mutex_lock(&surfaces_lock);
-        if (surf_start <= idx && idx < surf_start + arrlen(surfaces))
+        if (surf_start <= idx && idx < surf_start + arrlen(surfaces)) {
+            SDL_DestroySurface(surfaces[idx - surf_start]);
             surfaces[idx - surf_start] = image;
-        else
+        } else
             outside = true;
         pthread_mutex_unlock(&surfaces_lock);
 

@@ -27,8 +27,8 @@ void write_readlist(char *filename, int page, float scroll)
 
     fputc('\n', fh);
     fputs("readlist:\n", fh);
-    for (char **t = files; *t != nullptr; t++)
-        fprintf(fh, "%s\n", *t);
+    for (int i = 0; i < arrlen(files); i++)
+        fprintf(fh, "%s\n", files[i]);
 
     fclose(fh);
 }
@@ -47,13 +47,15 @@ void generate_readlist(struct appstate *s)
     }
 
     int n;
-    files = SDL_GlobDirectory(dirpath, "*.cbz", 0, &n);
-    assert(files != nullptr);
-    nat_sort(n, files);
+    char **_files = SDL_GlobDirectory(dirpath, "*.cbz", 0, &n);
+    assert(_files != nullptr);
+    nat_sort(n, _files);
+    for (char **t = _files; *t != nullptr; t++)
+        arrput(files, *t);
 
     write_readlist(filename != nullptr ? filename : files[0], s->start, s->scroll);
 
-    free(files);
+    free(_files);
 }
 
 void read_readlist(struct appstate *s)

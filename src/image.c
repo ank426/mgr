@@ -42,6 +42,7 @@ void update_textures(int start, int end, struct page *pages)
             SDL_DestroyTexture(textures[i]);
             textures[i] = SDL_CreateTextureFromSurface(renderer, surf);
             blank[i] = false;
+            assert(textures[i] != nullptr);
         }
     }
 
@@ -54,6 +55,7 @@ void update_textures(int start, int end, struct page *pages)
             arrins(textures, 0, make_texture(pages[tex_start].width, pages[tex_start].height));
             arrins(blank, 0, true);
         }
+        assert(textures[0] != nullptr);
     }
 
     while (tex_start + arrlen(textures) <= end) {
@@ -65,6 +67,7 @@ void update_textures(int start, int end, struct page *pages)
             arrput(textures, make_texture(pages[tex_start + arrlen(textures)].width, pages[tex_start + arrlen(textures)].height));
             arrput(blank, true);
         }
+        assert(arrlast(textures) != nullptr);
     }
 }
 
