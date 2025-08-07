@@ -17,17 +17,12 @@ void load_file(char *const path, struct appstate *s)
 
 enum modes calc_mode(struct page *pages)
 {
-    float iars[] = {1.422, 0.711};
-    int n_iars = sizeof(iars) / sizeof(float);
-
     int n = 0;
-    for (int i = 0; i < arrlen(pages); i++)
-        for (int j = 0; j < n_iars; j++)
-            if (fabs(pages[i].inv_ar - iars[j]) < 1e-3) {
-                n++;
-                break;
-            }
-
+    for (int i = 0; i < arrlen(pages); i++) {
+        float iar = pages[i].inv_ar;
+        if (1.4 < iar && iar <= 1.5 || 0.7 < iar && iar <= 0.75)
+            n++;
+    }
     return n >= arrlen(pages) / 2 ? BOOK : STRIP;
 }
 
