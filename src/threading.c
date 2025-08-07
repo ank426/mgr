@@ -12,7 +12,7 @@ static SDL_Surface **surfaces = nullptr;
 static int surf_start = 0;
 
 static int *work_queue = nullptr;
-static bool active = false;
+static _Atomic bool active = false;
 
 static const int num_threads = 4;
 static pthread_t *threads = nullptr;
@@ -94,18 +94,6 @@ void threads_free()
     arrfree(surfaces);
 }
 
-SDL_Surface *get_surface(int idx)
-{
-    SDL_Surface *surf;
-    pthread_mutex_lock(&surfaces_lock);
-    if (surf_start <= idx && idx < surf_start + arrlen(surfaces))
-        surf = surfaces[idx - surf_start];
-    else
-        surf = nullptr;
-    pthread_mutex_unlock(&surfaces_lock);
-    return surf;
-}
-
 void update_surfaces(struct appstate *s)
 {
     const int start = fmaxf(s->start - load_before, 0);
@@ -142,4 +130,16 @@ void update_surfaces(struct appstate *s)
     pthread_cond_signal(&cond);
     pthread_mutex_unlock(&queue_lock);
     pthread_mutex_unlock(&surfaces_lock);
+}
+
+SDL_Surface *get_surface(int idx)
+{
+    SDL_Surface *surf;
+    pthread_mutex_lock(&surfaces_lock);
+    if (surf_start <= idx && idx < surf_start + arrlen(surfaces))
+        surf = surfaces[idx - surf_start];
+    else
+        surf = nullptr;
+    pthread_mutex_unlock(&surfaces_lock);
+    return surf;
 }

@@ -36,8 +36,8 @@ void update_progress_text(struct appstate *s)
 
 void free_text()
 {
-    TTF_DestroyRendererTextEngine(engine);
-    TTF_CloseFont(progress_font);
     TTF_DestroyText(progress_text);
+    TTF_CloseFont(progress_font);
+    TTF_DestroyRendererTextEngine(engine);
     TTF_Quit();
 }
