@@ -1,3 +1,5 @@
+mod readlist;
+
 use clap::Parser;
 use std::path::PathBuf;
 
@@ -16,5 +18,28 @@ struct Args {
 fn main() {
     let args = Args::parse();
 
-    println!("{:?}", args.path);
+    if args.generate {
+        if !args.path.exists() {
+            eprintln!("Path does not exist: {}", args.path.display());
+            std::process::exit(1);
+        }
+
+        if !args.path.is_dir() {
+            eprintln!("Path is not a directory: {}", args.path.display());
+            std::process::exit(1);
+        }
+
+        match readlist::generate(&args.path) {
+            Ok(output_path) => {
+                println!("Generated {}", output_path.display());
+            }
+            Err(err) => {
+                eprintln!("Failed to generate progress file: {err}");
+                std::process::exit(1);
+            }
+        }
+        return;
+    }
+
+    println!("{:?}", args);
 }

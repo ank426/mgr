@@ -4,4 +4,6 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+alphanumeric-sort = "1.5.5"
 clap = { version = "4.5.60", features = ["derive"] }
+toml_edit = "0.25.3"
