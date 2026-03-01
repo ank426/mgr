@@ -63,10 +63,7 @@ async fn main() {
             .and_then(|ext| ext.to_str())
             .is_some_and(|ext| ext.eq_ignore_ascii_case("cbz") || ext.eq_ignore_ascii_case("zip"));
         if !is_supported {
-            eprintln!(
-                "Unsupported file type: {} (expected .cbz or .zip)",
-                args.path.display()
-            );
+            eprintln!("Unsupported file type: {} (expected .cbz or .zip)", args.path.display());
             std::process::exit(1);
         }
 

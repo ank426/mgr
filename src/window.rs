@@ -98,10 +98,7 @@ impl Window {
         }
 
         {
-            let mut inflight = self
-                .inflight_prefetch
-                .lock()
-                .expect("inflight prefetch lock poisoned");
+            let mut inflight = self.inflight_prefetch.lock().expect("inflight prefetch lock poisoned");
             if inflight.contains(&index) {
                 return Ok(());
             }
@@ -110,13 +107,12 @@ impl Window {
 
         let loaded = self.load_page(index).await;
 
-        let mut inflight = self
-            .inflight_prefetch
-            .lock()
-            .expect("inflight prefetch lock poisoned");
+        let mut inflight = self.inflight_prefetch.lock().expect("inflight prefetch lock poisoned");
         inflight.remove(&index);
 
-        if let Ok(data) = loaded && let Ok(mut cache) = self.cache.write() {
+        if let Ok(data) = loaded
+            && let Ok(mut cache) = self.cache.write()
+        {
             cache.entry(index).or_insert(data);
         }
 
@@ -146,20 +142,14 @@ impl Window {
     async fn load_page(&self, index: u32) -> io::Result<Arc<Vec<u8>>> {
         let archive_path = self.manga.archive_path.clone();
         let page_name = self.manga.pages[index as usize].name.clone();
-        let bytes =
-            tokio::task::spawn_blocking(move || cbz::load_page_bytes(&archive_path, &page_name))
-                .await
-                .map_err(|err| io::Error::other(format!("Page load task failed: {err}")))??;
+        let bytes = tokio::task::spawn_blocking(move || cbz::load_page_bytes(&archive_path, &page_name))
+            .await
+            .map_err(|err| io::Error::other(format!("Page load task failed: {err}")))??;
         Ok(Arc::new(bytes))
     }
 }
 
-fn window_bounds(
-    center: u32,
-    total_pages: usize,
-    prefetch_back: u32,
-    prefetch_forward: u32,
-) -> Option<(u32, u32)> {
+fn window_bounds(center: u32, total_pages: usize, prefetch_back: u32, prefetch_forward: u32) -> Option<(u32, u32)> {
     if total_pages == 0 {
         return None;
     }
