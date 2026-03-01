@@ -6,9 +6,11 @@ use std::sync::{Mutex, RwLock};
 
 use crate::cbz::{self, Manga};
 
+type PageBytes = Arc<Vec<u8>>;
+
 pub struct Window {
     manga: Manga,
-    cache: RwLock<HashMap<u32, Arc<Vec<u8>>>>,
+    cache: RwLock<HashMap<u32, PageBytes>>,
     inflight_prefetch: Mutex<HashSet<u32>>,
     latest_center: AtomicU32,
     prefetch_running: AtomicBool,
@@ -38,35 +40,25 @@ impl Window {
     }
 
     pub fn page_mime(&self, index: u32) -> Option<&'static str> {
-        self.manga.pages.get(index as usize).map(|page| page.mime)
+        self.page(index).map(|page| page.mime)
     }
 
-    pub async fn get_page_with_prefetch(self: &Arc<Self>, index: u32) -> io::Result<Arc<Vec<u8>>> {
+    pub async fn get_page_with_prefetch(self: &Arc<Self>, index: u32) -> io::Result<PageBytes> {
         let data = self.get_or_load_page(index).await?;
         self.latest_center.store(index, Ordering::Relaxed);
         self.maybe_spawn_prefetch();
         Ok(data)
     }
 
-    async fn prefetch_window(self: &Arc<Self>, center: u32) {
-        let Some((start, end)) = window_bounds(
-            center,
-            self.manga.pages.len(),
-            self.prefetch_back,
-            self.prefetch_forward,
-        ) else {
-            return;
-        };
-
-        for idx in start..=end {
-            if let Err(err) = self.prefetch_page(idx).await {
-                eprintln!("Prefetch failed for page {idx}: {err}");
-            }
+    async fn get_or_load_page(&self, index: u32) -> io::Result<PageBytes> {
+        if let Some(cached) = self.get_cached_page(index) {
+            return Ok(cached);
         }
 
-        if let Ok(mut cache) = self.cache.write() {
-            cache.retain(|idx, _| *idx >= start && *idx <= end);
-        }
+        let loaded = self.load_page(index).await?;
+        let mut cache = self.cache.write().expect("cache lock poisoned");
+        let entry = cache.entry(index).or_insert_with(|| Arc::clone(&loaded));
+        Ok(Arc::clone(entry))
     }
 
     fn maybe_spawn_prefetch(self: &Arc<Self>) {
@@ -92,60 +84,80 @@ impl Window {
         });
     }
 
+    async fn prefetch_window(self: &Arc<Self>, center: u32) {
+        let Some((start, end)) = window_bounds(
+            center,
+            self.manga.pages.len(),
+            self.prefetch_back,
+            self.prefetch_forward,
+        ) else {
+            return;
+        };
+
+        for idx in start..=end {
+            if let Err(err) = self.prefetch_page(idx).await {
+                eprintln!("Prefetch failed for page {idx}: {err}");
+            }
+        }
+
+        let mut cache = self.cache.write().expect("cache lock poisoned");
+        cache.retain(|idx, _| *idx >= start && *idx <= end);
+    }
+
     async fn prefetch_page(&self, index: u32) -> io::Result<()> {
         if self.get_cached_page(index).is_some() {
             return Ok(());
         }
-
-        {
-            let mut inflight = self.inflight_prefetch.lock().expect("inflight prefetch lock poisoned");
-            if inflight.contains(&index) {
-                return Ok(());
-            }
-            inflight.insert(index);
+        if !self.mark_inflight(index) {
+            return Ok(());
         }
 
         let loaded = self.load_page(index).await;
+        self.unmark_inflight(index);
 
-        let mut inflight = self.inflight_prefetch.lock().expect("inflight prefetch lock poisoned");
-        inflight.remove(&index);
-
-        if let Ok(data) = loaded
-            && let Ok(mut cache) = self.cache.write()
-        {
+        if let Ok(data) = loaded {
+            let mut cache = self.cache.write().expect("cache lock poisoned");
             cache.entry(index).or_insert(data);
         }
-
         Ok(())
     }
 
-    async fn get_or_load_page(&self, index: u32) -> io::Result<Arc<Vec<u8>>> {
-        if let Some(cached) = self.get_cached_page(index) {
-            return Ok(cached);
-        }
-
-        let loaded = self.load_page(index).await?;
-        if let Ok(mut cache) = self.cache.write() {
-            let entry = cache.entry(index).or_insert_with(|| Arc::clone(&loaded));
-            return Ok(Arc::clone(entry));
-        }
-        Ok(loaded)
+    fn get_cached_page(&self, index: u32) -> Option<PageBytes> {
+        let cache = self.cache.read().expect("cache lock poisoned");
+        cache.get(&index).map(Arc::clone)
     }
 
-    fn get_cached_page(&self, index: u32) -> Option<Arc<Vec<u8>>> {
-        self.cache
-            .read()
-            .ok()
-            .and_then(|cache| cache.get(&index).map(Arc::clone))
-    }
-
-    async fn load_page(&self, index: u32) -> io::Result<Arc<Vec<u8>>> {
+    async fn load_page(&self, index: u32) -> io::Result<PageBytes> {
         let archive_path = self.manga.archive_path.clone();
-        let page_name = self.manga.pages[index as usize].name.clone();
+        let Some(page) = self.page(index) else {
+            return Err(io::Error::new(
+                io::ErrorKind::NotFound,
+                format!("Page index out of range: {index}"),
+            ));
+        };
+        let page_name = page.name.clone();
         let bytes = tokio::task::spawn_blocking(move || cbz::load_page_bytes(&archive_path, &page_name))
             .await
             .map_err(|err| io::Error::other(format!("Page load task failed: {err}")))??;
         Ok(Arc::new(bytes))
+    }
+
+    fn mark_inflight(&self, index: u32) -> bool {
+        let mut inflight = self.inflight_prefetch.lock().expect("inflight prefetch lock poisoned");
+        if inflight.contains(&index) {
+            return false;
+        }
+        inflight.insert(index);
+        true
+    }
+
+    fn unmark_inflight(&self, index: u32) {
+        let mut inflight = self.inflight_prefetch.lock().expect("inflight prefetch lock poisoned");
+        inflight.remove(&index);
+    }
+
+    fn page(&self, index: u32) -> Option<&crate::cbz::Page> {
+        self.manga.pages.get(index as usize)
     }
 }
 

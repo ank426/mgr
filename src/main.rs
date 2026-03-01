@@ -26,66 +26,71 @@ struct Args {
 
 #[tokio::main]
 async fn main() {
-    let args = Args::parse();
-
-    if args.generate {
-        if !args.path.exists() {
-            eprintln!("Path does not exist: {}", args.path.display());
-            std::process::exit(1);
-        }
-
-        if !args.path.is_dir() {
-            eprintln!("Path is not a directory: {}", args.path.display());
-            std::process::exit(1);
-        }
-
-        match readlist::generate(&args.path) {
-            Ok(output_path) => {
-                println!("Generated {}", output_path.display());
-            }
-            Err(err) => {
-                eprintln!("Failed to generate progress file: {err}");
-                std::process::exit(1);
-            }
-        }
-        return;
-    }
-
-    if !args.path.exists() {
-        eprintln!("Path does not exist: {}", args.path.display());
+    if let Err(err) = run(Args::parse()).await {
+        eprintln!("{err}");
         std::process::exit(1);
+    }
+}
+
+async fn run(args: Args) -> Result<(), String> {
+    if args.generate {
+        return handle_generate(&args.path);
     }
 
     if args.path.is_file() {
-        let is_supported = args
-            .path
-            .extension()
-            .and_then(|ext| ext.to_str())
-            .is_some_and(|ext| ext.eq_ignore_ascii_case("cbz") || ext.eq_ignore_ascii_case("zip"));
-        if !is_supported {
-            eprintln!("Unsupported file type: {} (expected .cbz or .zip)", args.path.display());
-            std::process::exit(1);
-        }
-
-        match cbz::load_manga(&args.path) {
-            Ok(manga) => {
-                if manga.pages.is_empty() {
-                    eprintln!("No supported image pages found in {}", args.path.display());
-                    std::process::exit(1);
-                }
-                server::serve(manga, args.port, args.prefetch_back, args.prefetch_forward).await;
-            }
-            Err(err) => {
-                eprintln!("Failed to load manga file {}: {err}", args.path.display());
-                std::process::exit(1);
-            }
-        }
-        return;
+        return handle_serve_file(&args).await;
     }
 
-    eprintln!(
-        "Path {} is a directory. Use --generate for directories, or pass a .cbz/.zip file.",
+    if !args.path.exists() {
+        return Err(format!("Path does not exist: {}", args.path.display()));
+    }
+
+    if args.path.is_dir() {
+        return Err(format!(
+            "Path {} is a directory. Use --generate for directories, or pass a .cbz/.zip file.",
+            args.path.display()
+        ));
+    }
+
+    Err(format!(
+        "Unsupported path type: {} (expected file or directory)",
         args.path.display()
-    );
-    std::process::exit(1);
+    ))
+}
+
+fn handle_generate(path: &std::path::Path) -> Result<(), String> {
+    if !path.exists() {
+        return Err(format!("Path does not exist: {}", path.display()));
+    }
+    if !path.is_dir() {
+        return Err(format!("Path is not a directory: {}", path.display()));
+    }
+
+    let output_path = readlist::generate(path).map_err(|err| format!("Failed to generate progress file: {err}"))?;
+    println!("Generated {}", output_path.display());
+    Ok(())
+}
+
+async fn handle_serve_file(args: &Args) -> Result<(), String> {
+    if !is_supported_archive_file(&args.path) {
+        return Err(format!(
+            "Unsupported file type: {} (expected .cbz or .zip)",
+            args.path.display()
+        ));
+    }
+
+    let manga = cbz::load_manga(&args.path)
+        .map_err(|err| format!("Failed to load manga file {}: {err}", args.path.display()))?;
+    if manga.pages.is_empty() {
+        return Err(format!("No supported image pages found in {}", args.path.display()));
+    }
+
+    server::serve(manga, args.port, args.prefetch_back, args.prefetch_forward).await;
+    Ok(())
+}
+
+fn is_supported_archive_file(path: &std::path::Path) -> bool {
+    path.extension()
+        .and_then(|ext| ext.to_str())
+        .is_some_and(|ext| ext.eq_ignore_ascii_case("cbz") || ext.eq_ignore_ascii_case("zip"))
 }

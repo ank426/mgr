@@ -20,13 +20,11 @@ pub struct Manga {
 
 pub fn load_manga(path: &Path) -> io::Result<Manga> {
     let file = File::open(path)?;
-    let mut archive = ZipArchive::new(file).map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err))?;
+    let mut archive = ZipArchive::new(file).map_err(zip_invalid_data)?;
 
     let mut pages = Vec::new();
     for idx in 0..archive.len() {
-        let entry = archive
-            .by_index(idx)
-            .map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err))?;
+        let entry = archive.by_index(idx).map_err(zip_invalid_data)?;
 
         if entry.is_dir() {
             continue;
@@ -57,10 +55,8 @@ pub fn load_manga(path: &Path) -> io::Result<Manga> {
 
 pub fn load_page_bytes(archive_path: &Path, page_name: &str) -> io::Result<Vec<u8>> {
     let file = File::open(archive_path)?;
-    let mut archive = ZipArchive::new(file).map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err))?;
-    let mut entry = archive
-        .by_name(page_name)
-        .map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err))?;
+    let mut archive = ZipArchive::new(file).map_err(zip_invalid_data)?;
+    let mut entry = archive.by_name(page_name).map_err(zip_invalid_data)?;
 
     let mut data = Vec::new();
     entry.read_to_end(&mut data)?;
@@ -78,4 +74,8 @@ fn mime_for_path(path: &str) -> Option<&'static str> {
         "avif" => Some("image/avif"),
         _ => None,
     }
+}
+
+fn zip_invalid_data(err: zip::result::ZipError) -> io::Error {
+    io::Error::new(io::ErrorKind::InvalidData, err)
 }

@@ -28,6 +28,7 @@ async fn page_response(index: u32, state: Arc<Window>) -> Result<Response<Vec<u8
     let Some(mime) = state.page_mime(index) else {
         return Ok(not_found_response());
     };
+
     let data = match state.get_page_with_prefetch(index).await {
         Ok(data) => data,
         Err(err) => {
@@ -41,6 +42,19 @@ async fn page_response(index: u32, state: Arc<Window>) -> Result<Response<Vec<u8
         .header("content-type", mime)
         .body(data.as_ref().clone())
         .expect("valid response"))
+}
+
+fn build_html(title: &str, count: usize) -> String {
+    let mut images = String::new();
+    for idx in 0..count {
+        images.push_str(&format!(
+            "<img src=\"/page/{idx}\" loading=\"lazy\" decoding=\"async\" alt=\"page {idx}\" />\n"
+        ));
+    }
+
+    include_str!("viewer.html")
+        .replace("{title}", title)
+        .replace("{images}", &images)
 }
 
 fn not_found_response() -> Response<Vec<u8>> {
@@ -57,17 +71,4 @@ fn error_response(message: String) -> Response<Vec<u8>> {
         .header("content-type", "text/plain; charset=utf-8")
         .body(message.into_bytes())
         .expect("valid response")
-}
-
-fn build_html(title: &str, count: usize) -> String {
-    let mut images = String::new();
-    for idx in 0..count {
-        images.push_str(&format!(
-            "<img src=\"/page/{idx}\" loading=\"lazy\" decoding=\"async\" alt=\"page {idx}\" />\n"
-        ));
-    }
-
-    include_str!("viewer.html")
-        .replace("{title}", title)
-        .replace("{images}", &images)
 }
