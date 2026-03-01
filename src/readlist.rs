@@ -3,9 +3,33 @@ use std::io;
 use std::path::{Path, PathBuf};
 
 use alphanumeric_sort::compare_str;
-use toml_edit::{value, ArrayOfTables, DocumentMut, Item, Table};
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Serialize, Deserialize)]
+struct Progress {
+    file: String,
+    page: u32,
+    scroll: f64,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct FileEntry {
+    name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    mokuro: Option<String>,
+}
+
+#[derive(Debug, Default, Serialize, Deserialize)]
+struct ReadList {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    progress: Option<Progress>,
+    #[serde(default)]
+    files: Vec<FileEntry>,
+}
 
 pub fn generate(dir: &Path) -> io::Result<PathBuf> {
+    let output_path = dir.join(".mgr.toml");
+
     let mut cbz_files: Vec<String> = fs::read_dir(dir)?
         .filter_map(Result::ok)
         .filter(|entry| entry.file_type().map(|t| t.is_file()).unwrap_or(false))
@@ -21,34 +45,51 @@ pub fn generate(dir: &Path) -> io::Result<PathBuf> {
 
     cbz_files.sort_by(|a, b| compare_str(a, b));
 
-    let mut doc = DocumentMut::new();
+    let mut readlist = if output_path.is_file() {
+        let content = fs::read_to_string(&output_path)?;
+        toml::from_str::<ReadList>(&content).map_err(|err| {
+            io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!("Failed to parse {}: {err}", output_path.display()),
+            )
+        })?
+    } else {
+        ReadList::default()
+    };
 
-    let first_file = cbz_files.first().cloned().unwrap_or_default();
-
-    let mut progress = Table::new();
-    progress["file"] = value(first_file.clone());
-    progress["page"] = value(1);
-    progress["scroll"] = value(0.0);
-    doc["progress"] = Item::Table(progress);
-
-    let mut files = ArrayOfTables::new();
-    for file_name in &cbz_files {
-        let mut entry = Table::new();
-        entry["name"] = value(file_name.clone());
-
-        let mokuro_name = Path::new(file_name).with_extension("mokuro");
-        let mokuro_path = dir.join(&mokuro_name);
-        if mokuro_path.is_file() {
-            entry["mokuro"] = value(mokuro_name.to_string_lossy().to_string());
-        }
-
-        files.push(entry);
+    if readlist.progress.is_none() {
+        readlist.progress = Some(Progress {
+            file: cbz_files.first().cloned().unwrap_or_default(),
+            page: 1,
+            scroll: 0.0,
+        });
     }
 
-    doc["files"] = Item::ArrayOfTables(files);
+    readlist.files = cbz_files
+        .iter()
+        .map(|file_name| {
+            let mokuro_name = Path::new(file_name).with_extension("mokuro");
+            let mokuro_path = dir.join(&mokuro_name);
+            let mokuro = if mokuro_path.is_file() {
+                Some(mokuro_name.to_string_lossy().to_string())
+            } else {
+                None
+            };
 
-    let output_path = dir.join(".mgr.toml");
-    fs::write(&output_path, doc.to_string())?;
+            FileEntry {
+                name: file_name.clone(),
+                mokuro,
+            }
+        })
+        .collect();
+
+    let output = toml::to_string_pretty(&readlist).map_err(|err| {
+        io::Error::new(
+            io::ErrorKind::InvalidData,
+            format!("Failed to serialize readlist: {err}"),
+        )
+    })?;
+    fs::write(&output_path, output)?;
 
     Ok(output_path)
 }
