@@ -19,11 +19,9 @@ struct FileEntry {
     mokuro: Option<String>,
 }
 
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct ReadList {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    progress: Option<Progress>,
-    #[serde(default)]
+    progress: Progress,
     files: Vec<FileEntry>,
 }
 
@@ -54,16 +52,15 @@ pub fn generate(dir: &Path) -> io::Result<PathBuf> {
             )
         })?
     } else {
-        ReadList::default()
+        ReadList {
+            progress: Progress {
+                file: cbz_files.first().cloned().unwrap_or_default(),
+                page: 1,
+                scroll: 0.0,
+            },
+            files: Vec::new(),
+        }
     };
-
-    if readlist.progress.is_none() {
-        readlist.progress = Some(Progress {
-            file: cbz_files.first().cloned().unwrap_or_default(),
-            page: 1,
-            scroll: 0.0,
-        });
-    }
 
     readlist.files = cbz_files
         .iter()
