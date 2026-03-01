@@ -13,6 +13,12 @@ struct Args {
     #[arg(short, long, default_value_t = 8080)]
     port: u16,
 
+    #[arg(long, default_value_t = 2)]
+    prefetch_back: u32,
+
+    #[arg(long, default_value_t = 4)]
+    prefetch_forward: u32,
+
     #[arg(default_value = ".")]
     path: PathBuf,
 }
@@ -69,7 +75,7 @@ async fn main() {
                     eprintln!("No supported image pages found in {}", args.path.display());
                     std::process::exit(1);
                 }
-                server::serve(manga, args.port).await;
+                server::serve(manga, args.port, args.prefetch_back, args.prefetch_forward).await;
             }
             Err(err) => {
                 eprintln!("Failed to load manga file {}: {err}", args.path.display());

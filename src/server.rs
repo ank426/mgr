@@ -10,24 +10,25 @@ use warp::http::{Response, StatusCode};
 
 use crate::cbz::{self, Manga};
 
-const PREFETCH_BACK: u32 = 2;
-const PREFETCH_FORWARD: u32 = 4;
-
 struct ServerState {
     manga: Manga,
     cache: RwLock<HashMap<u32, Arc<Vec<u8>>>>,
     inflight_prefetch: Mutex<HashSet<u32>>,
     latest_center: AtomicU32,
     prefetch_running: AtomicBool,
+    prefetch_back: u32,
+    prefetch_forward: u32,
 }
 
-pub async fn serve(manga: Manga, port: u16) {
+pub async fn serve(manga: Manga, port: u16, prefetch_back: u32, prefetch_forward: u32) {
     let state = Arc::new(ServerState {
         manga,
         cache: RwLock::new(HashMap::new()),
         inflight_prefetch: Mutex::new(HashSet::new()),
         latest_center: AtomicU32::new(0),
         prefetch_running: AtomicBool::new(false),
+        prefetch_back,
+        prefetch_forward,
     });
 
     let html = build_html(&state.manga.title, state.manga.pages.len());
@@ -92,7 +93,12 @@ fn maybe_spawn_prefetch(state: Arc<ServerState>) {
 }
 
 async fn prefetch_window(center: u32, state: &Arc<ServerState>) {
-    let Some((start, end)) = window_bounds(center, state.manga.pages.len()) else {
+    let Some((start, end)) = window_bounds(
+        center,
+        state.manga.pages.len(),
+        state.prefetch_back,
+        state.prefetch_forward,
+    ) else {
         return;
     };
 
@@ -170,13 +176,18 @@ async fn load_page(index: u32, state: &Arc<ServerState>) -> io::Result<Arc<Vec<u
     Ok(Arc::new(bytes))
 }
 
-fn window_bounds(center: u32, total_pages: usize) -> Option<(u32, u32)> {
+fn window_bounds(
+    center: u32,
+    total_pages: usize,
+    prefetch_back: u32,
+    prefetch_forward: u32,
+) -> Option<(u32, u32)> {
     if total_pages == 0 {
         return None;
     }
     let last = total_pages as u32 - 1;
-    let start = center.saturating_sub(PREFETCH_BACK);
-    let end = center.saturating_add(PREFETCH_FORWARD).min(last);
+    let start = center.saturating_sub(prefetch_back);
+    let end = center.saturating_add(prefetch_forward).min(last);
     Some((start, end))
 }
 
