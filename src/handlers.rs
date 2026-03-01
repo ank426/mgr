@@ -49,9 +49,45 @@ pub fn handle_serve_readlist_directory(path: &Path) -> Result<(), String> {
         ));
     }
 
+    let readlist = readlist::load(&readlist_path).map_err(|err| format!("Failed to load readlist: {err}"))?;
+    if readlist.files.is_empty() {
+        return Err(format!("Readlist has no files in {}", readlist_path.display()));
+    }
+
+    if !readlist.files.iter().any(|name| name == &readlist.progress_file) {
+        return Err(format!(
+            "progress.file '{}' is not present in [[files]] in {}",
+            readlist.progress_file,
+            readlist_path.display()
+        ));
+    }
+
+    for name in &readlist.files {
+        let file_path = path.join(name);
+        if !file_path.exists() {
+            return Err(format!(
+                "Readlist file '{}' is missing on disk under {}",
+                file_path.display(),
+                path.display()
+            ));
+        }
+        if !file_path.is_file() {
+            return Err(format!("Readlist entry '{}' is not a file", file_path.display()));
+        }
+        if !is_supported_archive_file(&file_path) {
+            return Err(format!(
+                "Readlist file '{}' is not a supported archive (.cbz/.zip)",
+                file_path.display()
+            ));
+        }
+    }
+
     Err(format!(
-        "{READLIST_FILE_NAME} found in {}, but readlist mode is not implemented yet (Phase 1 only).",
-        path.display()
+        "Readlist validated in {} (progress file='{}', page={}, scroll={:.6}), but readlist serving is not implemented yet (Phase 2 complete).",
+        path.display(),
+        readlist.progress_file,
+        readlist.progress_page,
+        readlist.progress_scroll
     ))
 }
 

@@ -25,6 +25,13 @@ struct ReadList {
     files: Vec<FileEntry>,
 }
 
+pub struct LoadedReadList {
+    pub progress_file: String,
+    pub progress_page: u32,
+    pub progress_scroll: f64,
+    pub files: Vec<String>,
+}
+
 pub fn generate(dir: &Path) -> io::Result<PathBuf> {
     let output_path = dir.join(".mgr.toml");
 
@@ -89,4 +96,21 @@ pub fn generate(dir: &Path) -> io::Result<PathBuf> {
     fs::write(&output_path, output)?;
 
     Ok(output_path)
+}
+
+pub fn load(path: &Path) -> io::Result<LoadedReadList> {
+    let content = fs::read_to_string(path)?;
+    let readlist = toml::from_str::<ReadList>(&content).map_err(|err| {
+        io::Error::new(
+            io::ErrorKind::InvalidData,
+            format!("Failed to parse {}: {err}", path.display()),
+        )
+    })?;
+
+    Ok(LoadedReadList {
+        progress_file: readlist.progress.file,
+        progress_page: readlist.progress.page,
+        progress_scroll: readlist.progress.scroll,
+        files: readlist.files.into_iter().map(|entry| entry.name).collect(),
+    })
 }
