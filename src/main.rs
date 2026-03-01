@@ -1,6 +1,7 @@
 mod cbz;
 mod readlist;
 mod server;
+mod window;
 
 use clap::Parser;
 use std::path::PathBuf;

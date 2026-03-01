@@ -20,11 +20,14 @@ pub struct Manga {
 
 pub fn load_manga(path: &Path) -> io::Result<Manga> {
     let file = File::open(path)?;
-    let mut archive = ZipArchive::new(file).map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err))?;
+    let mut archive =
+        ZipArchive::new(file).map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err))?;
 
     let mut pages = Vec::new();
     for idx in 0..archive.len() {
-        let entry = archive.by_index(idx).map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err))?;
+        let entry = archive
+            .by_index(idx)
+            .map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err))?;
 
         if entry.is_dir() {
             continue;
