@@ -1,4 +1,6 @@
+mod cbz;
 mod readlist;
+mod server;
 
 use clap::Parser;
 use std::path::PathBuf;
@@ -15,7 +17,8 @@ struct Args {
     path: PathBuf,
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let args = Args::parse();
 
     if args.generate {
@@ -41,5 +44,44 @@ fn main() {
         return;
     }
 
-    println!("{:?}", args);
+    if !args.path.exists() {
+        eprintln!("Path does not exist: {}", args.path.display());
+        std::process::exit(1);
+    }
+
+    if args.path.is_file() {
+        let is_supported = args
+            .path
+            .extension()
+            .and_then(|ext| ext.to_str())
+            .is_some_and(|ext| ext.eq_ignore_ascii_case("cbz") || ext.eq_ignore_ascii_case("zip"));
+        if !is_supported {
+            eprintln!(
+                "Unsupported file type: {} (expected .cbz or .zip)",
+                args.path.display()
+            );
+            std::process::exit(1);
+        }
+
+        match cbz::load_manga(&args.path) {
+            Ok(manga) => {
+                if manga.pages.is_empty() {
+                    eprintln!("No supported image pages found in {}", args.path.display());
+                    std::process::exit(1);
+                }
+                server::serve(manga, args.port).await;
+            }
+            Err(err) => {
+                eprintln!("Failed to load manga file {}: {err}", args.path.display());
+                std::process::exit(1);
+            }
+        }
+        return;
+    }
+
+    eprintln!(
+        "Path {} is a directory. Use --generate for directories, or pass a .cbz/.zip file.",
+        args.path.display()
+    );
+    std::process::exit(1);
 }

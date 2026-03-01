@@ -7,4 +7,7 @@ edition = "2024"
 alphanumeric-sort = "1.5.5"
 clap = { version = "4.5.60", features = ["derive"] }
 serde = { version = "1.0.228", features = ["derive"] }
+tokio = { version = "1.49.0", features = ["rt-multi-thread", "macros"] }
 toml = "1.0.3"
+warp = { version = "0.4.2", features = ["server"] }
+zip = "8.1.0"
