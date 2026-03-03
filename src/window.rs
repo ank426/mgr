@@ -4,12 +4,13 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::{Mutex, RwLock};
 
-use crate::cbz::{self, Manga};
+use crate::cbz;
+use crate::global_index::GlobalIndex;
 
 type PageBytes = Arc<Vec<u8>>;
 
 pub struct Window {
-    manga: Manga,
+    index: GlobalIndex,
     cache: RwLock<HashMap<u32, PageBytes>>,
     inflight_prefetch: Mutex<HashSet<u32>>,
     latest_center: AtomicU32,
@@ -19,9 +20,9 @@ pub struct Window {
 }
 
 impl Window {
-    pub fn new(manga: Manga, prefetch_back: u32, prefetch_forward: u32) -> Self {
+    pub fn new(index: GlobalIndex, prefetch_back: u32, prefetch_forward: u32) -> Self {
         Self {
-            manga,
+            index,
             cache: RwLock::new(HashMap::new()),
             inflight_prefetch: Mutex::new(HashSet::new()),
             latest_center: AtomicU32::new(0),
@@ -32,11 +33,11 @@ impl Window {
     }
 
     pub fn title(&self) -> &str {
-        &self.manga.title
+        self.index.title()
     }
 
     pub fn page_count(&self) -> usize {
-        self.manga.pages.len()
+        self.index.page_count()
     }
 
     pub fn page_mime(&self, index: u32) -> Option<&'static str> {
@@ -87,7 +88,7 @@ impl Window {
     async fn prefetch_window(self: &Arc<Self>, center: u32) {
         let Some((start, end)) = window_bounds(
             center,
-            self.manga.pages.len(),
+            self.index.page_count(),
             self.prefetch_back,
             self.prefetch_forward,
         ) else {
@@ -128,14 +129,14 @@ impl Window {
     }
 
     async fn load_page(&self, index: u32) -> io::Result<PageBytes> {
-        let archive_path = self.manga.archive_path.clone();
         let Some(page) = self.page(index) else {
             return Err(io::Error::new(
                 io::ErrorKind::NotFound,
                 format!("Page index out of range: {index}"),
             ));
         };
-        let page_name = page.name.clone();
+        let archive_path = page.archive_path.clone();
+        let page_name = page.page_name.clone();
         let bytes = tokio::task::spawn_blocking(move || cbz::load_page_bytes(&archive_path, &page_name))
             .await
             .map_err(|err| io::Error::other(format!("Page load task failed: {err}")))??;
@@ -156,8 +157,8 @@ impl Window {
         inflight.remove(&index);
     }
 
-    fn page(&self, index: u32) -> Option<&crate::cbz::Page> {
-        self.manga.pages.get(index as usize)
+    fn page(&self, index: u32) -> Option<&crate::global_index::GlobalPageRef> {
+        self.index.page(index)
     }
 }
 

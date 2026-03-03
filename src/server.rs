@@ -4,11 +4,11 @@ use warp::Filter;
 use warp::Reply;
 use warp::http::{Response, StatusCode};
 
-use crate::cbz::Manga;
+use crate::global_index::GlobalIndex;
 use crate::window::Window;
 
-pub async fn serve(manga: Manga, port: u16, prefetch_back: u32, prefetch_forward: u32) {
-    let state = Arc::new(Window::new(manga, prefetch_back, prefetch_forward));
+pub async fn serve(index: GlobalIndex, port: u16, prefetch_back: u32, prefetch_forward: u32) {
+    let state = Arc::new(Window::new(index, prefetch_back, prefetch_forward));
 
     let html = build_html(state.title(), state.page_count());
     let html_route = warp::path::end().map(move || warp::reply::html(html.clone()).into_response());

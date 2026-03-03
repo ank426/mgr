@@ -1,4 +1,5 @@
 mod cbz;
+mod global_index;
 mod handlers;
 mod readlist;
 mod server;
