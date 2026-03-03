@@ -16,10 +16,10 @@ struct Args {
     #[arg(short, long, default_value_t = 8080)]
     port: u16,
 
-    #[arg(long, default_value_t = 2)]
+    #[arg(long, default_value_t = 1)]
     prefetch_back: u32,
 
-    #[arg(long, default_value_t = 4)]
+    #[arg(long, default_value_t = 2)]
     prefetch_forward: u32,
 
     #[arg(default_value = ".")]
@@ -48,7 +48,13 @@ async fn run(args: Args) -> Result<(), String> {
     }
 
     if args.path.is_dir() {
-        return handlers::handle_serve_readlist_directory(&args.path);
+        return handlers::handle_serve_readlist_directory(
+            &args.path,
+            args.port,
+            args.prefetch_back,
+            args.prefetch_forward,
+        )
+        .await;
     }
 
     Err(format!(

@@ -41,7 +41,12 @@ pub async fn handle_serve_file(
     Ok(())
 }
 
-pub fn handle_serve_readlist_directory(path: &Path) -> Result<(), String> {
+pub async fn handle_serve_readlist_directory(
+    path: &Path,
+    port: u16,
+    prefetch_back: u32,
+    prefetch_forward: u32,
+) -> Result<(), String> {
     let readlist_path = path.join(READLIST_FILE_NAME);
     if !readlist_path.is_file() {
         return Err(format!(
@@ -53,12 +58,6 @@ pub fn handle_serve_readlist_directory(path: &Path) -> Result<(), String> {
 
     let readlist = readlist::load(&readlist_path).map_err(|err| format!("Failed to load readlist: {err}"))?;
     let runtime = manga::build_from_readlist(path, readlist)?;
-
-    Err(format!(
-        "Readlist validated and runtime created for {} pages in {} (initial_global_page={}, scroll={:.6}), but readlist serving is not implemented yet.",
-        runtime.manga.page_count(),
-        path.display(),
-        runtime.initial_page_index,
-        runtime.initial_scroll
-    ))
+    server::serve(runtime.manga, port, prefetch_back, prefetch_forward).await;
+    Ok(())
 }
