@@ -1,6 +1,6 @@
 mod cbz;
-mod global_index;
 mod handlers;
+mod manga;
 mod readlist;
 mod server;
 mod window;

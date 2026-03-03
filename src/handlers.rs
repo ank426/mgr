@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use crate::{cbz, global_index, readlist, server};
+use crate::{cbz, manga, readlist, server};
 
 const READLIST_FILE_NAME: &str = ".mgr.toml";
 
@@ -30,13 +30,14 @@ pub async fn handle_serve_file(
         ));
     }
 
-    let manga = cbz::load_manga(path).map_err(|err| format!("Failed to load manga file {}: {err}", path.display()))?;
-    if manga.pages.is_empty() {
+    let volume =
+        cbz::load_volume(path).map_err(|err| format!("Failed to load manga file {}: {err}", path.display()))?;
+    if volume.pages.is_empty() {
         return Err(format!("No supported image pages found in {}", path.display()));
     }
 
-    let index = global_index::GlobalIndex::from_manga(manga);
-    server::serve(index, port, prefetch_back, prefetch_forward).await;
+    let series = manga::Manga::from_volume(volume);
+    server::serve(series, port, prefetch_back, prefetch_forward).await;
     Ok(())
 }
 
@@ -82,7 +83,7 @@ pub fn handle_serve_readlist_directory(path: &Path) -> Result<(), String> {
             ));
         }
     }
-    let page_counts = global_index::collect_readlist_page_counts(path, &readlist.files)?;
+    let page_counts = manga::collect_readlist_page_counts(path, &readlist.files)?;
 
     Err(format!(
         "Readlist validated and page counts loaded in-memory for {} files in {} (progress file='{}', page={}, scroll={:.6}), but readlist serving is not implemented yet.",

@@ -5,12 +5,12 @@ use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::{Mutex, RwLock};
 
 use crate::cbz;
-use crate::global_index::GlobalIndex;
+use crate::manga::Manga;
 
 type PageBytes = Arc<Vec<u8>>;
 
 pub struct Window {
-    index: GlobalIndex,
+    manga: Manga,
     cache: RwLock<HashMap<u32, PageBytes>>,
     inflight_prefetch: Mutex<HashSet<u32>>,
     latest_center: AtomicU32,
@@ -20,9 +20,9 @@ pub struct Window {
 }
 
 impl Window {
-    pub fn new(index: GlobalIndex, prefetch_back: u32, prefetch_forward: u32) -> Self {
+    pub fn new(manga: Manga, prefetch_back: u32, prefetch_forward: u32) -> Self {
         Self {
-            index,
+            manga,
             cache: RwLock::new(HashMap::new()),
             inflight_prefetch: Mutex::new(HashSet::new()),
             latest_center: AtomicU32::new(0),
@@ -33,11 +33,11 @@ impl Window {
     }
 
     pub fn title(&self) -> &str {
-        self.index.title()
+        self.manga.title()
     }
 
     pub fn page_count(&self) -> usize {
-        self.index.page_count()
+        self.manga.page_count()
     }
 
     pub fn page_mime(&self, index: u32) -> Option<&'static str> {
@@ -88,7 +88,7 @@ impl Window {
     async fn prefetch_window(self: &Arc<Self>, center: u32) {
         let Some((start, end)) = window_bounds(
             center,
-            self.index.page_count(),
+            self.manga.page_count(),
             self.prefetch_back,
             self.prefetch_forward,
         ) else {
@@ -157,8 +157,8 @@ impl Window {
         inflight.remove(&index);
     }
 
-    fn page(&self, index: u32) -> Option<&crate::global_index::GlobalPageRef> {
-        self.index.page(index)
+    fn page(&self, index: u32) -> Option<&crate::manga::MangaPageRef> {
+        self.manga.page(index)
     }
 }
 

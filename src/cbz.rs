@@ -12,13 +12,13 @@ pub struct Page {
 }
 
 #[derive(Clone, Debug)]
-pub struct Manga {
+pub struct Volume {
     pub archive_path: PathBuf,
     pub title: String,
     pub pages: Vec<Page>,
 }
 
-pub fn load_manga(path: &Path) -> io::Result<Manga> {
+pub fn load_volume(path: &Path) -> io::Result<Volume> {
     let file = File::open(path)?;
     let mut archive = ZipArchive::new(file).map_err(zip_invalid_data)?;
 
@@ -46,7 +46,7 @@ pub fn load_manga(path: &Path) -> io::Result<Manga> {
         .unwrap_or("manga")
         .to_string();
 
-    Ok(Manga {
+    Ok(Volume {
         archive_path: path.to_path_buf(),
         title,
         pages,
