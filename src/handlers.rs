@@ -23,7 +23,7 @@ pub async fn handle_serve_file(
     prefetch_back: u32,
     prefetch_forward: u32,
 ) -> Result<(), String> {
-    if !is_supported_archive_file(path) {
+    if !cbz::is_supported_archive_file(path) {
         return Err(format!(
             "Unsupported file type: {} (expected .cbz or .zip)",
             path.display()
@@ -52,51 +52,13 @@ pub fn handle_serve_readlist_directory(path: &Path) -> Result<(), String> {
     }
 
     let readlist = readlist::load(&readlist_path).map_err(|err| format!("Failed to load readlist: {err}"))?;
-    if readlist.files.is_empty() {
-        return Err(format!("Readlist has no files in {}", readlist_path.display()));
-    }
-
-    if !readlist.files.iter().any(|name| name == &readlist.progress_file) {
-        return Err(format!(
-            "progress.file '{}' is not present in [[files]] in {}",
-            readlist.progress_file,
-            readlist_path.display()
-        ));
-    }
-
-    for name in &readlist.files {
-        let file_path = path.join(name);
-        if !file_path.exists() {
-            return Err(format!(
-                "Readlist file '{}' is missing on disk under {}",
-                file_path.display(),
-                path.display()
-            ));
-        }
-        if !file_path.is_file() {
-            return Err(format!("Readlist entry '{}' is not a file", file_path.display()));
-        }
-        if !is_supported_archive_file(&file_path) {
-            return Err(format!(
-                "Readlist file '{}' is not a supported archive (.cbz/.zip)",
-                file_path.display()
-            ));
-        }
-    }
-    let page_counts = manga::collect_readlist_page_counts(path, &readlist.files)?;
+    let runtime = manga::build_from_readlist(path, readlist)?;
 
     Err(format!(
-        "Readlist validated and page counts loaded in-memory for {} files in {} (progress file='{}', page={}, scroll={:.6}), but readlist serving is not implemented yet.",
-        page_counts.len(),
+        "Readlist validated and runtime created for {} pages in {} (initial_global_page={}, scroll={:.6}), but readlist serving is not implemented yet.",
+        runtime.manga.page_count(),
         path.display(),
-        readlist.progress_file,
-        readlist.progress_page,
-        readlist.progress_scroll
+        runtime.initial_page_index,
+        runtime.initial_scroll
     ))
-}
-
-fn is_supported_archive_file(path: &Path) -> bool {
-    path.extension()
-        .and_then(|ext| ext.to_str())
-        .is_some_and(|ext| ext.eq_ignore_ascii_case("cbz") || ext.eq_ignore_ascii_case("zip"))
 }

@@ -76,6 +76,12 @@ fn mime_for_path(path: &str) -> Option<&'static str> {
     }
 }
 
+pub fn is_supported_archive_file(path: &Path) -> bool {
+    path.extension()
+        .and_then(|ext| ext.to_str())
+        .is_some_and(|ext| ext.eq_ignore_ascii_case("cbz") || ext.eq_ignore_ascii_case("zip"))
+}
+
 fn zip_invalid_data(err: zip::result::ZipError) -> io::Error {
     io::Error::new(io::ErrorKind::InvalidData, err)
 }
