@@ -25,7 +25,6 @@ async function init() {
     await insertPage(idx, false);
   }
 
-  syncSpacers();
   scheduleUpdate();
 }
 
@@ -255,7 +254,7 @@ function syncSpacers() {
   const topHeight = Math.max(0, Math.round(state.trimmedTopHeight + targetTopSafety));
 
   topSpacer.style.height = `${topHeight}px`;
-  bottomSpacer.style.height = `${Math.max(0, Math.round(bottomSafety))}px`;
+  bottomSpacer.style.height = `${bottomSafety}px`;
 
   if (state.topSafetyHeight === null) {
     state.topSafetyHeight = targetTopSafety;
