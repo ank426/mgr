@@ -69,6 +69,10 @@ async function updateWindow() {
   const targetStart = Math.max(0, anchorIndex - prefetchBack);
   const targetEnd = Math.min(pageCount - 1, anchorIndex + prefetchForward);
 
+  if (state.firstLoadedIndex === targetStart && state.lastLoadedIndex === targetEnd) {
+    return;
+  }
+
   let changed = false;
 
   while (state.firstLoadedIndex > targetStart) {
@@ -172,8 +176,6 @@ function releasePageElement(element) {
     return;
   }
 
-  image.onload = null;
-  image.onerror = null;
   image.removeAttribute("srcset");
   image.src = TRANSPARENT_PIXEL;
   image.remove();
@@ -193,12 +195,10 @@ async function getPageElement(index) {
   const loadPromise = loadPageElement(index)
     .then((element) => {
       state.pageElements.set(index, element);
-      state.inflightLoads.delete(index);
       return element;
     })
-    .catch((error) => {
+    .finally(() => {
       state.inflightLoads.delete(index);
-      throw error;
     });
 
   state.inflightLoads.set(index, loadPromise);
