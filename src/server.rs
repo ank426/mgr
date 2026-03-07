@@ -25,6 +25,15 @@ pub async fn serve(manga: Manga, port: u16, prefetch_back: u32, prefetch_forward
     warp::serve(routes).run(addr).await;
 }
 
+fn build_html(title: &str, count: usize, prefetch_back: u32, prefetch_forward: u32) -> String {
+    include_str!("viewer.html")
+        .replace("{title}", title)
+        .replace("{page_count}", &count.to_string())
+        .replace("{prefetch_back}", &prefetch_back.to_string())
+        .replace("{prefetch_forward}", &prefetch_forward.to_string())
+        .replace("{viewer_script}", &include_str!("viewer.js").replace("</script", "<\\/script"))
+}
+
 async fn page_response(index: u32, state: Arc<Manga>) -> Result<Response<Vec<u8>>, warp::Rejection> {
     let Some(page) = state.page(index) else {
         return Ok(not_found_response());
@@ -48,15 +57,6 @@ async fn page_response(index: u32, state: Arc<Manga>) -> Result<Response<Vec<u8>
         .header("expires", "0")
         .body(data)
         .expect("valid response"))
-}
-
-fn build_html(title: &str, count: usize, prefetch_back: u32, prefetch_forward: u32) -> String {
-    include_str!("viewer.html")
-        .replace("{title}", title)
-        .replace("{page_count}", &count.to_string())
-        .replace("{prefetch_back}", &prefetch_back.to_string())
-        .replace("{prefetch_forward}", &prefetch_forward.to_string())
-        .replace("{viewer_script}", &include_str!("viewer.js").replace("</script", "<\\/script"))
 }
 
 fn not_found_response() -> Response<Vec<u8>> {
