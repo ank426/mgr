@@ -1,68 +1,68 @@
 const pageCount = window.MGR_CONFIG.pageCount;
 const prefetchBack = window.MGR_CONFIG.prefetchBack;
 const prefetchForward = window.MGR_CONFIG.prefetchForward;
-const pagesRoot = document.getElementById("pages");
+const pagesContainer = document.getElementById("pages");
 const topSpacer = document.getElementById("top-spacer");
 const bottomSpacer = document.getElementById("bottom-spacer");
 
 const state = {
   firstLoadedIndex: 0,
   lastLoadedIndex: -1,
-  loadedPages: new Map(),
-  loadingPages: new Map(),
-  needsUpdate: false,
-  updateRunning: false,
-  trimmedTopHeight: 0,
-  topSafetyHeight: null,
+  loadedPageElements: new Map(),
+  loadingPagePromises: new Map(),
+  updatePending: false,
+  updateInProgress: false,
+  trimmedTopHeightPx: 0,
+  previousTopSafetyPx: null,
 };
 
-async function init() {
+async function initializeViewer() {
   if (pageCount === 0) {
     return;
   }
 
   for (let idx = 0; idx <= Math.min(pageCount - 1, prefetchForward); idx++) {
-    await insertPage(idx, false);
+    await mountPage(idx, false);
   }
 
-  scheduleUpdate();
+  requestWindowUpdate();
 }
 
-function scheduleUpdate() {
-  if (state.needsUpdate) {
+function requestWindowUpdate() {
+  if (state.updatePending) {
     return;
   }
 
-  state.needsUpdate = true;
+  state.updatePending = true;
 
-  if (state.updateRunning) {
+  if (state.updateInProgress) {
     return;
   }
 
-  requestAnimationFrame(runUpdate);
+  requestAnimationFrame(flushWindowUpdate);
 }
 
-async function runUpdate() {
-  if (!state.needsUpdate || state.updateRunning) {
+async function flushWindowUpdate() {
+  if (!state.updatePending || state.updateInProgress) {
     return;
   }
 
-  state.needsUpdate = false;
-  state.updateRunning = true;
+  state.updatePending = false;
+  state.updateInProgress = true;
 
   try {
-    await updateWindow();
+    await reconcileWindow();
   } finally {
-    state.updateRunning = false;
+    state.updateInProgress = false;
 
-    if (state.needsUpdate) {
-      requestAnimationFrame(runUpdate);
+    if (state.updatePending) {
+      requestAnimationFrame(flushWindowUpdate);
     }
   }
 }
 
-async function updateWindow() {
-  const visibleRange = findVisibleRange();
+async function reconcileWindow() {
+  const visibleRange = getVisiblePageRange();
   if (!visibleRange) {
     return;
   }
@@ -77,32 +77,32 @@ async function updateWindow() {
   let changed = false;
 
   while (state.firstLoadedIndex > targetStart) {
-    await insertPage(state.firstLoadedIndex - 1, true);
+    await mountPage(state.firstLoadedIndex - 1, true);
     changed = true;
   }
 
   while (state.lastLoadedIndex < targetEnd) {
-    await insertPage(state.lastLoadedIndex + 1, false);
+    await mountPage(state.lastLoadedIndex + 1, false);
     changed = true;
   }
 
   while (state.firstLoadedIndex < targetStart) {
-    removePage(true);
+    unmountPage(true);
     changed = true;
   }
 
   while (state.lastLoadedIndex > targetEnd) {
-    removePage(false);
+    unmountPage(false);
     changed = true;
   }
 
   if (changed) {
-    scheduleUpdate();
+    requestWindowUpdate();
   }
 }
 
-function findVisibleRange() {
-  if (pagesRoot.childElementCount === 0) {
+function getVisiblePageRange() {
+  if (pagesContainer.childElementCount === 0) {
     return null;
   }
 
@@ -110,7 +110,7 @@ function findVisibleRange() {
   let firstVisible = null;
   let lastVisible = null;
 
-  for (const element of pagesRoot.children) {
+  for (const element of pagesContainer.children) {
     const rect = element.getBoundingClientRect();
     const intersectsViewport = rect.bottom > 0 && rect.top < viewportBottom;
     if (!intersectsViewport) {
@@ -130,8 +130,8 @@ function findVisibleRange() {
     return { first: firstVisible, last: lastVisible };
   }
 
-  const first = pagesRoot.firstElementChild;
-  const last = pagesRoot.lastElementChild;
+  const first = pagesContainer.firstElementChild;
+  const last = pagesContainer.lastElementChild;
   if (!first || !last) {
     return null;
   }
@@ -148,35 +148,35 @@ function findVisibleRange() {
   return { first: state.firstLoadedIndex, last: state.lastLoadedIndex };
 }
 
-async function insertPage(index, prepend) {
-  const element = await getOrLoadPageElement(index);
-  if (prepend) {
-    pagesRoot.prepend(element);
+async function mountPage(index, insertAtStart) {
+  const element = await getOrLoadMountedPageElement(index);
+  if (insertAtStart) {
+    pagesContainer.prepend(element);
     state.firstLoadedIndex = index;
     const height = element.getBoundingClientRect().height;
-    if (state.trimmedTopHeight > 0) {
-      state.trimmedTopHeight = Math.max(0, state.trimmedTopHeight - height);
+    if (state.trimmedTopHeightPx > 0) {
+      state.trimmedTopHeightPx = Math.max(0, state.trimmedTopHeightPx - height);
     }
   } else {
-    pagesRoot.appendChild(element);
+    pagesContainer.appendChild(element);
     state.lastLoadedIndex = index;
   }
 
-  syncSpacers();
+  syncVirtualSpacers();
 }
 
-function removePage(fromStart) {
-  const element = fromStart
-    ? pagesRoot.firstElementChild
-    : pagesRoot.lastElementChild;
+function unmountPage(removeFromStart) {
+  const element = removeFromStart
+    ? pagesContainer.firstElementChild
+    : pagesContainer.lastElementChild;
 
   if (!element) {
     return;
   }
 
-  const height = fromStart ? element.getBoundingClientRect().height : 0;
+  const height = removeFromStart ? element.getBoundingClientRect().height : 0;
   const pageIndex = Number(element.dataset.pageIndex);
-  state.loadedPages.delete(pageIndex);
+  state.loadedPageElements.delete(pageIndex);
   const image = element.querySelector("img");
 
   if (image) {
@@ -185,42 +185,42 @@ function removePage(fromStart) {
     image.remove();
   }
 
-  if (fromStart) {
+  if (removeFromStart) {
     state.firstLoadedIndex++;
-    state.trimmedTopHeight += height;
+    state.trimmedTopHeightPx += height;
   } else {
     state.lastLoadedIndex--;
   }
 
   element.remove();
-  syncSpacers();
+  syncVirtualSpacers();
 }
 
-function getOrLoadPageElement(index) {
-  const loadedElement = state.loadedPages.get(index);
+function getOrLoadMountedPageElement(index) {
+  const loadedElement = state.loadedPageElements.get(index);
   if (loadedElement) {
     return Promise.resolve(loadedElement);
   }
 
-  const loadingPromise = state.loadingPages.get(index);
+  const loadingPromise = state.loadingPagePromises.get(index);
   if (loadingPromise) {
     return loadingPromise;
   }
 
-  const newLoadPromise = loadPageElement(index)
+  const newLoadPromise = createPageElement(index)
     .then((element) => {
-      state.loadedPages.set(index, element);
+      state.loadedPageElements.set(index, element);
       return element;
     })
     .finally(() => {
-      state.loadingPages.delete(index);
+      state.loadingPagePromises.delete(index);
     });
 
-  state.loadingPages.set(index, newLoadPromise);
+  state.loadingPagePromises.set(index, newLoadPromise);
   return newLoadPromise;
 }
 
-function loadPageElement(index) {
+function createPageElement(index) {
   return new Promise((resolve, reject) => {
     const image = new Image();
     image.decoding = "async";
@@ -246,31 +246,31 @@ function loadPageElement(index) {
   });
 }
 
-function syncSpacers() {
+function syncVirtualSpacers() {
   const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
   const reserve = Math.max(4000, Math.round(viewportHeight * 6));
   const targetTopSafety = state.firstLoadedIndex > 0 ? reserve : 0;
   const bottomSafety = state.lastLoadedIndex < pageCount - 1 ? reserve : 0;
-  const topHeight = Math.max(0, Math.round(state.trimmedTopHeight + targetTopSafety));
+  const topHeight = Math.max(0, Math.round(state.trimmedTopHeightPx + targetTopSafety));
 
   topSpacer.style.height = `${topHeight}px`;
   bottomSpacer.style.height = `${bottomSafety}px`;
 
-  if (state.topSafetyHeight === null) {
-    state.topSafetyHeight = targetTopSafety;
+  if (state.previousTopSafetyPx === null) {
+    state.previousTopSafetyPx = targetTopSafety;
     return;
   }
 
-  const safetyDelta = targetTopSafety - state.topSafetyHeight;
-  state.topSafetyHeight = targetTopSafety;
+  const safetyDelta = targetTopSafety - state.previousTopSafetyPx;
+  state.previousTopSafetyPx = targetTopSafety;
   if (safetyDelta !== 0) {
     window.scrollBy(0, safetyDelta);
   }
 }
 
-window.addEventListener("scroll", scheduleUpdate, { passive: true });
-window.addEventListener("resize", scheduleUpdate);
+window.addEventListener("scroll", requestWindowUpdate, { passive: true });
+window.addEventListener("resize", requestWindowUpdate);
 
-init().catch((error) => {
+initializeViewer().catch((error) => {
   console.error(error);
 });
