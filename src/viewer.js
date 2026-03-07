@@ -1,9 +1,9 @@
-const pagesRoot = document.getElementById("pages");
-const topSpacer = document.getElementById("top-spacer");
-const bottomSpacer = document.getElementById("bottom-spacer");
 const pageCount = window.MGR_CONFIG.pageCount;
 const prefetchBack = window.MGR_CONFIG.prefetchBack;
 const prefetchForward = window.MGR_CONFIG.prefetchForward;
+const pagesRoot = document.getElementById("pages");
+const topSpacer = document.getElementById("top-spacer");
+const bottomSpacer = document.getElementById("bottom-spacer");
 
 const state = {
   firstLoadedIndex: 0,
