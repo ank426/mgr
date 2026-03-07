@@ -10,7 +10,7 @@ const state = {
   lastLoadedIndex: -1,
   loadedPages: new Map(),
   loadingPages: new Map(),
-  updateScheduled: false,
+  needsUpdate: false,
   updateRunning: false,
   trimmedTopHeight: 0,
   topSafetyHeight: null,
@@ -30,26 +30,35 @@ async function init() {
 }
 
 function scheduleUpdate() {
-  if (state.updateScheduled) {
+  if (state.needsUpdate) {
     return;
   }
 
-  state.updateScheduled = true;
+  state.needsUpdate = true;
+
+  if (state.updateRunning) {
+    return;
+  }
+
   requestAnimationFrame(runUpdate);
 }
 
 async function runUpdate() {
-  state.updateScheduled = false;
-  if (state.updateRunning) {
-    scheduleUpdate();
+  if (!state.needsUpdate || state.updateRunning) {
     return;
   }
 
+  state.needsUpdate = false;
   state.updateRunning = true;
+
   try {
     await updateWindow();
   } finally {
     state.updateRunning = false;
+
+    if (state.needsUpdate) {
+      requestAnimationFrame(runUpdate);
+    }
   }
 }
 
