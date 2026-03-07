@@ -52,6 +52,9 @@ async fn page_response(index: u32, state: Arc<Manga>) -> Result<Response<Vec<u8>
     Ok(Response::builder()
         .status(StatusCode::OK)
         .header("content-type", page.mime)
+        .header("cache-control", "no-store, no-cache, must-revalidate, max-age=0")
+        .header("pragma", "no-cache")
+        .header("expires", "0")
         .body(data)
         .expect("valid response"))
 }

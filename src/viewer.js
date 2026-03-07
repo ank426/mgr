@@ -2,6 +2,7 @@ const config = window.MGR_CONFIG;
 const pagesRoot = document.getElementById("pages");
 const topSpacer = document.getElementById("top-spacer");
 const bottomSpacer = document.getElementById("bottom-spacer");
+const TRANSPARENT_PIXEL = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==";
 
 const state = {
   pageCount: config.pageCount,
@@ -155,6 +156,7 @@ function trimTopPage() {
 
   const height = element.getBoundingClientRect().height;
   state.pageElements.delete(Number(element.dataset.pageIndex));
+  releasePageElement(element);
   element.remove();
   state.firstLoadedIndex += 1;
   state.trimmedTopHeight += height;
@@ -168,9 +170,23 @@ function trimBottomPage() {
   }
 
   state.pageElements.delete(Number(element.dataset.pageIndex));
+  releasePageElement(element);
   element.remove();
   state.lastLoadedIndex -= 1;
   syncSpacers();
+}
+
+function releasePageElement(element) {
+  const image = element.querySelector("img");
+  if (!image) {
+    return;
+  }
+
+  image.onload = null;
+  image.onerror = null;
+  image.removeAttribute("srcset");
+  image.src = TRANSPARENT_PIXEL;
+  image.remove();
 }
 
 async function getPageElement(index) {
