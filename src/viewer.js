@@ -8,8 +8,8 @@ const prefetchForward = window.MGR_CONFIG.prefetchForward;
 const state = {
   firstLoadedIndex: 0,
   lastLoadedIndex: -1,
-  pageElements: new Map(),
-  inflightLoads: new Map(),
+  loadedPages: new Map(),
+  loadingPages: new Map(),
   updateScheduled: false,
   updateRunning: false,
   trimmedTopHeight: 0,
@@ -125,7 +125,7 @@ function findAnchorPageIndex() {
 }
 
 async function insertPage(index, prepend) {
-  const element = await getPageElement(index);
+  const element = await getOrLoadPageElement(index);
   if (prepend) {
     pagesRoot.prepend(element);
     state.firstLoadedIndex = index;
@@ -152,7 +152,7 @@ function removePage(fromStart) {
 
   const height = fromStart ? element.getBoundingClientRect().height : 0;
   const pageIndex = Number(element.dataset.pageIndex);
-  state.pageElements.delete(pageIndex);
+  state.loadedPages.delete(pageIndex);
   const image = element.querySelector("img");
 
   if (image) {
@@ -172,28 +172,28 @@ function removePage(fromStart) {
   syncSpacers();
 }
 
-async function getPageElement(index) {
-  const existing = state.pageElements.get(index);
-  if (existing) {
-    return existing;
+function getOrLoadPageElement(index) {
+  const loadedElement = state.loadedPages.get(index);
+  if (loadedElement) {
+    return Promise.resolve(loadedElement);
   }
 
-  const inflight = state.inflightLoads.get(index);
-  if (inflight) {
-    return inflight;
+  const loadingPromise = state.loadingPages.get(index);
+  if (loadingPromise) {
+    return loadingPromise;
   }
 
-  const loadPromise = loadPageElement(index)
+  const newLoadPromise = loadPageElement(index)
     .then((element) => {
-      state.pageElements.set(index, element);
+      state.loadedPages.set(index, element);
       return element;
     })
     .finally(() => {
-      state.inflightLoads.delete(index);
+      state.loadingPages.delete(index);
     });
 
-  state.inflightLoads.set(index, loadPromise);
-  return loadPromise;
+  state.loadingPages.set(index, newLoadPromise);
+  return newLoadPromise;
 }
 
 function loadPageElement(index) {
