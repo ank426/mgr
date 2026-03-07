@@ -63,13 +63,13 @@ async function runUpdate() {
 }
 
 async function updateWindow() {
-  const anchorIndex = findAnchorPageIndex();
-  if (anchorIndex === null) {
+  const visibleRange = findVisibleRange();
+  if (!visibleRange) {
     return;
   }
 
-  const targetStart = Math.max(0, anchorIndex - prefetchBack);
-  const targetEnd = Math.min(pageCount - 1, anchorIndex + prefetchForward);
+  const targetStart = Math.max(0, visibleRange.first - prefetchBack);
+  const targetEnd = Math.min(pageCount - 1, visibleRange.last + prefetchForward);
 
   if (state.firstLoadedIndex === targetStart && state.lastLoadedIndex === targetEnd) {
     return;
@@ -102,35 +102,51 @@ async function updateWindow() {
   }
 }
 
-function findAnchorPageIndex() {
+function findVisibleRange() {
   if (pagesRoot.childElementCount === 0) {
     return null;
   }
 
   const viewportBottom = window.innerHeight || document.documentElement.clientHeight || 0;
-  let bestIndex = null;
-  let bestVisiblePixels = -1;
+  let firstVisible = null;
+  let lastVisible = null;
 
   for (const element of pagesRoot.children) {
     const rect = element.getBoundingClientRect();
-    const visiblePixels = Math.min(rect.bottom, viewportBottom) - Math.max(rect.top, 0);
-    if (visiblePixels > bestVisiblePixels) {
-      bestVisiblePixels = visiblePixels;
-      bestIndex = Number(element.dataset.pageIndex);
+    const intersectsViewport = rect.bottom > 0 && rect.top < viewportBottom;
+    if (!intersectsViewport) {
+      continue;
+    }
+
+    const idx = Number(element.dataset.pageIndex);
+    if (firstVisible === null || idx < firstVisible) {
+      firstVisible = idx;
+    }
+    if (lastVisible === null || idx > lastVisible) {
+      lastVisible = idx;
     }
   }
 
-  if (bestVisiblePixels > 0 && bestIndex !== null) {
-    return bestIndex;
+  if (firstVisible !== null && lastVisible !== null) {
+    return { first: firstVisible, last: lastVisible };
   }
 
   const first = pagesRoot.firstElementChild;
-  if (first && first.getBoundingClientRect().top > 0) {
-    return Number(first.dataset.pageIndex);
+  const last = pagesRoot.lastElementChild;
+  if (!first || !last) {
+    return null;
   }
 
-  const last = pagesRoot.lastElementChild;
-  return last ? Number(last.dataset.pageIndex) : null;
+  const firstIndex = Number(first.dataset.pageIndex);
+  const lastIndex = Number(last.dataset.pageIndex);
+  if (first.getBoundingClientRect().top > 0) {
+    return { first: firstIndex, last: firstIndex };
+  }
+  if (last.getBoundingClientRect().bottom < 0) {
+    return { first: lastIndex, last: lastIndex };
+  }
+
+  return { first: state.firstLoadedIndex, last: state.lastLoadedIndex };
 }
 
 async function insertPage(index, prepend) {
