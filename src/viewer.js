@@ -1,11 +1,9 @@
-const config = window.MGR_CONFIG;
 const pagesRoot = document.getElementById("pages");
 const topSpacer = document.getElementById("top-spacer");
 const bottomSpacer = document.getElementById("bottom-spacer");
-const TRANSPARENT_PIXEL = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==";
-const pageCount = config.pageCount;
-const prefetchBack = config.prefetchBack;
-const prefetchForward = config.prefetchForward;
+const pageCount = window.MGR_CONFIG.pageCount;
+const prefetchBack = window.MGR_CONFIG.prefetchBack;
+const prefetchForward = window.MGR_CONFIG.prefetchForward;
 
 const state = {
   firstLoadedIndex: 0,
@@ -23,13 +21,8 @@ async function init() {
     return;
   }
 
-  const initialLastIndex = Math.min(
-    pageCount - 1,
-    prefetchForward,
-  );
-
-  for (let index = 0; index <= initialLastIndex; index += 1) {
-    await insertPage(index, false);
+  for (let idx = 0; idx <= Math.min(pageCount - 1, prefetchForward); idx++) {
+    await insertPage(idx, false);
   }
 
   syncSpacers();
@@ -105,7 +98,7 @@ function findAnchorPageIndex() {
     return null;
   }
 
-  const viewportBottom = viewportHeight();
+  const viewportBottom = window.innerHeight || document.documentElement.clientHeight || 0;
   let bestIndex = null;
   let bestVisiblePixels = -1;
 
@@ -149,7 +142,10 @@ async function insertPage(index, prepend) {
 }
 
 function removePage(fromStart) {
-  const element = fromStart ? pagesRoot.firstElementChild : pagesRoot.lastElementChild;
+  const element = fromStart
+    ? pagesRoot.firstElementChild
+    : pagesRoot.lastElementChild;
+
   if (!element) {
     return;
   }
@@ -157,28 +153,23 @@ function removePage(fromStart) {
   const height = fromStart ? element.getBoundingClientRect().height : 0;
   const pageIndex = Number(element.dataset.pageIndex);
   state.pageElements.delete(pageIndex);
-  releasePageElement(element);
+  const image = element.querySelector("img");
+
+  if (image) {
+    image.removeAttribute("srcset");
+    image.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==";
+    image.remove();
+  }
 
   if (fromStart) {
-    state.firstLoadedIndex += 1;
+    state.firstLoadedIndex++;
     state.trimmedTopHeight += height;
   } else {
-    state.lastLoadedIndex -= 1;
+    state.lastLoadedIndex--;
   }
 
   element.remove();
   syncSpacers();
-}
-
-function releasePageElement(element) {
-  const image = element.querySelector("img");
-  if (!image) {
-    return;
-  }
-
-  image.removeAttribute("srcset");
-  image.src = TRANSPARENT_PIXEL;
-  image.remove();
 }
 
 async function getPageElement(index) {
@@ -231,12 +222,9 @@ function loadPageElement(index) {
   });
 }
 
-function viewportHeight() {
-  return window.innerHeight || document.documentElement.clientHeight || 0;
-}
-
 function syncSpacers() {
-  const reserve = safetyReserveHeight();
+  const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+  const reserve = Math.max(4000, Math.round(viewportHeight * 6));
   const targetTopSafety = state.firstLoadedIndex > 0 ? reserve : 0;
   const bottomSafety = state.lastLoadedIndex < pageCount - 1 ? reserve : 0;
   const topHeight = Math.max(0, Math.round(state.trimmedTopHeight + targetTopSafety));
@@ -254,10 +242,6 @@ function syncSpacers() {
   if (safetyDelta !== 0) {
     window.scrollBy(0, safetyDelta);
   }
-}
-
-function safetyReserveHeight() {
-  return Math.max(4000, Math.round(viewportHeight() * 6));
 }
 
 window.addEventListener("scroll", scheduleUpdate, { passive: true });
