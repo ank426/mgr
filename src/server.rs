@@ -19,16 +19,7 @@ pub async fn serve(manga: Manga, port: u16, prefetch_back: u32, prefetch_forward
         .and(warp::any().map(move || Arc::clone(&state_for_route)))
         .and_then(page_response);
 
-    let script = include_str!("viewer.js");
-    let script_route = warp::path!("static" / "viewer.js").map(move || {
-        Response::builder()
-            .status(StatusCode::OK)
-            .header("content-type", "text/javascript; charset=utf-8")
-            .body(script.as_bytes().to_vec())
-            .expect("valid response")
-    });
-
-    let routes = html_route.or(script_route).or(page_route);
+    let routes = html_route.or(page_route);
     let addr = ([127, 0, 0, 1], port);
     println!("Open http://127.0.0.1:{port}");
     warp::serve(routes).run(addr).await;
@@ -65,6 +56,7 @@ fn build_html(title: &str, count: usize, prefetch_back: u32, prefetch_forward: u
         .replace("{page_count}", &count.to_string())
         .replace("{prefetch_back}", &prefetch_back.to_string())
         .replace("{prefetch_forward}", &prefetch_forward.to_string())
+        .replace("{viewer_script}", &include_str!("viewer.js").replace("</script", "<\\/script"))
 }
 
 fn not_found_response() -> Response<Vec<u8>> {
