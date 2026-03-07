@@ -36,17 +36,22 @@ fn build_html(title: &str, count: usize, prefetch_back: u32, prefetch_forward: u
 
 async fn page_response(index: u32, state: Arc<Manga>) -> Result<Response<Vec<u8>>, warp::Rejection> {
     let Some(page) = state.page(index) else {
-        return Ok(not_found_response());
+        return Ok(Response::builder()
+            .status(StatusCode::NOT_FOUND)
+            .header("content-type", "text/plain; charset=utf-8")
+            .body(b"Not Found".to_vec())
+            .expect("valid response"));
     };
 
-    let archive_path = page.archive_path.clone();
-    let page_name = page.page_name.clone();
-    let data = match load_page_bytes(archive_path, page_name).await {
+    let data = match load_page_bytes(page.archive_path.clone(), page.page_name.clone()).await {
         Ok(data) => data,
         Err(err) => {
-            let message = format!("Failed to load page {index}: {err}");
-            return Ok(error_response(message));
-        }
+            return Ok(Response::builder()
+                .status(StatusCode::INTERNAL_SERVER_ERROR)
+                .header("content-type", "text/plain; charset=utf-8")
+                .body(format!("Failed to load page {index}: {err}").into_bytes())
+                .expect("valid response"));
+        },
     };
 
     Ok(Response::builder()
@@ -57,22 +62,6 @@ async fn page_response(index: u32, state: Arc<Manga>) -> Result<Response<Vec<u8>
         .header("expires", "0")
         .body(data)
         .expect("valid response"))
-}
-
-fn not_found_response() -> Response<Vec<u8>> {
-    Response::builder()
-        .status(StatusCode::NOT_FOUND)
-        .header("content-type", "text/plain; charset=utf-8")
-        .body(b"Not Found".to_vec())
-        .expect("valid response")
-}
-
-fn error_response(message: String) -> Response<Vec<u8>> {
-    Response::builder()
-        .status(StatusCode::INTERNAL_SERVER_ERROR)
-        .header("content-type", "text/plain; charset=utf-8")
-        .body(message.into_bytes())
-        .expect("valid response")
 }
 
 async fn load_page_bytes(archive_path: std::path::PathBuf, page_name: String) -> io::Result<Vec<u8>> {
