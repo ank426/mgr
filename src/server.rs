@@ -8,10 +8,24 @@ use warp::http::{Response, StatusCode};
 use crate::cbz;
 use crate::manga::Manga;
 
-pub async fn serve(manga: Manga, port: u16, prefetch_back: u32, prefetch_forward: u32) {
+pub async fn serve(
+    manga: Manga,
+    port: u16,
+    prefetch_back: u32,
+    prefetch_forward: u32,
+    initial_page_index: u32,
+    initial_scroll: f64,
+) {
     let state = Arc::new(manga);
 
-    let html = build_html(state.title(), state.page_count(), prefetch_back, prefetch_forward);
+    let html = build_html(
+        state.title(),
+        state.page_count(),
+        prefetch_back,
+        prefetch_forward,
+        initial_page_index,
+        initial_scroll,
+    );
     let html_route = warp::path::end().map(move || warp::reply::html(html.clone()).into_response());
 
     let state_for_route = Arc::clone(&state);
@@ -25,13 +39,22 @@ pub async fn serve(manga: Manga, port: u16, prefetch_back: u32, prefetch_forward
     warp::serve(routes).run(addr).await;
 }
 
-fn build_html(title: &str, count: usize, prefetch_back: u32, prefetch_forward: u32) -> String {
+fn build_html(
+    title: &str,
+    count: usize,
+    prefetch_back: u32,
+    prefetch_forward: u32,
+    initial_page_index: u32,
+    initial_scroll: f64,
+) -> String {
     include_str!("viewer.html")
         .replace("{title}", title)
         .replace("{page_count}", &count.to_string())
         .replace("{prefetch_back}", &prefetch_back.to_string())
         .replace("{prefetch_forward}", &prefetch_forward.to_string())
-        .replace("{viewer_script}", &include_str!("viewer.js").replace("</script", "<\\/script"))
+        .replace("{initial_page_index}", &initial_page_index.to_string())
+        .replace("{initial_scroll}", &initial_scroll.to_string())
+        .replace("__VIEWER_SCRIPT__", &include_str!("viewer.js").replace("</script", "<\\/script"))
 }
 
 async fn page_response(index: u32, state: Arc<Manga>) -> Result<Response<Vec<u8>>, warp::Rejection> {

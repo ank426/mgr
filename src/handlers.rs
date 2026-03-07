@@ -37,7 +37,7 @@ pub async fn handle_serve_file(
     }
 
     let series = manga::Manga::from_volume(volume);
-    server::serve(series, port, prefetch_back, prefetch_forward).await;
+    server::serve(series, port, prefetch_back, prefetch_forward, 0, 0.0).await;
     Ok(())
 }
 
@@ -58,6 +58,14 @@ pub async fn handle_serve_readlist_directory(
 
     let readlist = readlist::load(&readlist_path).map_err(|err| format!("Failed to load readlist: {err}"))?;
     let runtime = manga::build_from_readlist(path, readlist)?;
-    server::serve(runtime.manga, port, prefetch_back, prefetch_forward).await;
+    server::serve(
+        runtime.manga,
+        port,
+        prefetch_back,
+        prefetch_forward,
+        runtime.initial_page_index,
+        runtime.initial_scroll,
+    )
+    .await;
     Ok(())
 }
