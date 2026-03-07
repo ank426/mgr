@@ -1,16 +1,17 @@
+use std::io;
 use std::sync::Arc;
 
 use warp::Filter;
 use warp::Reply;
 use warp::http::{Response, StatusCode};
 
+use crate::cbz;
 use crate::manga::Manga;
-use crate::window::Window;
 
 pub async fn serve(manga: Manga, port: u16, prefetch_back: u32, prefetch_forward: u32) {
-    let state = Arc::new(Window::new(manga, prefetch_back, prefetch_forward));
+    let state = Arc::new(manga);
 
-    let html = build_html(state.title(), state.page_count());
+    let html = build_html(state.title(), state.page_count(), prefetch_back, prefetch_forward);
     let html_route = warp::path::end().map(move || warp::reply::html(html.clone()).into_response());
 
     let state_for_route = Arc::clone(&state);
@@ -18,18 +19,29 @@ pub async fn serve(manga: Manga, port: u16, prefetch_back: u32, prefetch_forward
         .and(warp::any().map(move || Arc::clone(&state_for_route)))
         .and_then(page_response);
 
-    let routes = html_route.or(page_route);
+    let script = include_str!("viewer.js");
+    let script_route = warp::path!("static" / "viewer.js").map(move || {
+        Response::builder()
+            .status(StatusCode::OK)
+            .header("content-type", "text/javascript; charset=utf-8")
+            .body(script.as_bytes().to_vec())
+            .expect("valid response")
+    });
+
+    let routes = html_route.or(script_route).or(page_route);
     let addr = ([127, 0, 0, 1], port);
     println!("Open http://127.0.0.1:{port}");
     warp::serve(routes).run(addr).await;
 }
 
-async fn page_response(index: u32, state: Arc<Window>) -> Result<Response<Vec<u8>>, warp::Rejection> {
-    let Some(mime) = state.page_mime(index) else {
+async fn page_response(index: u32, state: Arc<Manga>) -> Result<Response<Vec<u8>>, warp::Rejection> {
+    let Some(page) = state.page(index) else {
         return Ok(not_found_response());
     };
 
-    let data = match state.get_page_with_prefetch(index).await {
+    let archive_path = page.archive_path.clone();
+    let page_name = page.page_name.clone();
+    let data = match load_page_bytes(archive_path, page_name).await {
         Ok(data) => data,
         Err(err) => {
             let message = format!("Failed to load page {index}: {err}");
@@ -39,22 +51,17 @@ async fn page_response(index: u32, state: Arc<Window>) -> Result<Response<Vec<u8
 
     Ok(Response::builder()
         .status(StatusCode::OK)
-        .header("content-type", mime)
-        .body(data.as_ref().clone())
+        .header("content-type", page.mime)
+        .body(data)
         .expect("valid response"))
 }
 
-fn build_html(title: &str, count: usize) -> String {
-    let mut images = String::new();
-    for idx in 0..count {
-        images.push_str(&format!(
-            "<img src=\"/page/{idx}\" loading=\"lazy\" decoding=\"async\" alt=\"page {idx}\" />\n"
-        ));
-    }
-
+fn build_html(title: &str, count: usize, prefetch_back: u32, prefetch_forward: u32) -> String {
     include_str!("viewer.html")
         .replace("{title}", title)
-        .replace("{images}", &images)
+        .replace("{page_count}", &count.to_string())
+        .replace("{prefetch_back}", &prefetch_back.to_string())
+        .replace("{prefetch_forward}", &prefetch_forward.to_string())
 }
 
 fn not_found_response() -> Response<Vec<u8>> {
@@ -71,4 +78,10 @@ fn error_response(message: String) -> Response<Vec<u8>> {
         .header("content-type", "text/plain; charset=utf-8")
         .body(message.into_bytes())
         .expect("valid response")
+}
+
+async fn load_page_bytes(archive_path: std::path::PathBuf, page_name: String) -> io::Result<Vec<u8>> {
+    tokio::task::spawn_blocking(move || cbz::load_page_bytes(&archive_path, &page_name))
+        .await
+        .map_err(|err| io::Error::other(format!("Page load task failed: {err}")))?
 }

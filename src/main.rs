@@ -3,7 +3,6 @@ mod handlers;
 mod manga;
 mod readlist;
 mod server;
-mod window;
 
 use clap::Parser;
 use std::path::PathBuf;
@@ -16,10 +15,10 @@ struct Args {
     #[arg(short, long, default_value_t = 8080)]
     port: u16,
 
-    #[arg(long, default_value_t = 1)]
+    #[arg(long, default_value_t = 2)]
     prefetch_back: u32,
 
-    #[arg(long, default_value_t = 2)]
+    #[arg(long, default_value_t = 4)]
     prefetch_forward: u32,
 
     #[arg(default_value = ".")]
