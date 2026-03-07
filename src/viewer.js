@@ -3,11 +3,11 @@ const pagesRoot = document.getElementById("pages");
 const topSpacer = document.getElementById("top-spacer");
 const bottomSpacer = document.getElementById("bottom-spacer");
 const TRANSPARENT_PIXEL = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==";
+const pageCount = config.pageCount;
+const prefetchBack = config.prefetchBack;
+const prefetchForward = config.prefetchForward;
 
 const state = {
-  pageCount: config.pageCount,
-  prefetchBack: config.prefetchBack,
-  prefetchForward: config.prefetchForward,
   firstLoadedIndex: 0,
   lastLoadedIndex: -1,
   pageElements: new Map(),
@@ -15,22 +15,21 @@ const state = {
   updateScheduled: false,
   updateRunning: false,
   trimmedTopHeight: 0,
-  topSafetyHeight: 0,
-  spacersInitialized: false,
+  topSafetyHeight: null,
 };
 
 async function init() {
-  if (state.pageCount === 0) {
+  if (pageCount === 0) {
     return;
   }
 
   const initialLastIndex = Math.min(
-    state.pageCount - 1,
-    state.prefetchForward,
+    pageCount - 1,
+    prefetchForward,
   );
 
   for (let index = 0; index <= initialLastIndex; index += 1) {
-    await appendPage(index);
+    await insertPage(index, false);
   }
 
   syncSpacers();
@@ -67,28 +66,28 @@ async function updateWindow() {
     return;
   }
 
-  const targetStart = Math.max(0, anchorIndex - state.prefetchBack);
-  const targetEnd = Math.min(state.pageCount - 1, anchorIndex + state.prefetchForward);
+  const targetStart = Math.max(0, anchorIndex - prefetchBack);
+  const targetEnd = Math.min(pageCount - 1, anchorIndex + prefetchForward);
 
   let changed = false;
 
   while (state.firstLoadedIndex > targetStart) {
-    await prependPage(state.firstLoadedIndex - 1);
+    await insertPage(state.firstLoadedIndex - 1, true);
     changed = true;
   }
 
   while (state.lastLoadedIndex < targetEnd) {
-    await appendPage(state.lastLoadedIndex + 1);
+    await insertPage(state.lastLoadedIndex + 1, false);
     changed = true;
   }
 
   while (state.firstLoadedIndex < targetStart) {
-    trimTopPage();
+    removePage(true);
     changed = true;
   }
 
   while (state.lastLoadedIndex > targetEnd) {
-    trimBottomPage();
+    removePage(false);
     changed = true;
   }
 
@@ -128,51 +127,42 @@ function findAnchorPageIndex() {
   return last ? Number(last.dataset.pageIndex) : null;
 }
 
-async function appendPage(index) {
+async function insertPage(index, prepend) {
   const element = await getPageElement(index);
-  pagesRoot.appendChild(element);
-  state.lastLoadedIndex = index;
-  syncSpacers();
-}
-
-async function prependPage(index) {
-  const element = await getPageElement(index);
-  pagesRoot.prepend(element);
-  state.firstLoadedIndex = index;
-  const height = element.getBoundingClientRect().height;
-
-  if (state.trimmedTopHeight > 0) {
-    state.trimmedTopHeight = Math.max(0, state.trimmedTopHeight - height);
+  if (prepend) {
+    pagesRoot.prepend(element);
+    state.firstLoadedIndex = index;
+    const height = element.getBoundingClientRect().height;
+    if (state.trimmedTopHeight > 0) {
+      state.trimmedTopHeight = Math.max(0, state.trimmedTopHeight - height);
+    }
+  } else {
+    pagesRoot.appendChild(element);
+    state.lastLoadedIndex = index;
   }
 
   syncSpacers();
 }
 
-function trimTopPage() {
-  const element = pagesRoot.firstElementChild;
+function removePage(fromStart) {
+  const element = fromStart ? pagesRoot.firstElementChild : pagesRoot.lastElementChild;
   if (!element) {
     return;
   }
 
-  const height = element.getBoundingClientRect().height;
-  state.pageElements.delete(Number(element.dataset.pageIndex));
+  const height = fromStart ? element.getBoundingClientRect().height : 0;
+  const pageIndex = Number(element.dataset.pageIndex);
+  state.pageElements.delete(pageIndex);
   releasePageElement(element);
-  element.remove();
-  state.firstLoadedIndex += 1;
-  state.trimmedTopHeight += height;
-  syncSpacers();
-}
 
-function trimBottomPage() {
-  const element = pagesRoot.lastElementChild;
-  if (!element) {
-    return;
+  if (fromStart) {
+    state.firstLoadedIndex += 1;
+    state.trimmedTopHeight += height;
+  } else {
+    state.lastLoadedIndex -= 1;
   }
 
-  state.pageElements.delete(Number(element.dataset.pageIndex));
-  releasePageElement(element);
   element.remove();
-  state.lastLoadedIndex -= 1;
   syncSpacers();
 }
 
@@ -248,14 +238,13 @@ function viewportHeight() {
 function syncSpacers() {
   const reserve = safetyReserveHeight();
   const targetTopSafety = state.firstLoadedIndex > 0 ? reserve : 0;
-  const bottomSafety = state.lastLoadedIndex < state.pageCount - 1 ? reserve : 0;
+  const bottomSafety = state.lastLoadedIndex < pageCount - 1 ? reserve : 0;
   const topHeight = Math.max(0, Math.round(state.trimmedTopHeight + targetTopSafety));
 
   topSpacer.style.height = `${topHeight}px`;
   bottomSpacer.style.height = `${Math.max(0, Math.round(bottomSafety))}px`;
 
-  if (!state.spacersInitialized) {
-    state.spacersInitialized = true;
+  if (state.topSafetyHeight === null) {
     state.topSafetyHeight = targetTopSafety;
     return;
   }
