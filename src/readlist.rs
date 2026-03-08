@@ -128,21 +128,6 @@ impl ReadList {
     }
 }
 
-impl Progress {
-    pub fn progress_position(&self, volumes: &[cbz::Volume]) -> (u32, u32) {
-        let page_index = self.page.checked_sub(1).expect("validated progress.page is >= 1");
-        let volume_index = volumes
-            .iter()
-            .position(|volume| {
-                volume.archive_path.file_name().and_then(|name| name.to_str()).is_some_and(|name| name == self.file)
-            })
-            .expect("validated progress.file matches a loaded volume");
-        let volume = &volumes[volume_index];
-        assert!(page_index < volume.pages.len() as u32, "validated progress.page fits in matched volume");
-        (volume_index as u32, page_index)
-    }
-}
-
 pub fn generate(dir: &Path, readlist_file_name: &str) -> io::Result<PathBuf> {
     let output_path = dir.join(readlist_file_name);
 
