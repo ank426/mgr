@@ -49,10 +49,7 @@ pub fn generate(dir: &Path, readlist_file_name: &str) -> io::Result<PathBuf> {
     cbz_files.sort_by(|a, b| compare_str(a, b));
 
     let mut readlist = if output_path.is_file() {
-        let content = fs::read_to_string(&output_path)?;
-        toml_edit::de::from_str::<ReadList>(&content).map_err(|err| {
-            io::Error::new(io::ErrorKind::InvalidData, format!("Failed to parse {}: {err}", output_path.display()))
-        })?
+        load(&output_path)?
     } else {
         ReadList {
             progress: Progress { file: cbz_files.first().cloned().unwrap_or_default(), page: 1, scroll: 0.0 },
