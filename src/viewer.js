@@ -1,13 +1,11 @@
-const volumePageCounts = window.MGR_CONFIG.volumePageCounts;
-const volumeNames = window.MGR_CONFIG.volumeNames;
-const prefetchBack = window.MGR_CONFIG.prefetchBack;
-const prefetchForward = window.MGR_CONFIG.prefetchForward;
+const volumes = window.MGR_CONFIG.volumes;
+const [prefetchBack, prefetchForward] = window.MGR_CONFIG.prefetch;
 const initialVolumeName = window.MGR_CONFIG.initialVolumeName;
-const initialPageIndex = window.MGR_CONFIG.initialPageIndex;
+const initialPageNumber = window.MGR_CONFIG.initialPageNumber;
 const pagesContainer = document.getElementById("pages");
 const topSpacer = document.getElementById("top-spacer");
 const bottomSpacer = document.getElementById("bottom-spacer");
-const orderedPages = buildOrderedPages(volumePageCounts, volumeNames);
+const orderedPages = buildOrderedPages(volumes);
 const pageCount = orderedPages.length;
 
 const state = {
@@ -224,8 +222,8 @@ function createPageElement(index) {
     const pageRef = orderedPages[index];
     const image = new Image();
     image.decoding = "async";
-    image.alt = `volume ${pageRef.volumeName} page ${pageRef.pageIndex}`;
-    image.src = `/volume/${encodeURIComponent(pageRef.volumeName)}/page/${pageRef.pageIndex}`;
+    image.alt = `volume ${pageRef.volumeName} page ${pageRef.pageNumber}`;
+    image.src = `/volume/${encodeURIComponent(pageRef.volumeName)}/page/${pageRef.pageNumber}`;
 
     image.addEventListener(
       "load",
@@ -234,7 +232,7 @@ function createPageElement(index) {
         element.dataset.pageIndex = String(index);
         element.dataset.volumeIndex = String(pageRef.volumeIndex);
         element.dataset.volumeName = pageRef.volumeName;
-        element.dataset.volumePageIndex = String(pageRef.pageIndex);
+        element.dataset.volumePageNumber = String(pageRef.pageNumber);
         element.appendChild(image);
         resolve(element);
       },
@@ -243,18 +241,17 @@ function createPageElement(index) {
 
     image.addEventListener(
       "error",
-      () => reject(new Error(`Failed to load volume ${pageRef.volumeName} page ${pageRef.pageIndex}`)),
+      () => reject(new Error(`Failed to load volume ${pageRef.volumeName} page ${pageRef.pageNumber}`)),
       { once: true },
     );
   });
 }
 
-function buildOrderedPages(counts, names) {
+function buildOrderedPages(volumesConfig) {
   const pages = [];
-  counts.forEach((count, volumeIndex) => {
-    const volumeName = names[volumeIndex];
-    for (let pageIndex = 0; pageIndex < count; pageIndex++) {
-      pages.push({ volumeIndex, volumeName, pageIndex });
+  volumesConfig.forEach((volume, volumeIndex) => {
+    for (let pageNumber = 1; pageNumber <= volume.pageDims.length; pageNumber++) {
+      pages.push({ volumeIndex, volumeName: volume.name, pageNumber, dimensions: volume.pageDims[pageNumber - 1] });
     }
   });
   return pages;
@@ -262,10 +259,11 @@ function buildOrderedPages(counts, names) {
 
 function findInitialOrdinal() {
   let ordinal = 0;
-  for (let volumeIndex = 0; volumeIndex < volumePageCounts.length; volumeIndex++) {
-    const pageCountForVolume = volumePageCounts[volumeIndex];
-    if (volumeNames[volumeIndex] === initialVolumeName) {
-      return ordinal + Math.min(initialPageIndex, Math.max(0, pageCountForVolume - 1));
+  for (const volume of volumes) {
+    const pageCountForVolume = volume.pageDims.length;
+    if (volume.name === initialVolumeName) {
+      const cappedPageNumber = Math.min(Math.max(initialPageNumber, 1), Math.max(pageCountForVolume, 1));
+      return ordinal + (cappedPageNumber - 1);
     }
     ordinal += pageCountForVolume;
   }
