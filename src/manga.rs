@@ -5,8 +5,8 @@ use crate::readlist::ReadList;
 
 #[derive(Clone, Debug)]
 pub struct Manga {
-    title: String,
-    volumes: Vec<Volume>,
+    pub title: String,
+    pub volumes: Vec<Volume>,
 }
 
 pub struct ReadlistRuntime {
@@ -17,19 +17,6 @@ pub struct ReadlistRuntime {
 }
 
 impl Manga {
-    pub fn from_volume(volume: Volume) -> Self {
-        let title = volume.title.clone();
-        Self::from_volumes(title, vec![volume])
-    }
-
-    pub fn from_volumes(title: String, volumes: Vec<Volume>) -> Self {
-        Self { title, volumes }
-    }
-
-    pub fn title(&self) -> &str {
-        &self.title
-    }
-
     pub fn volume_page_counts(&self) -> Vec<u32> {
         self.volumes.iter().map(|volume| volume.pages.len() as u32).collect()
     }
@@ -127,7 +114,7 @@ pub fn build_from_readlist(root: &Path, readlist: ReadList) -> Result<ReadlistRu
     }
 
     let title = root.file_name().and_then(|name| name.to_str()).unwrap_or("manga").to_string();
-    let manga = Manga::from_volumes(title, volumes);
+    let manga = Manga { title, volumes };
 
     Ok(ReadlistRuntime { manga, initial_volume_index, initial_page_index, initial_scroll: readlist.progress.scroll })
 }

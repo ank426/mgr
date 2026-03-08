@@ -33,7 +33,7 @@ pub async fn handle_serve_file(
         return Err(format!("No supported image pages found in {}", path.display()));
     }
 
-    let series = Manga::from_volume(volume);
+    let series = Manga { title: volume.title.clone(), volumes: vec![volume] };
     server::serve(series, port, prefetch_back, prefetch_forward, 0, 0, 0.0).await;
     Ok(())
 }

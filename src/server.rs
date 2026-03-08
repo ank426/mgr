@@ -20,7 +20,7 @@ pub async fn serve(
     let state = Arc::new(manga);
 
     let html = build_html(
-        state.title(),
+        &state.title,
         &state.volume_page_counts(),
         prefetch_back,
         prefetch_forward,
