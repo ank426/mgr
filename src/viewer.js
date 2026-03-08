@@ -43,36 +43,33 @@ function initializeViewer() {
 
 function buildDom() {
   const fragment = document.createDocumentFragment();
-  let globalIndex = 0;
+  let pageIndex = 0;
 
   for (const volume of volumes) {
     const volumeSection = document.createElement("section");
     volumeSection.dataset.volumeName = volume.name;
 
-    for (let pageOffset = 0; pageOffset < volume.pageDims.length; pageOffset++) {
-      const pageNumber = pageOffset + 1;
-      const dimensions = volume.pageDims[pageOffset];
-
+    for (let pageNumber = 1; pageNumber <= volume.pageDims.length; pageNumber++) {
+      const dimensions = volume.pageDims[pageNumber - 1];
       const slot = document.createElement("div");
+
       slot.dataset.pageSlot = "1";
-      slot.dataset.pageIndex = String(globalIndex);
+      slot.dataset.pageIndex = String(pageIndex);
       slot.dataset.volumeName = volume.name;
       slot.dataset.pageNumber = String(pageNumber);
 
       volumeSection.appendChild(slot);
-
       pageSlots.push({
-        index: globalIndex,
         slot,
         volumeName: volume.name,
         pageNumber,
         dimensions,
-        src: `/volume/${encodeURIComponent(volume.name)}/page/${pageNumber}`,
+        url: `/volume/${encodeURIComponent(volume.name)}/page/${pageNumber}`,
         status: "unloaded",
         image: null,
       });
 
-      globalIndex++;
+      pageIndex++;
     }
 
     fragment.appendChild(volumeSection);
@@ -82,24 +79,28 @@ function buildDom() {
 }
 
 function recomputeAllSlotHeights() {
-  const width = pagesContainer.clientWidth || window.innerWidth || 1;
+  const containerWidth = pagesContainer.clientWidth || window.innerWidth || 1;
 
   for (const page of pageSlots) {
     const [sourceWidth, sourceHeight] = page.dimensions;
     const safeWidth = Math.max(sourceWidth || 1, 1);
     const safeHeight = Math.max(sourceHeight || 1, 1);
-    const renderedHeight = Math.max(1, Math.round((width * safeHeight) / safeWidth));
-    page.slot.style.height = `${renderedHeight}px`;
+    const slotHeight = Math.max(1, Math.round((containerWidth * safeHeight) / safeWidth));
+    page.slot.style.height = `${slotHeight}px`;
   }
 }
 
 function handleIntersections(entries) {
   for (const entry of entries) {
-    const index = Number(entry.target.dataset.pageIndex);
+    const pageIndex = Number(entry.target.dataset.pageIndex);
+    if (Number.isNaN(pageIndex)) {
+      continue;
+    }
+
     if (entry.isIntersecting) {
-      state.nearVisibleIndices.add(index);
+      state.nearVisibleIndices.add(pageIndex);
     } else {
-      state.nearVisibleIndices.delete(index);
+      state.nearVisibleIndices.delete(pageIndex);
     }
   }
 
@@ -119,23 +120,18 @@ function scheduleReconcile() {
 }
 
 function reconcileWindow() {
-  if (pageSlots.length === 0) {
-    return;
-  }
-
-  if (state.nearVisibleIndices.size === 0) {
+  if (pageSlots.length === 0 || state.nearVisibleIndices.size === 0) {
     return;
   }
 
   let minIndex = pageSlots.length - 1;
   let maxIndex = 0;
-
-  for (const index of state.nearVisibleIndices) {
-    if (index < minIndex) {
-      minIndex = index;
+  for (const pageIndex of state.nearVisibleIndices) {
+    if (pageIndex < minIndex) {
+      minIndex = pageIndex;
     }
-    if (index > maxIndex) {
-      maxIndex = index;
+    if (pageIndex > maxIndex) {
+      maxIndex = pageIndex;
     }
   }
 
@@ -146,23 +142,23 @@ function reconcileWindow() {
 
 function applyWindow(start, end) {
   if (state.windowEnd >= state.windowStart) {
-    for (let index = state.windowStart; index <= state.windowEnd; index++) {
-      if (index < start || index > end) {
-        unloadPage(index);
+    for (let pageIndex = state.windowStart; pageIndex <= state.windowEnd; pageIndex++) {
+      if (pageIndex < start || pageIndex > end) {
+        unloadPage(pageIndex);
       }
     }
   }
 
-  for (let index = start; index <= end; index++) {
-    loadPage(index);
+  for (let pageIndex = start; pageIndex <= end; pageIndex++) {
+    loadPage(pageIndex);
   }
 
   state.windowStart = start;
   state.windowEnd = end;
 }
 
-function loadPage(index) {
-  const page = pageSlots[index];
+function loadPage(pageIndex) {
+  const page = pageSlots[pageIndex];
   if (!page || page.status === "loading" || page.status === "loaded" || page.status === "failed") {
     return;
   }
@@ -170,7 +166,6 @@ function loadPage(index) {
   const image = new Image();
   image.decoding = "async";
   image.alt = `volume ${page.volumeName} page ${page.pageNumber}`;
-  image.dataset.pageIndex = String(index);
 
   page.status = "loading";
   page.image = image;
@@ -203,11 +198,11 @@ function loadPage(index) {
     { once: true },
   );
 
-  image.src = page.src;
+  image.src = page.url;
 }
 
-function unloadPage(index) {
-  const page = pageSlots[index];
+function unloadPage(pageIndex) {
+  const page = pageSlots[pageIndex];
   if (!page || page.status === "failed") {
     return;
   }
