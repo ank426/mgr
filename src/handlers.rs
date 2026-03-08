@@ -2,9 +2,7 @@ use std::path::Path;
 
 use crate::{cbz, manga, readlist, server};
 
-const READLIST_FILE_NAME: &str = ".mgr.toml";
-
-pub fn handle_generate(path: &Path) -> Result<(), String> {
+pub fn handle_generate(path: &Path, readlist_file_name: &str) -> Result<(), String> {
     if !path.exists() {
         return Err(format!("Path does not exist: {}", path.display()));
     }
@@ -12,7 +10,8 @@ pub fn handle_generate(path: &Path) -> Result<(), String> {
         return Err(format!("Path is not a directory: {}", path.display()));
     }
 
-    let output_path = readlist::generate(path).map_err(|err| format!("Failed to generate progress file: {err}"))?;
+    let output_path = readlist::generate(path, readlist_file_name)
+        .map_err(|err| format!("Failed to generate progress file: {err}"))?;
     println!("Generated {}", output_path.display());
     Ok(())
 }
@@ -40,16 +39,18 @@ pub async fn handle_serve_file(
 
 pub async fn handle_serve_readlist_directory(
     path: &Path,
+    readlist_file_name: &str,
     port: u16,
     prefetch_back: u32,
     prefetch_forward: u32,
 ) -> Result<(), String> {
-    let readlist_path = path.join(READLIST_FILE_NAME);
+    let readlist_path = path.join(readlist_file_name);
     if !readlist_path.is_file() {
         return Err(format!(
-            "No {READLIST_FILE_NAME} found in {}. Run: mgr --generate {}",
+            "No {readlist_file_name} found in {}. Run: mgr --readlist-file {} --generate {}",
             path.display(),
-            path.display()
+            readlist_file_name,
+            path.display(),
         ));
     }
 

@@ -30,8 +30,8 @@ pub struct ReadList {
     pub files: Vec<FileEntry>,
 }
 
-pub fn generate(dir: &Path) -> io::Result<PathBuf> {
-    let output_path = dir.join(".mgr.toml");
+pub fn generate(dir: &Path, readlist_file_name: &str) -> io::Result<PathBuf> {
+    let output_path = dir.join(readlist_file_name);
 
     let mut cbz_files: Vec<String> = fs::read_dir(dir)?
         .filter_map(Result::ok)

@@ -12,6 +12,9 @@ struct Args {
     #[arg(short, long)]
     generate: bool,
 
+    #[arg(long, default_value = ".mgr.toml")]
+    readlist_file: String,
+
     #[arg(short, long, default_value_t = 8080)]
     port: u16,
 
@@ -35,7 +38,7 @@ async fn main() {
 
 async fn run(args: Args) -> Result<(), String> {
     if args.generate {
-        return handlers::handle_generate(&args.path);
+        return handlers::handle_generate(&args.path, &args.readlist_file);
     }
 
     if !args.path.exists() {
@@ -49,6 +52,7 @@ async fn run(args: Args) -> Result<(), String> {
     if args.path.is_dir() {
         return handlers::handle_serve_readlist_directory(
             &args.path,
+            &args.readlist_file,
             args.port,
             args.prefetch_back,
             args.prefetch_forward,
