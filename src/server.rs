@@ -39,8 +39,7 @@ fn build_html(
 ) -> String {
     let volume_page_counts =
         volumes.iter().map(|volume| (volume.pages.len() as u32).to_string()).collect::<Vec<_>>().join(", ");
-    let volume_names =
-        volumes.iter().map(|volume| format!("{:?}", volume.file_name())).collect::<Vec<_>>().join(", ");
+    let volume_names = volumes.iter().map(|volume| format!("{:?}", volume.file_name())).collect::<Vec<_>>().join(", ");
 
     include_str!("viewer.html")
         .replace("{title}", title)
@@ -60,37 +59,47 @@ async fn page_response(
     state: Arc<Vec<Volume>>,
 ) -> Result<Response<Vec<u8>>, warp::Rejection> {
     let Some(volume) = state.iter().find(|volume| volume.file_name() == volume_name) else {
-        return Ok(Response::builder()
-            .status(StatusCode::NOT_FOUND)
-            .header("content-type", "text/plain; charset=utf-8")
-            .body(b"Not Found".to_vec())
-            .expect("valid response"));
+        return Ok(not_found_response());
     };
     let Some(page) = volume.pages.get(page_index as usize) else {
-        return Ok(Response::builder()
-            .status(StatusCode::NOT_FOUND)
-            .header("content-type", "text/plain; charset=utf-8")
-            .body(b"Not Found".to_vec())
-            .expect("valid response"));
+        return Ok(not_found_response());
     };
 
     let data = match cbz::load_page_bytes(volume.archive_path.clone(), page.name.clone()).await {
         Ok(data) => data,
         Err(err) => {
-            return Ok(Response::builder()
-                .status(StatusCode::INTERNAL_SERVER_ERROR)
-                .header("content-type", "text/plain; charset=utf-8")
-                .body(format!("Failed to load volume {volume_name} page {page_index}: {err}").into_bytes())
-                .expect("valid response"));
+            return Ok(internal_server_error_response(format!(
+                "Failed to load volume {volume_name} page {page_index}: {err}"
+            )));
         }
     };
 
-    Ok(Response::builder()
+    Ok(ok_image_response(page.mime, data))
+}
+
+fn not_found_response() -> Response<Vec<u8>> {
+    Response::builder()
+        .status(StatusCode::NOT_FOUND)
+        .header("content-type", "text/plain; charset=utf-8")
+        .body(b"Not Found".to_vec())
+        .expect("valid response")
+}
+
+fn internal_server_error_response(message: String) -> Response<Vec<u8>> {
+    Response::builder()
+        .status(StatusCode::INTERNAL_SERVER_ERROR)
+        .header("content-type", "text/plain; charset=utf-8")
+        .body(message.into_bytes())
+        .expect("valid response")
+}
+
+fn ok_image_response(mime: &str, data: Vec<u8>) -> Response<Vec<u8>> {
+    Response::builder()
         .status(StatusCode::OK)
-        .header("content-type", page.mime)
+        .header("content-type", mime)
         .header("cache-control", "no-store, no-cache, must-revalidate, max-age=0")
         .header("pragma", "no-cache")
         .header("expires", "0")
         .body(data)
-        .expect("valid response"))
+        .expect("valid response")
 }
