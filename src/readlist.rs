@@ -33,8 +33,8 @@ pub struct ReadList {
 }
 
 impl ReadList {
-    pub fn validate(&self, root: &Path) -> AppResult<()> {
-        let _stage = timing::stage("startup validate readlist");
+    pub fn load_volumes(&self, root: &Path) -> AppResult<Vec<cbz::Volume>> {
+        let _stage = timing::stage("startup load volumes");
 
         if self.files.is_empty() {
             return Err("Readlist has no files".into());
@@ -51,6 +51,20 @@ impl ReadList {
             )
             .into());
         }
+
+        if self.progress.page == 0 {
+            return Err("progress.page must be >= 1".into());
+        }
+
+        if self.progress.page > progress_entry.pages {
+            return Err(format!(
+                "progress.page {} is out of range for '{}' (has {} pages)",
+                self.progress.page, progress_entry.name, progress_entry.pages
+            )
+            .into());
+        }
+
+        let mut volumes = Vec::with_capacity(self.files.len());
 
         for entry in &self.files {
             if entry.pages == 0 {
@@ -78,6 +92,7 @@ impl ReadList {
             }
 
             let volume = cbz::load_volume(&file_path)?;
+
             if volume.pages.len() != entry.pages as usize {
                 return Err(format!(
                     "Readlist file '{}' declares {} pages but archive has {}",
@@ -102,31 +117,7 @@ impl ReadList {
                     .into());
                 }
             }
-        }
 
-        if self.progress.page == 0 {
-            return Err("progress.page must be >= 1".into());
-        }
-
-        if self.progress.page > progress_entry.pages {
-            return Err(format!(
-                "progress.page {} is out of range for '{}' (has {} pages)",
-                self.progress.page, progress_entry.name, progress_entry.pages
-            )
-            .into());
-        }
-
-        Ok(())
-    }
-
-    pub fn load_volumes(&self, root: &Path) -> AppResult<Vec<cbz::Volume>> {
-        let _stage = timing::stage("startup load volumes");
-
-        let mut volumes = Vec::with_capacity(self.files.len());
-
-        for entry in &self.files {
-            let file_path = root.join(&entry.name);
-            let volume = cbz::load_volume(&file_path)?;
             volumes.push(volume);
         }
 
