@@ -3,7 +3,6 @@ mod error;
 mod handlers;
 mod readlist;
 mod server;
-mod timing;
 
 use clap::Parser;
 use std::path::PathBuf;
@@ -27,9 +26,6 @@ struct Args {
     #[arg(long, default_value_t = 4)]
     prefetch_forward: u32,
 
-    #[arg(long)]
-    timing: bool,
-
     #[arg(default_value = ".")]
     path: PathBuf,
 }
@@ -43,8 +39,6 @@ async fn main() {
 }
 
 async fn run(args: Args) -> AppResult<()> {
-    timing::set_enabled(args.timing);
-
     if args.generate {
         return handlers::handle_generate(&args.path, &args.readlist_file);
     }

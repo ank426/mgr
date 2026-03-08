@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use crate::error::AppResult;
-use crate::{cbz, readlist, server, timing};
+use crate::{cbz, readlist, server};
 
 pub fn handle_generate(path: &Path, readlist_file_name: &str) -> AppResult<()> {
     if !path.exists() {
@@ -21,10 +21,7 @@ pub async fn handle_serve_file(path: &Path, port: u16, prefetch: (u32, u32)) -> 
         return Err(format!("Unsupported file type: {} (expected .cbz)", path.display()).into());
     }
 
-    let volume = {
-        let _stage = timing::stage("startup load single volume");
-        cbz::load_volume(path)?
-    };
+    let volume = cbz::load_volume(path)?;
     let title = volume.title.clone();
     let volumes = vec![volume];
     let progress = readlist::Progress {

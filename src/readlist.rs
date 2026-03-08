@@ -8,7 +8,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::cbz;
 use crate::error::AppResult;
-use crate::timing;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Progress {
@@ -32,8 +31,6 @@ pub struct ReadList {
 
 impl ReadList {
     pub fn load_volumes(&self, root: &Path) -> AppResult<Vec<cbz::Volume>> {
-        let _stage = timing::stage("startup load volumes");
-
         if self.files.is_empty() {
             return Err("Readlist has no files".into());
         }
@@ -102,8 +99,6 @@ impl ReadList {
 }
 
 pub fn generate(dir: &Path, readlist_file_name: &str) -> AppResult<PathBuf> {
-    let _stage = timing::stage("generate readlist");
-
     let output_path = dir.join(readlist_file_name);
 
     let mut cbz_files: Vec<String> = fs::read_dir(dir)?
@@ -148,8 +143,6 @@ pub fn generate(dir: &Path, readlist_file_name: &str) -> AppResult<PathBuf> {
 }
 
 pub fn load(path: &Path) -> AppResult<ReadList> {
-    let _stage = timing::stage("startup load readlist");
-
     let content = fs::read_to_string(path)?;
     toml::from_str::<ReadList>(&content).map_err(|err| format!("Failed to parse {}: {err}", path.display()).into())
 }
