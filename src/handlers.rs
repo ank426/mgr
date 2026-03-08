@@ -28,9 +28,6 @@ pub async fn handle_serve_file(
 
     let volume =
         cbz::load_volume(path).map_err(|err| format!("Failed to load manga file {}: {err}", path.display()))?;
-    if volume.pages.is_empty() {
-        return Err(format!("No supported image pages found in {}", path.display()));
-    }
 
     let title = volume.title.clone();
     let volumes = vec![volume];

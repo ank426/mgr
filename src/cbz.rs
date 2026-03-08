@@ -52,6 +52,12 @@ pub fn load_volume(path: &Path) -> io::Result<Volume> {
     }
 
     pages.sort_by(|a, b| compare_str(&a.name, &b.name));
+    if pages.is_empty() {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            format!("No supported image pages found in {}", path.display()),
+        ));
+    }
 
     let title = path.file_name().and_then(|name| name.to_str()).unwrap_or("manga").to_string();
 
