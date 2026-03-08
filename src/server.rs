@@ -5,11 +5,11 @@ use warp::Filter;
 use warp::Reply;
 use warp::http::{Response, StatusCode};
 
-use crate::cbz;
-use crate::manga::Manga;
+use crate::cbz::{self, Volume};
 
 pub async fn serve(
-    manga: Manga,
+    title: String,
+    volumes: Vec<Volume>,
     port: u16,
     prefetch_back: u32,
     prefetch_forward: u32,
@@ -17,11 +17,10 @@ pub async fn serve(
     initial_page_index: u32,
     initial_scroll: f64,
 ) {
-    let state = Arc::new(manga);
-
+    let volume_page_counts = volumes.iter().map(|volume| volume.pages.len() as u32).collect::<Vec<_>>();
     let html = build_html(
-        &state.title,
-        &state.volume_page_counts(),
+        &title,
+        &volume_page_counts,
         prefetch_back,
         prefetch_forward,
         initial_volume_index,
@@ -30,6 +29,7 @@ pub async fn serve(
     );
     let html_route = warp::path::end().map(move || warp::reply::html(html.clone()).into_response());
 
+    let state = Arc::new(volumes);
     let state_for_route = Arc::clone(&state);
     let page_route = warp::path!("volume" / u32 / "page" / u32)
         .and(warp::any().map(move || Arc::clone(&state_for_route)))
@@ -66,9 +66,16 @@ fn build_html(
 async fn page_response(
     volume_index: u32,
     page_index: u32,
-    state: Arc<Manga>,
+    state: Arc<Vec<Volume>>,
 ) -> Result<Response<Vec<u8>>, warp::Rejection> {
-    let Some((volume, page)) = state.page(volume_index, page_index) else {
+    let Some(volume) = state.get(volume_index as usize) else {
+        return Ok(Response::builder()
+            .status(StatusCode::NOT_FOUND)
+            .header("content-type", "text/plain; charset=utf-8")
+            .body(b"Not Found".to_vec())
+            .expect("valid response"));
+    };
+    let Some(page) = volume.pages.get(page_index as usize) else {
         return Ok(Response::builder()
             .status(StatusCode::NOT_FOUND)
             .header("content-type", "text/plain; charset=utf-8")

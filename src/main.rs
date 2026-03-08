@@ -1,6 +1,5 @@
 mod cbz;
 mod handlers;
-mod manga;
 mod readlist;
 mod server;
 

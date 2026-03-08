@@ -1,6 +1,5 @@
 use std::path::Path;
 
-use crate::manga::{self, Manga};
 use crate::{cbz, readlist, server};
 
 pub fn handle_generate(path: &Path, readlist_file_name: &str) -> Result<(), String> {
@@ -23,8 +22,8 @@ pub async fn handle_serve_file(
     prefetch_back: u32,
     prefetch_forward: u32,
 ) -> Result<(), String> {
-    if !cbz::is_supported_archive_file(path) {
-        return Err(format!("Unsupported file type: {} (expected .cbz or .zip)", path.display()));
+    if !cbz::is_cbz(path) {
+        return Err(format!("Unsupported file type: {} (expected .cbz)", path.display()));
     }
 
     let volume =
@@ -33,8 +32,9 @@ pub async fn handle_serve_file(
         return Err(format!("No supported image pages found in {}", path.display()));
     }
 
-    let series = Manga { title: volume.title.clone(), volumes: vec![volume] };
-    server::serve(series, port, prefetch_back, prefetch_forward, 0, 0, 0.0).await;
+    let title = volume.title.clone();
+    let volumes = vec![volume];
+    server::serve(title, volumes, port, prefetch_back, prefetch_forward, 0, 0, 0.0).await;
     Ok(())
 }
 
@@ -56,15 +56,20 @@ pub async fn handle_serve_readlist_directory(
     }
 
     let readlist = readlist::load(&readlist_path).map_err(|err| format!("Failed to load readlist: {err}"))?;
-    let runtime = manga::build_from_readlist(path, readlist)?;
+    readlist.validate_for_runtime()?;
+    let (initial_volume_index, initial_page_index) = readlist.progress_position()?;
+    let initial_scroll = readlist.progress.scroll;
+    let volumes = readlist.load_volumes(path)?;
+    let title = path.file_name().and_then(|name| name.to_str()).unwrap_or("manga").to_string();
     server::serve(
-        runtime.manga,
+        title,
+        volumes,
         port,
         prefetch_back,
         prefetch_forward,
-        runtime.initial_volume_index,
-        runtime.initial_page_index,
-        runtime.initial_scroll,
+        initial_volume_index,
+        initial_page_index,
+        initial_scroll,
     )
     .await;
     Ok(())

@@ -30,6 +30,121 @@ pub struct ReadList {
     pub files: Vec<FileEntry>,
 }
 
+impl ReadList {
+    pub fn validate_for_runtime(&self) -> Result<(), String> {
+        if self.files.is_empty() {
+            return Err("Readlist has no files".to_string());
+        }
+
+        let Some((_, progress_entry)) = self.progress_entry() else {
+            return Err(format!("progress.file '{}' is not present in files", self.progress.file));
+        };
+
+        if !self.progress.scroll.is_finite() || !(0.0..=1.0).contains(&self.progress.scroll) {
+            return Err(format!(
+                "progress.scroll must be a finite value in [0.0, 1.0], found {}",
+                self.progress.scroll
+            ));
+        }
+
+        for entry in &self.files {
+            if entry.pages == 0 {
+                return Err(format!("Readlist file '{}' has pages = 0", entry.name));
+            }
+            if entry.page_dims.len() != entry.pages as usize {
+                return Err(format!(
+                    "Readlist file '{}' has {} page_dims entries but pages = {}",
+                    entry.name,
+                    entry.page_dims.len(),
+                    entry.pages
+                ));
+            }
+        }
+
+        if self.progress.page == 0 {
+            return Err("progress.page must be >= 1".to_string());
+        }
+
+        if self.progress.page > progress_entry.pages {
+            return Err(format!(
+                "progress.page {} is out of range for '{}' (has {} pages)",
+                self.progress.page, progress_entry.name, progress_entry.pages
+            ));
+        }
+
+        Ok(())
+    }
+
+    pub fn progress_position(&self) -> Result<(u32, u32), String> {
+        let Some((volume_index, progress_entry)) = self.progress_entry() else {
+            return Err(format!("progress.file '{}' is not present in files", self.progress.file));
+        };
+        if self.progress.page == 0 {
+            return Err("progress.page must be >= 1".to_string());
+        }
+        if self.progress.page > progress_entry.pages {
+            return Err(format!(
+                "progress.page {} is out of range for '{}' (has {} pages)",
+                self.progress.page, progress_entry.name, progress_entry.pages
+            ));
+        }
+        Ok((volume_index as u32, self.progress.page - 1))
+    }
+
+    pub fn load_volumes(&self, root: &Path) -> Result<Vec<cbz::Volume>, String> {
+        let mut volumes = Vec::with_capacity(self.files.len());
+
+        for entry in &self.files {
+            let file_path = root.join(&entry.name);
+            if !file_path.exists() {
+                return Err(format!("Readlist file '{}' does not exist", file_path.display()));
+            }
+            if !file_path.is_file() {
+                return Err(format!("Readlist entry '{}' is not a file", file_path.display()));
+            }
+            if !cbz::is_cbz(&file_path) {
+                return Err(format!("Readlist file '{}' is not a supported archive (.cbz)", file_path.display()));
+            }
+
+            let volume = cbz::load_volume(&file_path)
+                .map_err(|err| format!("Failed to load manga file {}: {err}", file_path.display()))?;
+            if volume.pages.is_empty() {
+                return Err(format!("No supported image pages found in {}", file_path.display()));
+            }
+            if volume.pages.len() != entry.pages as usize {
+                return Err(format!(
+                    "Readlist file '{}' declares {} pages but archive has {}",
+                    entry.name,
+                    entry.pages,
+                    volume.pages.len()
+                ));
+            }
+
+            for (page, expected_dims) in volume.pages.iter().zip(&entry.page_dims) {
+                if page.dimensions != *expected_dims {
+                    return Err(format!(
+                        "Readlist file '{}' has mismatched dimensions for page '{}': expected {}x{}, found {}x{}",
+                        entry.name,
+                        page.name,
+                        expected_dims[0],
+                        expected_dims[1],
+                        page.dimensions[0],
+                        page.dimensions[1]
+                    ));
+                }
+            }
+
+            volumes.push(volume);
+        }
+
+        Ok(volumes)
+    }
+
+    fn progress_entry(&self) -> Option<(usize, &FileEntry)> {
+        self.files.iter().enumerate().find(|(_, entry)| entry.name == self.progress.file)
+    }
+}
+
 pub fn generate(dir: &Path, readlist_file_name: &str) -> io::Result<PathBuf> {
     let output_path = dir.join(readlist_file_name);
 
