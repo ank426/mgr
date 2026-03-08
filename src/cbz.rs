@@ -87,6 +87,14 @@ fn mime_for_path(path: &str) -> Option<&'static str> {
     }
 }
 
+pub fn is_cbz(path: &Path) -> bool {
+    path.extension().and_then(|ext| ext.to_str()).is_some_and(|ext| ext.eq_ignore_ascii_case("cbz"))
+}
+
+fn zip_invalid_data(err: zip::result::ZipError) -> io::Error {
+    io::Error::new(io::ErrorKind::InvalidData, err)
+}
+
 fn page_dimensions<R: Read>(reader: R) -> io::Result<[u32; 2]> {
     let size = reader_size(CachedReadSeeker::new(reader))
         .map_err(|err| io::Error::new(io::ErrorKind::InvalidData, format!("Failed to read image dimensions: {err}")))?;
@@ -192,12 +200,4 @@ impl<R: Read> Seek for CachedReadSeeker<R> {
         u64::try_from(self.position)
             .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, "Seek position exceeds u64"))
     }
-}
-
-pub fn is_cbz(path: &Path) -> bool {
-    path.extension().and_then(|ext| ext.to_str()).is_some_and(|ext| ext.eq_ignore_ascii_case("cbz"))
-}
-
-fn zip_invalid_data(err: zip::result::ZipError) -> io::Error {
-    io::Error::new(io::ErrorKind::InvalidData, err)
 }
