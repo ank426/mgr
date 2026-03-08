@@ -1,10 +1,9 @@
 use std::fs;
-use std::io;
 use std::path::{Path, PathBuf};
 
 use alphanumeric_sort::compare_str;
 use serde::{Deserialize, Serialize};
-use toml_edit::{Array, ArrayOfTables, DocumentMut, Item, Table, Value, value};
+use toml_edit::{ArrayOfTables, DocumentMut, Item, Table, value};
 
 use crate::cbz;
 use crate::error::AppResult;
@@ -22,8 +21,6 @@ pub struct FileEntry {
     pub name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub mokuro: Option<String>,
-    pub pages: u32,
-    pub page_dims: Vec<[u32; 2]>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -40,9 +37,9 @@ impl ReadList {
             return Err("Readlist has no files".into());
         }
 
-        let Some(progress_entry) = self.files.iter().find(|entry| entry.name == self.progress.file) else {
+        if !self.files.iter().any(|entry| entry.name == self.progress.file) {
             return Err(format!("progress.file '{}' is not present in files", self.progress.file).into());
-        };
+        }
 
         if !self.progress.scroll.is_finite() || !(0.0..=1.0).contains(&self.progress.scroll) {
             return Err(format!(
@@ -56,30 +53,9 @@ impl ReadList {
             return Err("progress.page must be >= 1".into());
         }
 
-        if self.progress.page > progress_entry.pages {
-            return Err(format!(
-                "progress.page {} is out of range for '{}' (has {} pages)",
-                self.progress.page, progress_entry.name, progress_entry.pages
-            )
-            .into());
-        }
-
         let mut volumes = Vec::with_capacity(self.files.len());
 
         for entry in &self.files {
-            if entry.pages == 0 {
-                return Err(format!("Readlist file '{}' has pages = 0", entry.name).into());
-            }
-            if entry.page_dims.len() != entry.pages as usize {
-                return Err(format!(
-                    "Readlist file '{}' has {} page_dims entries but pages = {}",
-                    entry.name,
-                    entry.page_dims.len(),
-                    entry.pages
-                )
-                .into());
-            }
-
             let file_path = root.join(&entry.name);
             if !file_path.exists() {
                 return Err(format!("Readlist file '{}' does not exist", file_path.display()).into());
@@ -93,29 +69,14 @@ impl ReadList {
 
             let volume = cbz::load_volume(&file_path)?;
 
-            if volume.pages.len() != entry.pages as usize {
+            if entry.name == self.progress.file && self.progress.page > volume.pages.len() as u32 {
                 return Err(format!(
-                    "Readlist file '{}' declares {} pages but archive has {}",
+                    "progress.page {} is out of range for '{}' (has {} pages)",
+                    self.progress.page,
                     entry.name,
-                    entry.pages,
                     volume.pages.len()
                 )
                 .into());
-            }
-
-            for (page, expected_dims) in volume.pages.iter().zip(&entry.page_dims) {
-                if page.dimensions != *expected_dims {
-                    return Err(format!(
-                        "Readlist file '{}' has mismatched dimensions for page '{}': expected {}x{}, found {}x{}",
-                        entry.name,
-                        page.name,
-                        expected_dims[0],
-                        expected_dims[1],
-                        page.dimensions[0],
-                        page.dimensions[1]
-                    )
-                    .into());
-                }
             }
 
             volumes.push(volume);
@@ -157,20 +118,13 @@ pub fn generate(dir: &Path, readlist_file_name: &str) -> AppResult<PathBuf> {
     readlist.files = cbz_files
         .iter()
         .map(|file_name| {
-            let file_path = dir.join(file_name);
-            let volume = cbz::load_volume(&file_path)?;
             let mokuro_name = Path::new(file_name).with_extension("mokuro");
             let mokuro_path = dir.join(&mokuro_name);
             let mokuro = if mokuro_path.is_file() { Some(mokuro_name.to_string_lossy().to_string()) } else { None };
 
-            Ok(FileEntry {
-                name: file_name.clone(),
-                mokuro,
-                pages: volume.pages.len() as u32,
-                page_dims: volume.pages.into_iter().map(|page| page.dimensions).collect(),
-            })
+            FileEntry { name: file_name.clone(), mokuro }
         })
-        .collect::<io::Result<Vec<_>>>()?;
+        .collect();
 
     let output = format_readlist(&readlist);
     fs::write(&output_path, output)?;
@@ -206,25 +160,8 @@ fn format_files_array(entries: &[FileEntry]) -> ArrayOfTables {
         if let Some(mokuro) = &entry.mokuro {
             file["mokuro"] = value(mokuro);
         }
-        file["pages"] = value(i64::from(entry.pages));
-        file["page_dims"] = Item::Value(Value::Array(format_page_dims(&entry.page_dims)));
         files.push(file);
     }
 
     files
-}
-
-fn format_page_dims(page_dims: &[[u32; 2]]) -> Array {
-    let mut dims = Array::new();
-
-    for [width, height] in page_dims {
-        let mut pair = Array::new();
-        pair.push(i64::from(*width));
-        pair.push(i64::from(*height));
-        pair.fmt();
-        dims.push(Value::Array(pair));
-    }
-
-    dims.fmt();
-    dims
 }
