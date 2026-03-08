@@ -1,10 +1,13 @@
 mod cbz;
+mod error;
 mod handlers;
 mod readlist;
 mod server;
 
 use clap::Parser;
 use std::path::PathBuf;
+
+use crate::error::AppResult;
 
 #[derive(Parser, Debug)]
 struct Args {
@@ -35,13 +38,13 @@ async fn main() {
     }
 }
 
-async fn run(args: Args) -> Result<(), String> {
+async fn run(args: Args) -> AppResult<()> {
     if args.generate {
         return handlers::handle_generate(&args.path, &args.readlist_file);
     }
 
     if !args.path.exists() {
-        return Err(format!("Path does not exist: {}", args.path.display()));
+        return Err(format!("Path does not exist: {}", args.path.display()).into());
     }
 
     if args.path.is_file() {
@@ -59,5 +62,5 @@ async fn run(args: Args) -> Result<(), String> {
         .await;
     }
 
-    Err(format!("Unsupported path type: {} (expected file or directory)", args.path.display()))
+    Err(format!("Unsupported path type: {} (expected file or directory)", args.path.display()).into())
 }
