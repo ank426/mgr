@@ -21,8 +21,8 @@ async function initializeViewer() {
     return;
   }
 
-  for (let idx = 0; idx <= Math.min(pageCount - 1, prefetchForward); idx++) {
-    await mountPage(idx, false);
+  for (let count = 0; count <= Math.min(pageCount - 1, prefetchForward); count++) {
+    await appendPage();
   }
 
   requestWindowUpdate();
@@ -75,22 +75,22 @@ async function reconcileWindow() {
   let changed = false;
 
   while (state.firstLoadedIndex > targetStart) {
-    await mountPage(state.firstLoadedIndex - 1, true);
+    await prependPage();
     changed = true;
   }
 
   while (state.lastLoadedIndex < targetEnd) {
-    await mountPage(state.lastLoadedIndex + 1, false);
+    await appendPage();
     changed = true;
   }
 
   while (state.firstLoadedIndex < targetStart) {
-    unmountPage(true);
+    removeFirstPage();
     changed = true;
   }
 
   while (state.lastLoadedIndex > targetEnd) {
-    unmountPage(false);
+    removeLastPage();
     changed = true;
   }
 
@@ -146,33 +146,35 @@ function getVisiblePageRange() {
   return { first: state.firstLoadedIndex, last: state.lastLoadedIndex };
 }
 
-async function mountPage(index, insertAtStart) {
-  const element = await getOrLoadMountedPageElement(index);
-  if (insertAtStart) {
-    pagesContainer.prepend(element);
-    state.firstLoadedIndex = index;
-    const height = element.getBoundingClientRect().height;
-    if (state.trimmedTopHeightPx > 0) {
-      state.trimmedTopHeightPx = Math.max(0, state.trimmedTopHeightPx - height);
-    }
-  } else {
-    pagesContainer.appendChild(element);
-    state.lastLoadedIndex = index;
-  }
-
+async function prependPage() {
+  const element = await getOrLoadMountedPageElement(state.firstLoadedIndex - 1);
+  pagesContainer.prepend(element);
+  state.firstLoadedIndex--;
+  state.trimmedTopHeightPx = Math.max(0, state.trimmedTopHeightPx - element.getBoundingClientRect().height);
   syncVirtualSpacers();
 }
 
-function unmountPage(removeFromStart) {
-  const element = removeFromStart
-    ? pagesContainer.firstElementChild
-    : pagesContainer.lastElementChild;
+async function appendPage() {
+  const element = await getOrLoadMountedPageElement(state.lastLoadedIndex + 1);
+  pagesContainer.appendChild(element);
+  state.lastLoadedIndex++;
+  syncVirtualSpacers();
+}
 
-  if (!element) {
-    return;
-  }
+function removeFirstPage() {
+  const element = pagesContainer.firstElementChild;
+  state.firstLoadedIndex++;
+  state.trimmedTopHeightPx += element.getBoundingClientRect().height;
+  removePageElement(element);
+}
 
-  const height = removeFromStart ? element.getBoundingClientRect().height : 0;
+function removeLastPage() {
+  const element = pagesContainer.lastElementChild;
+  state.lastLoadedIndex--;
+  removePageElement(element);
+}
+
+function removePageElement(element) {
   const pageIndex = Number(element.dataset.pageIndex);
   state.loadedPageElements.delete(pageIndex);
   const image = element.querySelector("img");
@@ -181,13 +183,6 @@ function unmountPage(removeFromStart) {
     image.removeAttribute("srcset");
     image.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==";
     image.remove();
-  }
-
-  if (removeFromStart) {
-    state.firstLoadedIndex++;
-    state.trimmedTopHeightPx += height;
-  } else {
-    state.lastLoadedIndex--;
   }
 
   element.remove();
