@@ -29,9 +29,8 @@ pub async fn serve(
     let html_route = warp::path::end().map(move || warp::reply::html(html.clone()).into_response());
 
     let state_for_route = Arc::clone(&state);
-    let page_route = warp::path!("page" / u32)
-        .and(warp::any().map(move || Arc::clone(&state_for_route)))
-        .and_then(page_response);
+    let page_route =
+        warp::path!("page" / u32).and(warp::any().map(move || Arc::clone(&state_for_route))).and_then(page_response);
 
     let routes = html_route.or(page_route);
     let addr = ([127, 0, 0, 1], port);
@@ -74,7 +73,7 @@ async fn page_response(index: u32, state: Arc<Manga>) -> Result<Response<Vec<u8>
                 .header("content-type", "text/plain; charset=utf-8")
                 .body(format!("Failed to load page {index}: {err}").into_bytes())
                 .expect("valid response"));
-        },
+        }
     };
 
     Ok(Response::builder()

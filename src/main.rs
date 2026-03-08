@@ -56,8 +56,5 @@ async fn run(args: Args) -> Result<(), String> {
         .await;
     }
 
-    Err(format!(
-        "Unsupported path type: {} (expected file or directory)",
-        args.path.display()
-    ))
+    Err(format!("Unsupported path type: {} (expected file or directory)", args.path.display()))
 }

@@ -24,10 +24,7 @@ pub async fn handle_serve_file(
     prefetch_forward: u32,
 ) -> Result<(), String> {
     if !cbz::is_supported_archive_file(path) {
-        return Err(format!(
-            "Unsupported file type: {} (expected .cbz or .zip)",
-            path.display()
-        ));
+        return Err(format!("Unsupported file type: {} (expected .cbz or .zip)", path.display()));
     }
 
     let volume =

@@ -4,6 +4,9 @@ use std::path::{Path, PathBuf};
 
 use alphanumeric_sort::compare_str;
 use serde::{Deserialize, Serialize};
+use toml_edit::{Array, ArrayOfTables, DocumentMut, Item, Table, Value, value};
+
+use crate::cbz;
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Progress {
@@ -17,6 +20,8 @@ struct FileEntry {
     name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     mokuro: Option<String>,
+    pages: u32,
+    page_dims: Vec<[u32; 2]>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -25,11 +30,18 @@ struct ReadList {
     files: Vec<FileEntry>,
 }
 
+#[derive(Clone, Debug)]
+pub struct LoadedFileEntry {
+    pub name: String,
+    pub pages: u32,
+    pub page_dims: Vec<[u32; 2]>,
+}
+
 pub struct LoadedReadList {
     pub progress_file: String,
     pub progress_page: u32,
     pub progress_scroll: f64,
-    pub files: Vec<String>,
+    pub files: Vec<LoadedFileEntry>,
 }
 
 pub fn generate(dir: &Path) -> io::Result<PathBuf> {
@@ -53,18 +65,11 @@ pub fn generate(dir: &Path) -> io::Result<PathBuf> {
     let mut readlist = if output_path.is_file() {
         let content = fs::read_to_string(&output_path)?;
         toml::from_str::<ReadList>(&content).map_err(|err| {
-            io::Error::new(
-                io::ErrorKind::InvalidData,
-                format!("Failed to parse {}: {err}", output_path.display()),
-            )
+            io::Error::new(io::ErrorKind::InvalidData, format!("Failed to parse {}: {err}", output_path.display()))
         })?
     } else {
         ReadList {
-            progress: Progress {
-                file: cbz_files.first().cloned().unwrap_or_default(),
-                page: 1,
-                scroll: 0.0,
-            },
+            progress: Progress { file: cbz_files.first().cloned().unwrap_or_default(), page: 1, scroll: 0.0 },
             files: Vec::new(),
         }
     };
@@ -72,27 +77,22 @@ pub fn generate(dir: &Path) -> io::Result<PathBuf> {
     readlist.files = cbz_files
         .iter()
         .map(|file_name| {
+            let file_path = dir.join(file_name);
+            let volume = cbz::load_volume(&file_path)?;
             let mokuro_name = Path::new(file_name).with_extension("mokuro");
             let mokuro_path = dir.join(&mokuro_name);
-            let mokuro = if mokuro_path.is_file() {
-                Some(mokuro_name.to_string_lossy().to_string())
-            } else {
-                None
-            };
+            let mokuro = if mokuro_path.is_file() { Some(mokuro_name.to_string_lossy().to_string()) } else { None };
 
-            FileEntry {
+            Ok(FileEntry {
                 name: file_name.clone(),
                 mokuro,
-            }
+                pages: volume.pages.len() as u32,
+                page_dims: volume.pages.into_iter().map(|page| page.dimensions).collect(),
+            })
         })
-        .collect();
+        .collect::<io::Result<Vec<_>>>()?;
 
-    let output = toml::to_string_pretty(&readlist).map_err(|err| {
-        io::Error::new(
-            io::ErrorKind::InvalidData,
-            format!("Failed to serialize readlist: {err}"),
-        )
-    })?;
+    let output = format_readlist(&readlist)?;
     fs::write(&output_path, output)?;
 
     Ok(output_path)
@@ -101,16 +101,60 @@ pub fn generate(dir: &Path) -> io::Result<PathBuf> {
 pub fn load(path: &Path) -> io::Result<LoadedReadList> {
     let content = fs::read_to_string(path)?;
     let readlist = toml::from_str::<ReadList>(&content).map_err(|err| {
-        io::Error::new(
-            io::ErrorKind::InvalidData,
-            format!("Failed to parse {}: {err}", path.display()),
-        )
+        io::Error::new(io::ErrorKind::InvalidData, format!("Failed to parse {}: {err}", path.display()))
     })?;
 
     Ok(LoadedReadList {
         progress_file: readlist.progress.file,
         progress_page: readlist.progress.page,
         progress_scroll: readlist.progress.scroll,
-        files: readlist.files.into_iter().map(|entry| entry.name).collect(),
+        files: readlist
+            .files
+            .into_iter()
+            .map(|entry| LoadedFileEntry { name: entry.name, pages: entry.pages, page_dims: entry.page_dims })
+            .collect(),
     })
+}
+
+fn format_readlist(readlist: &ReadList) -> io::Result<String> {
+    let mut doc = DocumentMut::new();
+    let mut progress = Table::new();
+    progress["file"] = value(&readlist.progress.file);
+    progress["page"] = value(i64::from(readlist.progress.page));
+    progress["scroll"] = value(readlist.progress.scroll);
+    doc["progress"] = Item::Table(progress);
+    doc["files"] = Item::ArrayOfTables(format_files_array(&readlist.files));
+    Ok(format!("{}\n# vim: set nowrap:\n", doc))
+}
+
+fn format_files_array(entries: &[FileEntry]) -> ArrayOfTables {
+    let mut files = ArrayOfTables::new();
+
+    for entry in entries {
+        let mut file = Table::new();
+        file["name"] = value(&entry.name);
+        if let Some(mokuro) = &entry.mokuro {
+            file["mokuro"] = value(mokuro);
+        }
+        file["pages"] = value(i64::from(entry.pages));
+        file["page_dims"] = Item::Value(Value::Array(format_page_dims(&entry.page_dims)));
+        files.push(file);
+    }
+
+    files
+}
+
+fn format_page_dims(page_dims: &[[u32; 2]]) -> Array {
+    let mut dims = Array::new();
+
+    for [width, height] in page_dims {
+        let mut pair = Array::new();
+        pair.push(i64::from(*width));
+        pair.push(i64::from(*height));
+        pair.fmt();
+        dims.push(Value::Array(pair));
+    }
+
+    dims.fmt();
+    dims
 }
