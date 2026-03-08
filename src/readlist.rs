@@ -3,7 +3,6 @@ use std::path::{Path, PathBuf};
 
 use alphanumeric_sort::compare_str;
 use serde::{Deserialize, Serialize};
-use toml_edit::{ArrayOfTables, DocumentMut, Item, Table, value};
 
 use crate::cbz;
 use crate::error::AppResult;
@@ -126,7 +125,7 @@ pub fn generate(dir: &Path, readlist_file_name: &str) -> AppResult<PathBuf> {
         })
         .collect();
 
-    let output = format_readlist(&readlist);
+    let output = toml::to_string(&readlist).map_err(|err| format!("Failed to serialize readlist: {err}"))?;
     fs::write(&output_path, output)?;
 
     Ok(output_path)
@@ -136,32 +135,5 @@ pub fn load(path: &Path) -> AppResult<ReadList> {
     let _stage = timing::stage("startup load readlist");
 
     let content = fs::read_to_string(path)?;
-    toml_edit::de::from_str::<ReadList>(&content)
-        .map_err(|err| format!("Failed to parse {}: {err}", path.display()).into())
-}
-
-fn format_readlist(readlist: &ReadList) -> String {
-    let mut doc = DocumentMut::new();
-    let mut progress = Table::new();
-    progress["file"] = value(&readlist.progress.file);
-    progress["page"] = value(i64::from(readlist.progress.page));
-    progress["scroll"] = value(readlist.progress.scroll);
-    doc["progress"] = Item::Table(progress);
-    doc["files"] = Item::ArrayOfTables(format_files_array(&readlist.files));
-    format!("{}\n# vim: set nowrap:\n", doc)
-}
-
-fn format_files_array(entries: &[FileEntry]) -> ArrayOfTables {
-    let mut files = ArrayOfTables::new();
-
-    for entry in entries {
-        let mut file = Table::new();
-        file["name"] = value(&entry.name);
-        if let Some(mokuro) = &entry.mokuro {
-            file["mokuro"] = value(mokuro);
-        }
-        files.push(file);
-    }
-
-    files
+    toml::from_str::<ReadList>(&content).map_err(|err| format!("Failed to parse {}: {err}", path.display()).into())
 }
