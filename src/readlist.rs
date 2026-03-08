@@ -36,7 +36,7 @@ impl ReadList {
             return Err("Readlist has no files".to_string());
         }
 
-        let Some((_, progress_entry)) = self.progress_entry() else {
+        let Some(progress_entry) = self.files.iter().find(|entry| entry.name == self.progress.file) else {
             return Err(format!("progress.file '{}' is not present in files", self.progress.file));
         };
 
@@ -125,10 +125,6 @@ impl ReadList {
         }
 
         Ok(volumes)
-    }
-
-    fn progress_entry(&self) -> Option<(usize, &FileEntry)> {
-        self.files.iter().enumerate().find(|(_, entry)| entry.name == self.progress.file)
     }
 }
 

@@ -38,10 +38,9 @@ fn build_html(
     prefetch_back: u32,
     prefetch_forward: u32,
 ) -> String {
-    let volume_page_counts = volumes.iter().map(|volume| volume.pages.len() as u32).collect::<Vec<_>>();
     let (initial_volume_index, initial_page_index) = progress.progress_position(volumes);
-    let initial_scroll = progress.scroll;
-    let volume_page_counts = volume_page_counts.iter().map(u32::to_string).collect::<Vec<_>>().join(", ");
+    let volume_page_counts =
+        volumes.iter().map(|volume| (volume.pages.len() as u32).to_string()).collect::<Vec<_>>().join(", ");
 
     include_str!("viewer.html")
         .replace("{title}", title)
@@ -50,7 +49,7 @@ fn build_html(
         .replace("{prefetch_forward}", &prefetch_forward.to_string())
         .replace("{initial_volume_index}", &initial_volume_index.to_string())
         .replace("{initial_page_index}", &initial_page_index.to_string())
-        .replace("{initial_scroll}", &initial_scroll.to_string())
+        .replace("{initial_scroll}", &progress.scroll.to_string())
         .replace("__VIEWER_SCRIPT__", &include_str!("viewer.js").replace("</script", "<\\/script"))
 }
 
