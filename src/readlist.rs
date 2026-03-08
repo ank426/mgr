@@ -1,7 +1,9 @@
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::time::Instant;
 
 use alphanumeric_sort::compare_str;
+use indicatif::{ProgressBar, ProgressStyle};
 use serde::{Deserialize, Serialize};
 
 use crate::cbz;
@@ -53,8 +55,17 @@ impl ReadList {
         }
 
         let mut volumes = Vec::with_capacity(self.files.len());
+        let started_at = Instant::now();
+        let progress = ProgressBar::new(self.files.len() as u64);
+        progress.set_style(
+            ProgressStyle::with_template("Loading volumes [{bar:24}] {pos}/{len} {elapsed_precise} {msg}")
+                .expect("valid progress bar template")
+                .progress_chars("=> "),
+        );
 
         for entry in &self.files {
+            progress.set_message(entry.name.clone());
+
             let file_path = root.join(&entry.name);
             if !file_path.exists() {
                 return Err(format!("Readlist file '{}' does not exist", file_path.display()).into());
@@ -79,7 +90,12 @@ impl ReadList {
             }
 
             volumes.push(volume);
+            progress.inc(1);
         }
+
+        let elapsed = started_at.elapsed().as_secs_f64();
+        progress.finish_and_clear();
+        eprintln!("Loaded {} volumes in {:.3}s", self.files.len(), elapsed);
 
         Ok(volumes)
     }
