@@ -1,9 +1,9 @@
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::time::Instant;
+use std::time::Duration;
 
 use alphanumeric_sort::compare_str;
-use indicatif::{ProgressBar, ProgressStyle};
+use indicatif::{ProgressBar, ProgressState, ProgressStyle};
 use serde::{Deserialize, Serialize};
 
 use crate::cbz;
@@ -52,13 +52,16 @@ impl ReadList {
         }
 
         let mut volumes = Vec::with_capacity(self.files.len());
-        let started_at = Instant::now();
         let progress = ProgressBar::new(self.files.len() as u64);
         progress.set_style(
-            ProgressStyle::with_template("Loading volumes [{bar:24}] {pos}/{len} {elapsed_precise} {msg}")
+            ProgressStyle::with_template("Loading volumes [{bar:24}] {pos}/{len} {elapsed_s} {msg}")
                 .expect("valid progress bar template")
+                .with_key("elapsed_s", |state: &ProgressState, writer: &mut dyn std::fmt::Write| {
+                    let _ = write!(writer, "{:.3}s", state.elapsed().as_secs_f64());
+                })
                 .progress_chars("=> "),
         );
+        progress.enable_steady_tick(Duration::from_millis(100));
 
         for entry in &self.files {
             progress.set_message(entry.name.clone());
@@ -90,9 +93,7 @@ impl ReadList {
             progress.inc(1);
         }
 
-        let elapsed = started_at.elapsed().as_secs_f64();
-        progress.finish_and_clear();
-        eprintln!("Loaded {} volumes in {:.3}s", self.files.len(), elapsed);
+        progress.finish();
 
         Ok(volumes)
     }
