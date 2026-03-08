@@ -115,18 +115,7 @@ impl ReadList {
     }
 
     pub fn progress_position(&self) -> Result<(u32, u32), String> {
-        let Some((volume_index, progress_entry)) = self.progress_entry() else {
-            return Err(format!("progress.file '{}' is not present in files", self.progress.file));
-        };
-        if self.progress.page == 0 {
-            return Err("progress.page must be >= 1".to_string());
-        }
-        if self.progress.page > progress_entry.pages {
-            return Err(format!(
-                "progress.page {} is out of range for '{}' (has {} pages)",
-                self.progress.page, progress_entry.name, progress_entry.pages
-            ));
-        }
+        let (volume_index, _) = self.progress_entry().expect("validated progress entry exists");
         Ok((volume_index as u32, self.progress.page - 1))
     }
 
