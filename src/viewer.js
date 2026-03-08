@@ -43,21 +43,19 @@ function requestWindowUpdate() {
 }
 
 async function flushWindowUpdate() {
-  if (!state.updatePending || state.updateInProgress) {
+  if (state.updateInProgress) {
     return;
   }
 
-  state.updatePending = false;
   state.updateInProgress = true;
 
   try {
-    await reconcileWindow();
+    while (state.updatePending) {
+      state.updatePending = false;
+      await reconcileWindow();
+    }
   } finally {
     state.updateInProgress = false;
-
-    if (state.updatePending) {
-      requestAnimationFrame(flushWindowUpdate);
-    }
   }
 }
 
