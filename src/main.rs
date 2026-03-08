@@ -47,19 +47,14 @@ async fn run(args: Args) -> AppResult<()> {
         return Err(format!("Path does not exist: {}", args.path.display()).into());
     }
 
+    let prefetch = (args.prefetch_back, args.prefetch_forward);
+
     if args.path.is_file() {
-        return handlers::handle_serve_file(&args.path, args.port, args.prefetch_back, args.prefetch_forward).await;
+        return handlers::handle_serve_file(&args.path, args.port, prefetch).await;
     }
 
     if args.path.is_dir() {
-        return handlers::handle_serve_readlist_directory(
-            &args.path,
-            &args.readlist_file,
-            args.port,
-            args.prefetch_back,
-            args.prefetch_forward,
-        )
-        .await;
+        return handlers::handle_serve_readlist_directory(&args.path, &args.readlist_file, args.port, prefetch).await;
     }
 
     Err(format!("Unsupported path type: {} (expected file or directory)", args.path.display()).into())

@@ -7,15 +7,8 @@ use warp::http::{Response, StatusCode};
 use crate::cbz::{self, Volume};
 use crate::readlist::Progress;
 
-pub async fn serve(
-    title: String,
-    volumes: Vec<Volume>,
-    progress: Progress,
-    port: u16,
-    prefetch_back: u32,
-    prefetch_forward: u32,
-) {
-    let html = build_html(&title, &volumes, &progress, prefetch_back, prefetch_forward);
+pub async fn serve(title: String, volumes: Vec<Volume>, progress: Progress, port: u16, prefetch: (u32, u32)) {
+    let html = build_html(&title, &volumes, &progress, prefetch);
     let html_route = warp::path::end().map(move || warp::reply::html(html.clone()).into_response());
 
     let state = Arc::new(volumes);
@@ -30,13 +23,7 @@ pub async fn serve(
     warp::serve(routes).run(addr).await;
 }
 
-fn build_html(
-    title: &str,
-    volumes: &[Volume],
-    progress: &Progress,
-    prefetch_back: u32,
-    prefetch_forward: u32,
-) -> String {
+fn build_html(title: &str, volumes: &[Volume], progress: &Progress, prefetch: (u32, u32)) -> String {
     let volume_page_counts =
         volumes.iter().map(|volume| (volume.pages.len() as u32).to_string()).collect::<Vec<_>>().join(", ");
     let volume_names = volumes.iter().map(|volume| format!("{:?}", volume.file_name())).collect::<Vec<_>>().join(", ");
@@ -45,8 +32,8 @@ fn build_html(
         .replace("{title}", title)
         .replace("{volume_page_counts}", &format!("[{volume_page_counts}]"))
         .replace("{volume_names}", &format!("[{volume_names}]"))
-        .replace("{prefetch_back}", &prefetch_back.to_string())
-        .replace("{prefetch_forward}", &prefetch_forward.to_string())
+        .replace("{prefetch_back}", &prefetch.0.to_string())
+        .replace("{prefetch_forward}", &prefetch.1.to_string())
         .replace("{initial_volume_name}", &format!("{:?}", progress.file.as_str()))
         .replace("{initial_page_index}", &(progress.page - 1).to_string())
         .replace("{initial_scroll}", &progress.scroll.to_string())

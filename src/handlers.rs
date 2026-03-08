@@ -16,7 +16,7 @@ pub fn handle_generate(path: &Path, readlist_file_name: &str) -> AppResult<()> {
     Ok(())
 }
 
-pub async fn handle_serve_file(path: &Path, port: u16, prefetch_back: u32, prefetch_forward: u32) -> AppResult<()> {
+pub async fn handle_serve_file(path: &Path, port: u16, prefetch: (u32, u32)) -> AppResult<()> {
     if !cbz::is_cbz(path) {
         return Err(format!("Unsupported file type: {} (expected .cbz)", path.display()).into());
     }
@@ -29,7 +29,7 @@ pub async fn handle_serve_file(path: &Path, port: u16, prefetch_back: u32, prefe
         page: 1,
         scroll: 0.0,
     };
-    server::serve(title, volumes, progress, port, prefetch_back, prefetch_forward).await;
+    server::serve(title, volumes, progress, port, prefetch).await;
     Ok(())
 }
 
@@ -37,8 +37,7 @@ pub async fn handle_serve_readlist_directory(
     path: &Path,
     readlist_file_name: &str,
     port: u16,
-    prefetch_back: u32,
-    prefetch_forward: u32,
+    prefetch: (u32, u32),
 ) -> AppResult<()> {
     let readlist_path = path.join(readlist_file_name);
     if !readlist_path.is_file() {
@@ -55,6 +54,6 @@ pub async fn handle_serve_readlist_directory(
     readlist.validate(path)?;
     let volumes = readlist.load_volumes(path)?;
     let title = path.file_name().and_then(|name| name.to_str()).unwrap_or("manga").to_string();
-    server::serve(title, volumes, readlist.progress.clone(), port, prefetch_back, prefetch_forward).await;
+    server::serve(title, volumes, readlist.progress.clone(), port, prefetch).await;
     Ok(())
 }
