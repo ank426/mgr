@@ -1,6 +1,7 @@
 use std::path::Path;
 
-use crate::{cbz, manga, readlist, server};
+use crate::manga::{self, Manga};
+use crate::{cbz, readlist, server};
 
 pub fn handle_generate(path: &Path, readlist_file_name: &str) -> Result<(), String> {
     if !path.exists() {
@@ -32,8 +33,8 @@ pub async fn handle_serve_file(
         return Err(format!("No supported image pages found in {}", path.display()));
     }
 
-    let series = manga::Manga::from_volume(volume);
-    server::serve(series, port, prefetch_back, prefetch_forward, 0, 0.0).await;
+    let series = Manga::from_volume(volume);
+    server::serve(series, port, prefetch_back, prefetch_forward, 0, 0, 0.0).await;
     Ok(())
 }
 
@@ -61,6 +62,7 @@ pub async fn handle_serve_readlist_directory(
         port,
         prefetch_back,
         prefetch_forward,
+        runtime.initial_volume_index,
         runtime.initial_page_index,
         runtime.initial_scroll,
     )

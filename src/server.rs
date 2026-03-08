@@ -13,6 +13,7 @@ pub async fn serve(
     port: u16,
     prefetch_back: u32,
     prefetch_forward: u32,
+    initial_volume_index: u32,
     initial_page_index: u32,
     initial_scroll: f64,
 ) {
@@ -20,17 +21,19 @@ pub async fn serve(
 
     let html = build_html(
         state.title(),
-        state.page_count(),
+        &state.volume_page_counts(),
         prefetch_back,
         prefetch_forward,
+        initial_volume_index,
         initial_page_index,
         initial_scroll,
     );
     let html_route = warp::path::end().map(move || warp::reply::html(html.clone()).into_response());
 
     let state_for_route = Arc::clone(&state);
-    let page_route =
-        warp::path!("page" / u32).and(warp::any().map(move || Arc::clone(&state_for_route))).and_then(page_response);
+    let page_route = warp::path!("volume" / u32 / "page" / u32)
+        .and(warp::any().map(move || Arc::clone(&state_for_route)))
+        .and_then(page_response);
 
     let routes = html_route.or(page_route);
     let addr = ([127, 0, 0, 1], port);
@@ -40,24 +43,32 @@ pub async fn serve(
 
 fn build_html(
     title: &str,
-    count: usize,
+    volume_page_counts: &[u32],
     prefetch_back: u32,
     prefetch_forward: u32,
+    initial_volume_index: u32,
     initial_page_index: u32,
     initial_scroll: f64,
 ) -> String {
+    let volume_page_counts = volume_page_counts.iter().map(u32::to_string).collect::<Vec<_>>().join(", ");
+
     include_str!("viewer.html")
         .replace("{title}", title)
-        .replace("{page_count}", &count.to_string())
+        .replace("{volume_page_counts}", &format!("[{volume_page_counts}]"))
         .replace("{prefetch_back}", &prefetch_back.to_string())
         .replace("{prefetch_forward}", &prefetch_forward.to_string())
+        .replace("{initial_volume_index}", &initial_volume_index.to_string())
         .replace("{initial_page_index}", &initial_page_index.to_string())
         .replace("{initial_scroll}", &initial_scroll.to_string())
         .replace("__VIEWER_SCRIPT__", &include_str!("viewer.js").replace("</script", "<\\/script"))
 }
 
-async fn page_response(index: u32, state: Arc<Manga>) -> Result<Response<Vec<u8>>, warp::Rejection> {
-    let Some(page) = state.page(index) else {
+async fn page_response(
+    volume_index: u32,
+    page_index: u32,
+    state: Arc<Manga>,
+) -> Result<Response<Vec<u8>>, warp::Rejection> {
+    let Some(page) = state.page(volume_index, page_index) else {
         return Ok(Response::builder()
             .status(StatusCode::NOT_FOUND)
             .header("content-type", "text/plain; charset=utf-8")
@@ -71,7 +82,7 @@ async fn page_response(index: u32, state: Arc<Manga>) -> Result<Response<Vec<u8>
             return Ok(Response::builder()
                 .status(StatusCode::INTERNAL_SERVER_ERROR)
                 .header("content-type", "text/plain; charset=utf-8")
-                .body(format!("Failed to load page {index}: {err}").into_bytes())
+                .body(format!("Failed to load volume {volume_index} page {page_index}: {err}").into_bytes())
                 .expect("valid response"));
         }
     };

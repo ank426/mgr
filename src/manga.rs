@@ -11,13 +11,19 @@ pub struct MangaPageRef {
 }
 
 #[derive(Clone, Debug)]
+pub struct MangaVolume {
+    pages: Vec<MangaPageRef>,
+}
+
+#[derive(Clone, Debug)]
 pub struct Manga {
     title: String,
-    pages: Vec<MangaPageRef>,
+    volumes: Vec<MangaVolume>,
 }
 
 pub struct ReadlistRuntime {
     pub manga: Manga,
+    pub initial_volume_index: u32,
     pub initial_page_index: u32,
     pub initial_scroll: f64,
 }
@@ -29,20 +35,20 @@ impl Manga {
     }
 
     pub fn from_volumes(title: String, volumes: Vec<Volume>) -> Self {
-        let pages = flatten_pages(volumes);
-        Self { title, pages }
+        let volumes = map_volumes(volumes);
+        Self { title, volumes }
     }
 
     pub fn title(&self) -> &str {
         &self.title
     }
 
-    pub fn page_count(&self) -> usize {
-        self.pages.len()
+    pub fn volume_page_counts(&self) -> Vec<u32> {
+        self.volumes.iter().map(|volume| volume.pages.len() as u32).collect()
     }
 
-    pub fn page(&self, index: u32) -> Option<&MangaPageRef> {
-        self.pages.get(index as usize)
+    pub fn page(&self, volume_index: u32, page_index: u32) -> Option<&MangaPageRef> {
+        self.volumes.get(volume_index as usize)?.pages.get(page_index as usize)
     }
 }
 
@@ -61,10 +67,10 @@ pub fn build_from_readlist(root: &Path, readlist: ReadList) -> Result<ReadlistRu
     }
 
     let mut volumes = Vec::with_capacity(readlist.files.len());
+    let mut initial_volume_index = 0_u32;
     let mut initial_page_index = 0_u32;
-    let mut page_offset = 0_u32;
 
-    for entry in &readlist.files {
+    for (volume_index, entry) in readlist.files.iter().enumerate() {
         if entry.pages == 0 {
             return Err(format!("Readlist file '{}' has pages = 0", entry.name));
         }
@@ -124,26 +130,29 @@ pub fn build_from_readlist(root: &Path, readlist: ReadList) -> Result<ReadlistRu
                     volume.pages.len()
                 ));
             }
-            initial_page_index = page_offset + local_index;
+            initial_volume_index = volume_index as u32;
+            initial_page_index = local_index;
         }
 
-        page_offset += volume.pages.len() as u32;
         volumes.push(volume);
     }
 
     let title = root.file_name().and_then(|name| name.to_str()).unwrap_or("manga").to_string();
     let manga = Manga::from_volumes(title, volumes);
 
-    Ok(ReadlistRuntime { manga, initial_page_index, initial_scroll: readlist.progress.scroll })
+    Ok(ReadlistRuntime { manga, initial_volume_index, initial_page_index, initial_scroll: readlist.progress.scroll })
 }
 
-fn flatten_pages(volumes: Vec<Volume>) -> Vec<MangaPageRef> {
-    let mut pages = Vec::new();
+fn map_volumes(volumes: Vec<Volume>) -> Vec<MangaVolume> {
+    let mut mapped = Vec::with_capacity(volumes.len());
     for volume in volumes {
         let archive_path = volume.archive_path;
-        for page in volume.pages {
-            pages.push(MangaPageRef { archive_path: archive_path.clone(), page_name: page.name, mime: page.mime });
-        }
+        let pages = volume
+            .pages
+            .into_iter()
+            .map(|page| MangaPageRef { archive_path: archive_path.clone(), page_name: page.name, mime: page.mime })
+            .collect();
+        mapped.push(MangaVolume { pages });
     }
-    pages
+    mapped
 }

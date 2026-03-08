@@ -1,9 +1,13 @@
-const pageCount = window.MGR_CONFIG.pageCount;
+const volumePageCounts = window.MGR_CONFIG.volumePageCounts;
 const prefetchBack = window.MGR_CONFIG.prefetchBack;
 const prefetchForward = window.MGR_CONFIG.prefetchForward;
+const initialVolumeIndex = window.MGR_CONFIG.initialVolumeIndex;
+const initialPageIndex = window.MGR_CONFIG.initialPageIndex;
 const pagesContainer = document.getElementById("pages");
 const topSpacer = document.getElementById("top-spacer");
 const bottomSpacer = document.getElementById("bottom-spacer");
+const orderedPages = buildOrderedPages(volumePageCounts);
+const pageCount = orderedPages.length;
 
 const state = {
   firstLoadedIndex: 0,
@@ -21,7 +25,11 @@ async function initializeViewer() {
     return;
   }
 
-  for (let count = 0; count <= Math.min(pageCount - 1, prefetchForward); count++) {
+  const initialOrdinal = Math.max(0, findInitialOrdinal());
+  state.firstLoadedIndex = initialOrdinal;
+  state.lastLoadedIndex = initialOrdinal - 1;
+
+  for (let count = initialOrdinal; count <= Math.min(pageCount - 1, initialOrdinal + prefetchForward); count++) {
     await appendPage();
   }
 
@@ -212,16 +220,19 @@ function getOrLoadMountedPageElement(index) {
 
 function createPageElement(index) {
   return new Promise((resolve, reject) => {
+    const pageRef = orderedPages[index];
     const image = new Image();
     image.decoding = "async";
-    image.alt = `page ${index}`;
-    image.src = `/page/${index}`;
+    image.alt = `volume ${pageRef.volumeIndex} page ${pageRef.pageIndex}`;
+    image.src = `/volume/${pageRef.volumeIndex}/page/${pageRef.pageIndex}`;
 
     image.addEventListener(
       "load",
       () => {
         const element = document.createElement("article");
         element.dataset.pageIndex = String(index);
+        element.dataset.volumeIndex = String(pageRef.volumeIndex);
+        element.dataset.volumePageIndex = String(pageRef.pageIndex);
         element.appendChild(image);
         resolve(element);
       },
@@ -230,10 +241,33 @@ function createPageElement(index) {
 
     image.addEventListener(
       "error",
-      () => reject(new Error(`Failed to load page ${index}`)),
+      () => reject(new Error(`Failed to load volume ${pageRef.volumeIndex} page ${pageRef.pageIndex}`)),
       { once: true },
     );
   });
+}
+
+function buildOrderedPages(counts) {
+  const pages = [];
+  counts.forEach((count, volumeIndex) => {
+    for (let pageIndex = 0; pageIndex < count; pageIndex++) {
+      pages.push({ volumeIndex, pageIndex });
+    }
+  });
+  return pages;
+}
+
+function findInitialOrdinal() {
+  let ordinal = 0;
+  for (let volumeIndex = 0; volumeIndex < volumePageCounts.length; volumeIndex++) {
+    const pageCountForVolume = volumePageCounts[volumeIndex];
+    if (volumeIndex === initialVolumeIndex) {
+      return ordinal + Math.min(initialPageIndex, Math.max(0, pageCountForVolume - 1));
+    }
+    ordinal += pageCountForVolume;
+  }
+
+  return 0;
 }
 
 function syncVirtualSpacers() {
