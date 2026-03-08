@@ -58,7 +58,7 @@ pub async fn handle_serve_readlist_directory(
     }
 
     let readlist = readlist::load(&readlist_path).map_err(|err| format!("Failed to load readlist: {err}"))?;
-    readlist.validate_for_runtime(path)?;
+    readlist.validate(path)?;
     let volumes = readlist.load_volumes(path)?;
     let title = path.file_name().and_then(|name| name.to_str()).unwrap_or("manga").to_string();
     server::serve(title, volumes, readlist.progress.clone(), port, prefetch_back, prefetch_forward).await;

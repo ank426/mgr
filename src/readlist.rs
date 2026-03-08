@@ -31,7 +31,7 @@ pub struct ReadList {
 }
 
 impl ReadList {
-    pub fn validate_for_runtime(&self, root: &Path) -> Result<(), String> {
+    pub fn validate(&self, root: &Path) -> Result<(), String> {
         if self.files.is_empty() {
             return Err("Readlist has no files".to_string());
         }
