@@ -31,7 +31,7 @@ pub struct ReadList {
 }
 
 impl ReadList {
-    pub fn validate_for_runtime(&self) -> Result<(), String> {
+    pub fn validate_for_runtime(&self, root: &Path) -> Result<(), String> {
         if self.files.is_empty() {
             return Err("Readlist has no files".to_string());
         }
@@ -59,42 +59,7 @@ impl ReadList {
                     entry.pages
                 ));
             }
-        }
 
-        if self.progress.page == 0 {
-            return Err("progress.page must be >= 1".to_string());
-        }
-
-        if self.progress.page > progress_entry.pages {
-            return Err(format!(
-                "progress.page {} is out of range for '{}' (has {} pages)",
-                self.progress.page, progress_entry.name, progress_entry.pages
-            ));
-        }
-
-        Ok(())
-    }
-
-    pub fn progress_position(&self) -> Result<(u32, u32), String> {
-        let Some((volume_index, progress_entry)) = self.progress_entry() else {
-            return Err(format!("progress.file '{}' is not present in files", self.progress.file));
-        };
-        if self.progress.page == 0 {
-            return Err("progress.page must be >= 1".to_string());
-        }
-        if self.progress.page > progress_entry.pages {
-            return Err(format!(
-                "progress.page {} is out of range for '{}' (has {} pages)",
-                self.progress.page, progress_entry.name, progress_entry.pages
-            ));
-        }
-        Ok((volume_index as u32, self.progress.page - 1))
-    }
-
-    pub fn load_volumes(&self, root: &Path) -> Result<Vec<cbz::Volume>, String> {
-        let mut volumes = Vec::with_capacity(self.files.len());
-
-        for entry in &self.files {
             let file_path = root.join(&entry.name);
             if !file_path.exists() {
                 return Err(format!("Readlist file '{}' does not exist", file_path.display()));
@@ -133,7 +98,45 @@ impl ReadList {
                     ));
                 }
             }
+        }
 
+        if self.progress.page == 0 {
+            return Err("progress.page must be >= 1".to_string());
+        }
+
+        if self.progress.page > progress_entry.pages {
+            return Err(format!(
+                "progress.page {} is out of range for '{}' (has {} pages)",
+                self.progress.page, progress_entry.name, progress_entry.pages
+            ));
+        }
+
+        Ok(())
+    }
+
+    pub fn progress_position(&self) -> Result<(u32, u32), String> {
+        let Some((volume_index, progress_entry)) = self.progress_entry() else {
+            return Err(format!("progress.file '{}' is not present in files", self.progress.file));
+        };
+        if self.progress.page == 0 {
+            return Err("progress.page must be >= 1".to_string());
+        }
+        if self.progress.page > progress_entry.pages {
+            return Err(format!(
+                "progress.page {} is out of range for '{}' (has {} pages)",
+                self.progress.page, progress_entry.name, progress_entry.pages
+            ));
+        }
+        Ok((volume_index as u32, self.progress.page - 1))
+    }
+
+    pub fn load_volumes(&self, root: &Path) -> Result<Vec<cbz::Volume>, String> {
+        let mut volumes = Vec::with_capacity(self.files.len());
+
+        for entry in &self.files {
+            let file_path = root.join(&entry.name);
+            let volume = cbz::load_volume(&file_path)
+                .map_err(|err| format!("Failed to load manga file {}: {err}", file_path.display()))?;
             volumes.push(volume);
         }
 

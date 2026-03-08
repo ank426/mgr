@@ -56,7 +56,7 @@ pub async fn handle_serve_readlist_directory(
     }
 
     let readlist = readlist::load(&readlist_path).map_err(|err| format!("Failed to load readlist: {err}"))?;
-    readlist.validate_for_runtime()?;
+    readlist.validate_for_runtime(path)?;
     let (initial_volume_index, initial_page_index) = readlist.progress_position()?;
     let initial_scroll = readlist.progress.scroll;
     let volumes = readlist.load_volumes(path)?;
