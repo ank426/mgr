@@ -8,40 +8,26 @@ use toml_edit::{Array, ArrayOfTables, DocumentMut, Item, Table, Value, value};
 
 use crate::cbz;
 
-#[derive(Debug, Serialize, Deserialize)]
-struct Progress {
-    file: String,
-    page: u32,
-    scroll: f64,
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Progress {
+    pub file: String,
+    pub page: u32,
+    pub scroll: f64,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-struct FileEntry {
-    name: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    mokuro: Option<String>,
-    pages: u32,
-    page_dims: Vec<[u32; 2]>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct ReadList {
-    progress: Progress,
-    files: Vec<FileEntry>,
-}
-
-#[derive(Clone, Debug)]
-pub struct LoadedFileEntry {
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct FileEntry {
     pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mokuro: Option<String>,
     pub pages: u32,
     pub page_dims: Vec<[u32; 2]>,
 }
 
-pub struct LoadedReadList {
-    pub progress_file: String,
-    pub progress_page: u32,
-    pub progress_scroll: f64,
-    pub files: Vec<LoadedFileEntry>,
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ReadList {
+    pub progress: Progress,
+    pub files: Vec<FileEntry>,
 }
 
 pub fn generate(dir: &Path) -> io::Result<PathBuf> {
@@ -98,22 +84,10 @@ pub fn generate(dir: &Path) -> io::Result<PathBuf> {
     Ok(output_path)
 }
 
-pub fn load(path: &Path) -> io::Result<LoadedReadList> {
+pub fn load(path: &Path) -> io::Result<ReadList> {
     let content = fs::read_to_string(path)?;
-    let readlist = toml::from_str::<ReadList>(&content).map_err(|err| {
-        io::Error::new(io::ErrorKind::InvalidData, format!("Failed to parse {}: {err}", path.display()))
-    })?;
-
-    Ok(LoadedReadList {
-        progress_file: readlist.progress.file,
-        progress_page: readlist.progress.page,
-        progress_scroll: readlist.progress.scroll,
-        files: readlist
-            .files
-            .into_iter()
-            .map(|entry| LoadedFileEntry { name: entry.name, pages: entry.pages, page_dims: entry.page_dims })
-            .collect(),
-    })
+    toml::from_str::<ReadList>(&content)
+        .map_err(|err| io::Error::new(io::ErrorKind::InvalidData, format!("Failed to parse {}: {err}", path.display())))
 }
 
 fn format_readlist(readlist: &ReadList) -> io::Result<String> {

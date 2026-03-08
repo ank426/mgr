@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 
 use crate::cbz::{self, Volume};
-use crate::readlist::LoadedReadList;
+use crate::readlist::ReadList;
 
 #[derive(Clone, Debug)]
 pub struct MangaPageRef {
@@ -46,17 +46,17 @@ impl Manga {
     }
 }
 
-pub fn build_from_readlist(root: &Path, readlist: LoadedReadList) -> Result<ReadlistRuntime, String> {
+pub fn build_from_readlist(root: &Path, readlist: ReadList) -> Result<ReadlistRuntime, String> {
     if readlist.files.is_empty() {
         return Err(format!("Readlist has no files in {}", root.display()));
     }
-    if !readlist.files.iter().any(|entry| entry.name == readlist.progress_file) {
-        return Err(format!("progress.file '{}' is not present in files", readlist.progress_file));
+    if !readlist.files.iter().any(|entry| entry.name == readlist.progress.file) {
+        return Err(format!("progress.file '{}' is not present in files", readlist.progress.file));
     }
-    if !readlist.progress_scroll.is_finite() || !(0.0..=1.0).contains(&readlist.progress_scroll) {
+    if !readlist.progress.scroll.is_finite() || !(0.0..=1.0).contains(&readlist.progress.scroll) {
         return Err(format!(
             "progress.scroll must be a finite value in [0.0, 1.0], found {}",
-            readlist.progress_scroll
+            readlist.progress.scroll
         ));
     }
 
@@ -111,15 +111,15 @@ pub fn build_from_readlist(root: &Path, readlist: LoadedReadList) -> Result<Read
             }
         }
 
-        if entry.name == readlist.progress_file {
-            if readlist.progress_page == 0 {
+        if entry.name == readlist.progress.file {
+            if readlist.progress.page == 0 {
                 return Err("progress.page must be >= 1".to_string());
             }
-            let local_index = readlist.progress_page - 1;
+            let local_index = readlist.progress.page - 1;
             if local_index >= volume.pages.len() as u32 {
                 return Err(format!(
                     "progress.page {} is out of range for '{}' (has {} pages)",
-                    readlist.progress_page,
+                    readlist.progress.page,
                     entry.name,
                     volume.pages.len()
                 ));
@@ -134,7 +134,7 @@ pub fn build_from_readlist(root: &Path, readlist: LoadedReadList) -> Result<Read
     let title = root.file_name().and_then(|name| name.to_str()).unwrap_or("manga").to_string();
     let manga = Manga::from_volumes(title, volumes);
 
-    Ok(ReadlistRuntime { manga, initial_page_index, initial_scroll: readlist.progress_scroll })
+    Ok(ReadlistRuntime { manga, initial_page_index, initial_scroll: readlist.progress.scroll })
 }
 
 fn flatten_pages(volumes: Vec<Volume>) -> Vec<MangaPageRef> {
