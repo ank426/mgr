@@ -175,16 +175,13 @@ function removeLastPage() {
 }
 
 function removePageElement(element) {
-  const pageIndex = Number(element.dataset.pageIndex);
-  state.loadedPageElements.delete(pageIndex);
+  state.loadedPageElements.delete(Number(element.dataset.pageIndex));
   const image = element.querySelector("img");
-
   if (image) {
     image.removeAttribute("srcset");
     image.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==";
     image.remove();
   }
-
   element.remove();
   syncVirtualSpacers();
 }
