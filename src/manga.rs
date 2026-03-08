@@ -1,24 +1,12 @@
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
-use crate::cbz::{self, Volume};
+use crate::cbz::{self, Page, Volume};
 use crate::readlist::ReadList;
-
-#[derive(Clone, Debug)]
-pub struct MangaPageRef {
-    pub archive_path: PathBuf,
-    pub page_name: String,
-    pub mime: &'static str,
-}
-
-#[derive(Clone, Debug)]
-pub struct MangaVolume {
-    pages: Vec<MangaPageRef>,
-}
 
 #[derive(Clone, Debug)]
 pub struct Manga {
     title: String,
-    volumes: Vec<MangaVolume>,
+    volumes: Vec<Volume>,
 }
 
 pub struct ReadlistRuntime {
@@ -35,7 +23,6 @@ impl Manga {
     }
 
     pub fn from_volumes(title: String, volumes: Vec<Volume>) -> Self {
-        let volumes = map_volumes(volumes);
         Self { title, volumes }
     }
 
@@ -47,8 +34,10 @@ impl Manga {
         self.volumes.iter().map(|volume| volume.pages.len() as u32).collect()
     }
 
-    pub fn page(&self, volume_index: u32, page_index: u32) -> Option<&MangaPageRef> {
-        self.volumes.get(volume_index as usize)?.pages.get(page_index as usize)
+    pub fn page(&self, volume_index: u32, page_index: u32) -> Option<(&Volume, &Page)> {
+        let volume = self.volumes.get(volume_index as usize)?;
+        let page = volume.pages.get(page_index as usize)?;
+        Some((volume, page))
     }
 }
 
@@ -141,18 +130,4 @@ pub fn build_from_readlist(root: &Path, readlist: ReadList) -> Result<ReadlistRu
     let manga = Manga::from_volumes(title, volumes);
 
     Ok(ReadlistRuntime { manga, initial_volume_index, initial_page_index, initial_scroll: readlist.progress.scroll })
-}
-
-fn map_volumes(volumes: Vec<Volume>) -> Vec<MangaVolume> {
-    let mut mapped = Vec::with_capacity(volumes.len());
-    for volume in volumes {
-        let archive_path = volume.archive_path;
-        let pages = volume
-            .pages
-            .into_iter()
-            .map(|page| MangaPageRef { archive_path: archive_path.clone(), page_name: page.name, mime: page.mime })
-            .collect();
-        mapped.push(MangaVolume { pages });
-    }
-    mapped
 }

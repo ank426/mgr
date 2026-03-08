@@ -68,7 +68,7 @@ async fn page_response(
     page_index: u32,
     state: Arc<Manga>,
 ) -> Result<Response<Vec<u8>>, warp::Rejection> {
-    let Some(page) = state.page(volume_index, page_index) else {
+    let Some((volume, page)) = state.page(volume_index, page_index) else {
         return Ok(Response::builder()
             .status(StatusCode::NOT_FOUND)
             .header("content-type", "text/plain; charset=utf-8")
@@ -76,7 +76,7 @@ async fn page_response(
             .expect("valid response"));
     };
 
-    let data = match load_page_bytes(page.archive_path.clone(), page.page_name.clone()).await {
+    let data = match load_page_bytes(volume.archive_path.clone(), page.name.clone()).await {
         Ok(data) => data,
         Err(err) => {
             return Ok(Response::builder()
