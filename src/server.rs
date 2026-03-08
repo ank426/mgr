@@ -1,4 +1,3 @@
-use std::io;
 use std::sync::Arc;
 
 use warp::Filter;
@@ -41,7 +40,7 @@ fn build_html(
     let volume_page_counts =
         volumes.iter().map(|volume| (volume.pages.len() as u32).to_string()).collect::<Vec<_>>().join(", ");
     let volume_names =
-        volumes.iter().map(|volume| js_quoted_string(&volume_file_name(volume))).collect::<Vec<_>>().join(", ");
+        volumes.iter().map(|volume| format!("{:?}", volume.file_name())).collect::<Vec<_>>().join(", ");
 
     include_str!("viewer.html")
         .replace("{title}", title)
@@ -49,7 +48,7 @@ fn build_html(
         .replace("{volume_names}", &format!("[{volume_names}]"))
         .replace("{prefetch_back}", &prefetch_back.to_string())
         .replace("{prefetch_forward}", &prefetch_forward.to_string())
-        .replace("{initial_volume_name}", &js_quoted_string(&progress.file))
+        .replace("{initial_volume_name}", &format!("{:?}", progress.file.as_str()))
         .replace("{initial_page_index}", &(progress.page - 1).to_string())
         .replace("{initial_scroll}", &progress.scroll.to_string())
         .replace("__VIEWER_SCRIPT__", &include_str!("viewer.js").replace("</script", "<\\/script"))
@@ -60,7 +59,7 @@ async fn page_response(
     page_index: u32,
     state: Arc<Vec<Volume>>,
 ) -> Result<Response<Vec<u8>>, warp::Rejection> {
-    let Some(volume) = state.iter().find(|volume| volume_file_name(volume) == volume_name) else {
+    let Some(volume) = state.iter().find(|volume| volume.file_name() == volume_name) else {
         return Ok(Response::builder()
             .status(StatusCode::NOT_FOUND)
             .header("content-type", "text/plain; charset=utf-8")
@@ -75,7 +74,7 @@ async fn page_response(
             .expect("valid response"));
     };
 
-    let data = match load_page_bytes(volume.archive_path.clone(), page.name.clone()).await {
+    let data = match cbz::load_page_bytes(volume.archive_path.clone(), page.name.clone()).await {
         Ok(data) => data,
         Err(err) => {
             return Ok(Response::builder()
@@ -94,23 +93,4 @@ async fn page_response(
         .header("expires", "0")
         .body(data)
         .expect("valid response"))
-}
-
-async fn load_page_bytes(archive_path: std::path::PathBuf, page_name: String) -> io::Result<Vec<u8>> {
-    tokio::task::spawn_blocking(move || cbz::load_page_bytes(&archive_path, &page_name))
-        .await
-        .map_err(|err| io::Error::other(format!("Page load task failed: {err}")))?
-}
-
-fn volume_file_name(volume: &Volume) -> String {
-    volume
-        .archive_path
-        .file_name()
-        .and_then(|name| name.to_str())
-        .expect("loaded volume archive has a UTF-8 file name")
-        .to_string()
-}
-
-fn js_quoted_string(value: &str) -> String {
-    format!("{:?}", value)
 }
