@@ -114,11 +114,6 @@ impl ReadList {
         Ok(())
     }
 
-    pub fn progress_position(&self) -> Result<(u32, u32), String> {
-        let (volume_index, _) = self.progress_entry().expect("validated progress entry exists");
-        Ok((volume_index as u32, self.progress.page - 1))
-    }
-
     pub fn load_volumes(&self, root: &Path) -> Result<Vec<cbz::Volume>, String> {
         let mut volumes = Vec::with_capacity(self.files.len());
 
@@ -134,6 +129,21 @@ impl ReadList {
 
     fn progress_entry(&self) -> Option<(usize, &FileEntry)> {
         self.files.iter().enumerate().find(|(_, entry)| entry.name == self.progress.file)
+    }
+}
+
+impl Progress {
+    pub fn progress_position(&self, volumes: &[cbz::Volume]) -> (u32, u32) {
+        let page_index = self.page.checked_sub(1).expect("validated progress.page is >= 1");
+        let volume_index = volumes
+            .iter()
+            .position(|volume| {
+                volume.archive_path.file_name().and_then(|name| name.to_str()).is_some_and(|name| name == self.file)
+            })
+            .expect("validated progress.file matches a loaded volume");
+        let volume = &volumes[volume_index];
+        assert!(page_index < volume.pages.len() as u32, "validated progress.page fits in matched volume");
+        (volume_index as u32, page_index)
     }
 }
 

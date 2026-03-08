@@ -34,7 +34,12 @@ pub async fn handle_serve_file(
 
     let title = volume.title.clone();
     let volumes = vec![volume];
-    server::serve(title, volumes, port, prefetch_back, prefetch_forward, 0, 0, 0.0).await;
+    let progress = readlist::Progress {
+        file: path.file_name().and_then(|name| name.to_str()).unwrap_or_default().to_string(),
+        page: 1,
+        scroll: 0.0,
+    };
+    server::serve(title, volumes, progress, port, prefetch_back, prefetch_forward).await;
     Ok(())
 }
 
@@ -57,20 +62,8 @@ pub async fn handle_serve_readlist_directory(
 
     let readlist = readlist::load(&readlist_path).map_err(|err| format!("Failed to load readlist: {err}"))?;
     readlist.validate_for_runtime(path)?;
-    let (initial_volume_index, initial_page_index) = readlist.progress_position()?;
-    let initial_scroll = readlist.progress.scroll;
     let volumes = readlist.load_volumes(path)?;
     let title = path.file_name().and_then(|name| name.to_str()).unwrap_or("manga").to_string();
-    server::serve(
-        title,
-        volumes,
-        port,
-        prefetch_back,
-        prefetch_forward,
-        initial_volume_index,
-        initial_page_index,
-        initial_scroll,
-    )
-    .await;
+    server::serve(title, volumes, readlist.progress.clone(), port, prefetch_back, prefetch_forward).await;
     Ok(())
 }

@@ -6,27 +6,17 @@ use warp::Reply;
 use warp::http::{Response, StatusCode};
 
 use crate::cbz::{self, Volume};
+use crate::readlist::Progress;
 
 pub async fn serve(
     title: String,
     volumes: Vec<Volume>,
+    progress: Progress,
     port: u16,
     prefetch_back: u32,
     prefetch_forward: u32,
-    initial_volume_index: u32,
-    initial_page_index: u32,
-    initial_scroll: f64,
 ) {
-    let volume_page_counts = volumes.iter().map(|volume| volume.pages.len() as u32).collect::<Vec<_>>();
-    let html = build_html(
-        &title,
-        &volume_page_counts,
-        prefetch_back,
-        prefetch_forward,
-        initial_volume_index,
-        initial_page_index,
-        initial_scroll,
-    );
+    let html = build_html(&title, &volumes, &progress, prefetch_back, prefetch_forward);
     let html_route = warp::path::end().map(move || warp::reply::html(html.clone()).into_response());
 
     let state = Arc::new(volumes);
@@ -43,13 +33,14 @@ pub async fn serve(
 
 fn build_html(
     title: &str,
-    volume_page_counts: &[u32],
+    volumes: &[Volume],
+    progress: &Progress,
     prefetch_back: u32,
     prefetch_forward: u32,
-    initial_volume_index: u32,
-    initial_page_index: u32,
-    initial_scroll: f64,
 ) -> String {
+    let volume_page_counts = volumes.iter().map(|volume| volume.pages.len() as u32).collect::<Vec<_>>();
+    let (initial_volume_index, initial_page_index) = progress.progress_position(volumes);
+    let initial_scroll = progress.scroll;
     let volume_page_counts = volume_page_counts.iter().map(u32::to_string).collect::<Vec<_>>().join(", ");
 
     include_str!("viewer.html")
