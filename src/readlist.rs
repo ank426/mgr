@@ -50,7 +50,7 @@ pub fn generate(dir: &Path, readlist_file_name: &str) -> io::Result<PathBuf> {
 
     let mut readlist = if output_path.is_file() {
         let content = fs::read_to_string(&output_path)?;
-        toml::from_str::<ReadList>(&content).map_err(|err| {
+        toml_edit::de::from_str::<ReadList>(&content).map_err(|err| {
             io::Error::new(io::ErrorKind::InvalidData, format!("Failed to parse {}: {err}", output_path.display()))
         })?
     } else {
@@ -86,7 +86,7 @@ pub fn generate(dir: &Path, readlist_file_name: &str) -> io::Result<PathBuf> {
 
 pub fn load(path: &Path) -> io::Result<ReadList> {
     let content = fs::read_to_string(path)?;
-    toml::from_str::<ReadList>(&content)
+    toml_edit::de::from_str::<ReadList>(&content)
         .map_err(|err| io::Error::new(io::ErrorKind::InvalidData, format!("Failed to parse {}: {err}", path.display())))
 }
 

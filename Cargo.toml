@@ -9,7 +9,6 @@ clap = { version = "4.5.60", features = ["derive"] }
 imagesize = "0.14.0"
 serde = { version = "1.0.228", features = ["derive"] }
 tokio = { version = "1.49.0", features = ["rt-multi-thread", "macros"] }
-toml = "1.0.3"
-toml_edit = "0.25.4"
+toml_edit = { version = "0.25.4", features = ["serde"] }
 warp = { version = "0.4.2", features = ["server"] }
 zip = "8.1.0"
