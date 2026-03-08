@@ -16,21 +16,23 @@
         margin: 0;
         background: black;
       }
-      main {
+      #pages {
         overflow-anchor: none;
       }
-      img {
+      [data-page-slot] {
+        width: 100%;
+        background: black;
+      }
+      [data-page-slot] img {
         display: block;
         width: 100%;
+        height: 100%;
+        object-fit: contain;
       }
     </style>
   </head>
   <body>
-    <main>
-      <div id="top-spacer" aria-hidden="true"></div>
-      <section id="pages"></section>
-      <div id="bottom-spacer" aria-hidden="true"></div>
-    </main>
+    <main id="pages"></main>
     <script>
       window.MGR_CONFIG = {
         volumes: {volumes},

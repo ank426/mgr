@@ -1,301 +1,227 @@
 const volumes = window.MGR_CONFIG.volumes;
 const [prefetchBack, prefetchForward] = window.MGR_CONFIG.prefetch;
-const initialVolumeName = window.MGR_CONFIG.initialVolumeName;
-const initialPageNumber = window.MGR_CONFIG.initialPageNumber;
 const pagesContainer = document.getElementById("pages");
-const topSpacer = document.getElementById("top-spacer");
-const bottomSpacer = document.getElementById("bottom-spacer");
-const orderedPages = buildOrderedPages(volumes);
-const pageCount = orderedPages.length;
+
+const pageSlots = [];
 
 const state = {
-  firstLoadedIndex: 0,
-  lastLoadedIndex: -1,
-  loadedPageElements: new Map(),
-  loadingPagePromises: new Map(),
-  updatePending: false,
-  updateInProgress: false,
-  trimmedTopHeightPx: 0,
-  previousTopSafetyPx: null,
+  nearVisibleIndices: new Set(),
+  windowStart: 0,
+  windowEnd: -1,
+  reconcileScheduled: false,
 };
 
-async function initializeViewer() {
-  if (pageCount === 0) {
+function initializeViewer() {
+  if (!pagesContainer) {
+    throw new Error("Missing pages container");
+  }
+
+  buildDom();
+  recomputeAllSlotHeights();
+
+  if (pageSlots.length === 0) {
     return;
   }
 
-  const initialOrdinal = Math.max(0, findInitialOrdinal());
-  state.firstLoadedIndex = initialOrdinal;
-  state.lastLoadedIndex = initialOrdinal - 1;
+  const observer = new IntersectionObserver(handleIntersections, {
+    root: null,
+    rootMargin: "100% 0px 100% 0px",
+    threshold: 0,
+  });
 
-  for (let count = initialOrdinal; count <= Math.min(pageCount - 1, initialOrdinal + prefetchForward); count++) {
-    await appendPage();
+  for (const page of pageSlots) {
+    observer.observe(page.slot);
   }
 
-  requestWindowUpdate();
-}
+  applyWindow(0, Math.min(pageSlots.length - 1, prefetchForward));
 
-function requestWindowUpdate() {
-  if (state.updatePending) {
-    return;
-  }
-
-  state.updatePending = true;
-
-  if (state.updateInProgress) {
-    return;
-  }
-
-  requestAnimationFrame(flushWindowUpdate);
-}
-
-async function flushWindowUpdate() {
-  if (state.updateInProgress) {
-    return;
-  }
-
-  state.updateInProgress = true;
-
-  try {
-    while (state.updatePending) {
-      state.updatePending = false;
-      await reconcileWindow();
-    }
-  } finally {
-    state.updateInProgress = false;
-  }
-}
-
-async function reconcileWindow() {
-  const visibleRange = getVisiblePageRange();
-  if (!visibleRange) {
-    return;
-  }
-
-  const targetStart = Math.max(0, visibleRange.first - prefetchBack);
-  const targetEnd = Math.min(pageCount - 1, visibleRange.last + prefetchForward);
-
-  if (state.firstLoadedIndex === targetStart && state.lastLoadedIndex === targetEnd) {
-    return;
-  }
-
-  let changed = false;
-
-  while (state.firstLoadedIndex > targetStart) {
-    await prependPage();
-    changed = true;
-  }
-
-  while (state.lastLoadedIndex < targetEnd) {
-    await appendPage();
-    changed = true;
-  }
-
-  while (state.firstLoadedIndex < targetStart) {
-    removeFirstPage();
-    changed = true;
-  }
-
-  while (state.lastLoadedIndex > targetEnd) {
-    removeLastPage();
-    changed = true;
-  }
-
-  if (changed) {
-    requestWindowUpdate();
-  }
-}
-
-function getVisiblePageRange() {
-  if (pagesContainer.childElementCount === 0) {
-    return null;
-  }
-
-  const viewportBottom = window.innerHeight || document.documentElement.clientHeight || 0;
-  let firstVisible = null;
-  let lastVisible = null;
-
-  for (const element of pagesContainer.children) {
-    const rect = element.getBoundingClientRect();
-    const intersectsViewport = rect.bottom > 0 && rect.top < viewportBottom;
-    if (!intersectsViewport) {
-      continue;
-    }
-
-    const idx = Number(element.dataset.pageIndex);
-    if (firstVisible === null || idx < firstVisible) {
-      firstVisible = idx;
-    }
-    if (lastVisible === null || idx > lastVisible) {
-      lastVisible = idx;
-    }
-  }
-
-  if (firstVisible !== null && lastVisible !== null) {
-    return { first: firstVisible, last: lastVisible };
-  }
-
-  const first = pagesContainer.firstElementChild;
-  const last = pagesContainer.lastElementChild;
-  if (!first || !last) {
-    return null;
-  }
-
-  const firstIndex = Number(first.dataset.pageIndex);
-  const lastIndex = Number(last.dataset.pageIndex);
-  if (first.getBoundingClientRect().top > 0) {
-    return { first: firstIndex, last: firstIndex };
-  }
-  if (last.getBoundingClientRect().bottom < 0) {
-    return { first: lastIndex, last: lastIndex };
-  }
-
-  return { first: state.firstLoadedIndex, last: state.lastLoadedIndex };
-}
-
-async function prependPage() {
-  const element = await getOrLoadMountedPageElement(state.firstLoadedIndex - 1);
-  pagesContainer.prepend(element);
-  state.firstLoadedIndex--;
-  state.trimmedTopHeightPx = Math.max(0, state.trimmedTopHeightPx - element.getBoundingClientRect().height);
-  syncVirtualSpacers();
-}
-
-async function appendPage() {
-  const element = await getOrLoadMountedPageElement(state.lastLoadedIndex + 1);
-  pagesContainer.appendChild(element);
-  state.lastLoadedIndex++;
-  syncVirtualSpacers();
-}
-
-function removeFirstPage() {
-  const element = pagesContainer.firstElementChild;
-  state.firstLoadedIndex++;
-  state.trimmedTopHeightPx += element.getBoundingClientRect().height;
-  removePageElement(element);
-}
-
-function removeLastPage() {
-  const element = pagesContainer.lastElementChild;
-  state.lastLoadedIndex--;
-  removePageElement(element);
-}
-
-function removePageElement(element) {
-  state.loadedPageElements.delete(Number(element.dataset.pageIndex));
-  const image = element.querySelector("img");
-  if (image) {
-    image.removeAttribute("srcset");
-    image.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==";
-    image.remove();
-  }
-  element.remove();
-  syncVirtualSpacers();
-}
-
-function getOrLoadMountedPageElement(index) {
-  const loadedElement = state.loadedPageElements.get(index);
-  if (loadedElement) {
-    return Promise.resolve(loadedElement);
-  }
-
-  const loadingPromise = state.loadingPagePromises.get(index);
-  if (loadingPromise) {
-    return loadingPromise;
-  }
-
-  const newLoadPromise = createPageElement(index)
-    .then((element) => {
-      state.loadedPageElements.set(index, element);
-      return element;
-    })
-    .finally(() => {
-      state.loadingPagePromises.delete(index);
-    });
-
-  state.loadingPagePromises.set(index, newLoadPromise);
-  return newLoadPromise;
-}
-
-function createPageElement(index) {
-  return new Promise((resolve, reject) => {
-    const pageRef = orderedPages[index];
-    const image = new Image();
-    image.decoding = "async";
-    image.alt = `volume ${pageRef.volumeName} page ${pageRef.pageNumber}`;
-    image.src = `/volume/${encodeURIComponent(pageRef.volumeName)}/page/${pageRef.pageNumber}`;
-
-    image.addEventListener(
-      "load",
-      () => {
-        const element = document.createElement("article");
-        element.dataset.pageIndex = String(index);
-        element.dataset.volumeIndex = String(pageRef.volumeIndex);
-        element.dataset.volumeName = pageRef.volumeName;
-        element.dataset.volumePageNumber = String(pageRef.pageNumber);
-        element.appendChild(image);
-        resolve(element);
-      },
-      { once: true },
-    );
-
-    image.addEventListener(
-      "error",
-      () => reject(new Error(`Failed to load volume ${pageRef.volumeName} page ${pageRef.pageNumber}`)),
-      { once: true },
-    );
+  window.addEventListener("resize", () => {
+    recomputeAllSlotHeights();
+    scheduleReconcile();
   });
 }
 
-function buildOrderedPages(volumesConfig) {
-  const pages = [];
-  volumesConfig.forEach((volume, volumeIndex) => {
-    for (let pageNumber = 1; pageNumber <= volume.pageDims.length; pageNumber++) {
-      pages.push({ volumeIndex, volumeName: volume.name, pageNumber, dimensions: volume.pageDims[pageNumber - 1] });
-    }
-  });
-  return pages;
-}
+function buildDom() {
+  const fragment = document.createDocumentFragment();
+  let globalIndex = 0;
 
-function findInitialOrdinal() {
-  let ordinal = 0;
   for (const volume of volumes) {
-    const pageCountForVolume = volume.pageDims.length;
-    if (volume.name === initialVolumeName) {
-      const cappedPageNumber = Math.min(Math.max(initialPageNumber, 1), Math.max(pageCountForVolume, 1));
-      return ordinal + (cappedPageNumber - 1);
+    const volumeSection = document.createElement("section");
+    volumeSection.dataset.volumeName = volume.name;
+
+    for (let pageOffset = 0; pageOffset < volume.pageDims.length; pageOffset++) {
+      const pageNumber = pageOffset + 1;
+      const dimensions = volume.pageDims[pageOffset];
+
+      const slot = document.createElement("div");
+      slot.dataset.pageSlot = "1";
+      slot.dataset.pageIndex = String(globalIndex);
+      slot.dataset.volumeName = volume.name;
+      slot.dataset.pageNumber = String(pageNumber);
+
+      volumeSection.appendChild(slot);
+
+      pageSlots.push({
+        index: globalIndex,
+        slot,
+        volumeName: volume.name,
+        pageNumber,
+        dimensions,
+        src: `/volume/${encodeURIComponent(volume.name)}/page/${pageNumber}`,
+        status: "unloaded",
+        image: null,
+      });
+
+      globalIndex++;
     }
-    ordinal += pageCountForVolume;
+
+    fragment.appendChild(volumeSection);
   }
 
-  return 0;
+  pagesContainer.replaceChildren(fragment);
 }
 
-function syncVirtualSpacers() {
-  const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
-  const reserve = Math.max(4000, Math.round(viewportHeight * 6));
-  const targetTopSafety = state.firstLoadedIndex > 0 ? reserve : 0;
-  const bottomSafety = state.lastLoadedIndex < pageCount - 1 ? reserve : 0;
-  const topHeight = Math.max(0, Math.round(state.trimmedTopHeightPx + targetTopSafety));
+function recomputeAllSlotHeights() {
+  const width = pagesContainer.clientWidth || window.innerWidth || 1;
 
-  topSpacer.style.height = `${topHeight}px`;
-  bottomSpacer.style.height = `${bottomSafety}px`;
+  for (const page of pageSlots) {
+    const [sourceWidth, sourceHeight] = page.dimensions;
+    const safeWidth = Math.max(sourceWidth || 1, 1);
+    const safeHeight = Math.max(sourceHeight || 1, 1);
+    const renderedHeight = Math.max(1, Math.round((width * safeHeight) / safeWidth));
+    page.slot.style.height = `${renderedHeight}px`;
+  }
+}
 
-  if (state.previousTopSafetyPx === null) {
-    state.previousTopSafetyPx = targetTopSafety;
+function handleIntersections(entries) {
+  for (const entry of entries) {
+    const index = Number(entry.target.dataset.pageIndex);
+    if (entry.isIntersecting) {
+      state.nearVisibleIndices.add(index);
+    } else {
+      state.nearVisibleIndices.delete(index);
+    }
+  }
+
+  scheduleReconcile();
+}
+
+function scheduleReconcile() {
+  if (state.reconcileScheduled) {
     return;
   }
 
-  const safetyDelta = targetTopSafety - state.previousTopSafetyPx;
-  state.previousTopSafetyPx = targetTopSafety;
-  if (safetyDelta !== 0) {
-    window.scrollBy(0, safetyDelta);
-  }
+  state.reconcileScheduled = true;
+  requestAnimationFrame(() => {
+    state.reconcileScheduled = false;
+    reconcileWindow();
+  });
 }
 
-window.addEventListener("scroll", requestWindowUpdate, { passive: true });
-window.addEventListener("resize", requestWindowUpdate);
+function reconcileWindow() {
+  if (pageSlots.length === 0) {
+    return;
+  }
 
-initializeViewer().catch((error) => {
-  console.error(error);
-});
+  if (state.nearVisibleIndices.size === 0) {
+    return;
+  }
+
+  let minIndex = pageSlots.length - 1;
+  let maxIndex = 0;
+
+  for (const index of state.nearVisibleIndices) {
+    if (index < minIndex) {
+      minIndex = index;
+    }
+    if (index > maxIndex) {
+      maxIndex = index;
+    }
+  }
+
+  const nextStart = Math.max(0, minIndex - prefetchBack);
+  const nextEnd = Math.min(pageSlots.length - 1, maxIndex + prefetchForward);
+  applyWindow(nextStart, nextEnd);
+}
+
+function applyWindow(start, end) {
+  if (state.windowEnd >= state.windowStart) {
+    for (let index = state.windowStart; index <= state.windowEnd; index++) {
+      if (index < start || index > end) {
+        unloadPage(index);
+      }
+    }
+  }
+
+  for (let index = start; index <= end; index++) {
+    loadPage(index);
+  }
+
+  state.windowStart = start;
+  state.windowEnd = end;
+}
+
+function loadPage(index) {
+  const page = pageSlots[index];
+  if (!page || page.status === "loading" || page.status === "loaded" || page.status === "failed") {
+    return;
+  }
+
+  const image = new Image();
+  image.decoding = "async";
+  image.alt = `volume ${page.volumeName} page ${page.pageNumber}`;
+  image.dataset.pageIndex = String(index);
+
+  page.status = "loading";
+  page.image = image;
+
+  image.addEventListener(
+    "load",
+    () => {
+      if (page.image !== image) {
+        return;
+      }
+
+      page.status = "loaded";
+      page.slot.replaceChildren(image);
+    },
+    { once: true },
+  );
+
+  image.addEventListener(
+    "error",
+    () => {
+      if (page.image !== image) {
+        return;
+      }
+
+      page.status = "failed";
+      page.image = null;
+      page.slot.replaceChildren();
+      console.error(`Failed to load volume ${page.volumeName} page ${page.pageNumber}`);
+    },
+    { once: true },
+  );
+
+  image.src = page.src;
+}
+
+function unloadPage(index) {
+  const page = pageSlots[index];
+  if (!page || page.status === "failed") {
+    return;
+  }
+
+  if (page.image) {
+    page.image.removeAttribute("srcset");
+    page.image.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==";
+    page.image.removeAttribute("src");
+    page.image.remove();
+  }
+
+  page.image = null;
+  page.slot.replaceChildren();
+  page.status = "unloaded";
+}
+
+initializeViewer();
