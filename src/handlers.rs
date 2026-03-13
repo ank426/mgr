@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use crate::error::AppResult;
 use crate::{cbz, readlist, server};
@@ -16,16 +16,22 @@ pub fn handle_generate(path: &Path, readlist_file_name: &str) -> AppResult<()> {
     Ok(())
 }
 
-pub async fn handle_serve_file(path: &Path, port: u16, prefetch: (u32, u32)) -> AppResult<()> {
-    if !cbz::is_cbz(path) {
-        return Err(format!("Unsupported file type: {} (expected .cbz)", path.display()).into());
+pub async fn handle_serve_files(paths: &[PathBuf], port: u16, prefetch: (u32, u32)) -> AppResult<()> {
+    if paths.is_empty() {
+        return Err("No files provided".into());
     }
 
-    let volume = cbz::load_volume(path)?;
-    let title = volume.title.clone();
-    let volumes = vec![volume];
+    let mut volumes = Vec::with_capacity(paths.len());
+    for path in paths {
+        if !cbz::is_cbz(path) {
+            return Err(format!("Unsupported file type: {} (expected .cbz)", path.display()).into());
+        }
+        volumes.push(cbz::load_volume(path)?);
+    }
+
+    let title = if volumes.len() == 1 { volumes[0].title.clone() } else { "mgr".to_string() };
     let progress = readlist::Progress {
-        file: path.file_name().and_then(|name| name.to_str()).unwrap_or_default().to_string(),
+        file: paths[0].file_name().and_then(|name| name.to_str()).unwrap_or_default().to_string(),
         page: 1,
         scroll: 0.0,
     };

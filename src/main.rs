@@ -28,7 +28,7 @@ struct Args {
     prefetch_forward: u32,
 
     #[arg(default_value = ".")]
-    path: PathBuf,
+    paths: Vec<PathBuf>,
 }
 
 #[tokio::main]
@@ -41,22 +41,29 @@ async fn main() {
 
 async fn run(args: Args) -> AppResult<()> {
     if args.generate {
-        return handlers::handle_generate(&args.path, &args.readlist_file);
-    }
-
-    if !args.path.exists() {
-        return Err(format!("Path does not exist: {}", args.path.display()).into());
+        if args.paths.len() != 1 {
+            return Err("--generate expects a single directory path".into());
+        }
+        return handlers::handle_generate(&args.paths[0], &args.readlist_file);
     }
 
     let prefetch = (args.prefetch_back, args.prefetch_forward);
 
-    if args.path.is_file() {
-        return handlers::handle_serve_file(&args.path, args.port, prefetch).await;
+    if args.paths[0].is_dir() {
+        if args.paths.len() != 1 {
+            return Err("Directory path must be provided alone".into());
+        }
+        return handlers::handle_serve_readlist_directory(&args.paths[0], &args.readlist_file, args.port, prefetch).await;
     }
 
-    if args.path.is_dir() {
-        return handlers::handle_serve_readlist_directory(&args.path, &args.readlist_file, args.port, prefetch).await;
+    for path in &args.paths {
+        if !path.exists() {
+            return Err(format!("Path does not exist: {}", path.display()).into());
+        }
+        if !path.is_file() {
+            return Err(format!("Multiple paths only supports files, found: {}", path.display()).into());
+        }
     }
 
-    Err(format!("Unsupported path type: {} (expected file or directory)", args.path.display()).into())
+    handlers::handle_serve_files(args.paths.as_slice(), args.port, prefetch).await
 }
