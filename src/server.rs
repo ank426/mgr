@@ -5,7 +5,7 @@ use warp::Filter;
 use warp::Reply;
 use warp::http::{Response, StatusCode};
 
-use crate::cbz::{self, Volume};
+use crate::cbz::Volume;
 use crate::readlist::Progress;
 
 #[derive(Serialize)]
@@ -71,7 +71,7 @@ async fn page_response(
             )));
         }
     };
-    let data = match cbz::load_page_bytes(volume.archive_path.clone(), page.name.clone()).await {
+    let data = match page.load_bytes(volume.archive_path.clone()).await {
         Ok(data) => data,
         Err(err) => {
             return Ok(internal_server_error_response(format!(
