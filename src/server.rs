@@ -12,7 +12,7 @@ use crate::readlist::Progress;
 struct ViewerVolume<'a> {
     name: &'a str,
     #[serde(rename = "pageDims")]
-    page_dims: Vec<[u32; 2]>,
+    page_dims: Vec<(u32, u32)>,
 }
 
 pub async fn serve(title: String, volumes: Vec<Volume>, progress: Progress, port: u16, prefetch: (u32, u32)) {

@@ -10,7 +10,7 @@ use crate::image;
 #[derive(Clone, Debug)]
 pub struct Page {
     pub name: String,
-    pub dimensions: [u32; 2],
+    pub dimensions: (u32, u32),
 }
 
 #[derive(Clone, Debug)]

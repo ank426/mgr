@@ -1,11 +1,11 @@
 use std::io::{self, BufRead, Read, Seek, SeekFrom};
 
-use imagesize::{ImageSize, blob_size, reader_size};
+use imagesize::{blob_size, reader_size, ImageSize};
 
 const DIMENSION_CHUNK_SIZE: usize = 32 * 1024;
 const DIMENSION_PREFIX_SIZE: usize = 1024;
 
-pub fn read_dimensions<R: Read>(mut reader: R) -> io::Result<[u32; 2]> {
+pub fn read_dimensions<R: Read>(mut reader: R) -> io::Result<(u32, u32)> {
     let mut prefix = vec![0_u8; DIMENSION_PREFIX_SIZE];
     let bytes_read = reader.read(&mut prefix)?;
     prefix.truncate(bytes_read);
@@ -20,13 +20,13 @@ pub fn read_dimensions<R: Read>(mut reader: R) -> io::Result<[u32; 2]> {
     to_dimensions(size)
 }
 
-fn to_dimensions(size: ImageSize) -> io::Result<[u32; 2]> {
+fn to_dimensions(size: ImageSize) -> io::Result<(u32, u32)> {
     let width = u32::try_from(size.width)
         .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, format!("Image width {} exceeds u32", size.width)))?;
     let height = u32::try_from(size.height)
         .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, format!("Image height {} exceeds u32", size.height)))?;
 
-    Ok([width, height])
+    Ok((width, height))
 }
 
 struct CachedReadSeeker<R> {
