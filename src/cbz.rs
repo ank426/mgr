@@ -13,21 +13,6 @@ pub struct Page {
     pub dimensions: (u32, u32),
 }
 
-#[derive(Clone, Debug)]
-pub struct Volume {
-    pub archive_path: PathBuf,
-    pub pages: Vec<Page>,
-}
-
-impl Volume {
-    pub fn file_name(&self) -> &str {
-        self.archive_path
-            .file_name()
-            .and_then(|name| name.to_str())
-            .expect("loaded volume archive has a UTF-8 file name")
-    }
-}
-
 impl Page {
     pub fn mime(&self) -> Option<&'static str> {
         let ext = Path::new(&self.name).extension()?.to_str()?.to_ascii_lowercase();
@@ -40,6 +25,21 @@ impl Page {
             "avif" => Some("image/avif"),
             _ => None,
         }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct Volume {
+    pub archive_path: PathBuf,
+    pub pages: Vec<Page>,
+}
+
+impl Volume {
+    pub fn file_name(&self) -> &str {
+        self.archive_path
+            .file_name()
+            .and_then(|name| name.to_str())
+            .expect("loaded volume archive has a UTF-8 file name")
     }
 }
 
