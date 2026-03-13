@@ -34,10 +34,8 @@ pub async fn handle_serve_readlist_directory(
     let readlist_path = path.join(readlist_file_name);
     if !readlist_path.is_file() {
         return Err(format!(
-            "No {readlist_file_name} found in {}. Run: mgr --readlist-file {} --generate {}",
-            path.display(),
-            readlist_file_name,
-            path.display(),
+            "No {readlist_file_name} found in {path}. Run: mgr --readlist-file {readlist_file_name} --generate {path}",
+            path = path.display(),
         )
         .into());
     }
