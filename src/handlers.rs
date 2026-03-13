@@ -18,12 +18,7 @@ pub fn handle_generate(path: &Path, readlist_file_name: &str) -> AppResult<()> {
     Ok(())
 }
 
-pub async fn handle_serve_files(
-    paths: &[PathBuf],
-    port: u16,
-    prefetch: (u32, u32),
-    open: bool,
-) -> AppResult<()> {
+pub async fn handle_serve_files(paths: &[PathBuf], port: u16, prefetch: (u32, u32), open: bool) -> AppResult<()> {
     let manga = Manga::new(paths)?;
     let progress = readlist::Progress { file: paths[0].to_string_lossy().into_owned(), page: 1, scroll: 0.0 };
     server::serve(manga, progress, port, prefetch, open).await;

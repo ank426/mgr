@@ -9,13 +9,7 @@ use warp::http::{Response, StatusCode};
 use crate::manga::Manga;
 use crate::readlist::Progress;
 
-pub async fn serve(
-    manga: Manga,
-    progress: Progress,
-    port: u16,
-    prefetch: (u32, u32),
-    open: bool,
-) {
+pub async fn serve(manga: Manga, progress: Progress, port: u16, prefetch: (u32, u32), open: bool) {
     let html = build_html(&manga, &progress, prefetch);
     let html_route = warp::path::end().map(move || warp::reply::html(html.clone()).into_response());
 

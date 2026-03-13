@@ -64,7 +64,7 @@ async fn run(args: Args) -> AppResult<()> {
             prefetch,
             args.open,
         )
-            .await;
+        .await;
     }
 
     for path in &args.paths {
