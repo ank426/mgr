@@ -14,6 +14,12 @@ pub struct Page {
 }
 
 impl Page {
+    pub fn new<R: Read>(mut entry: zip::read::ZipFile<'_, R>) -> io::Result<Self> {
+        let name = entry.name().to_string();
+        let dimensions = image::read_dimensions(&mut entry)?;
+        Ok(Self { name, dimensions })
+    }
+
     pub fn mime(&self) -> Option<&'static str> {
         let ext = Path::new(&self.name).extension()?.to_str()?.to_ascii_lowercase();
         match ext.as_str() {
@@ -50,15 +56,10 @@ pub fn load_volume(path: &Path) -> io::Result<Volume> {
     let mut pages = Vec::with_capacity(archive.len());
     for idx in 0..archive.len() {
         let entry = archive.by_index(idx).map_err(zip_invalid_data)?;
-
         if entry.is_dir() {
             continue;
         }
-
-        let name = entry.name().to_string();
-        let dimensions = image::read_dimensions(entry)?;
-
-        pages.push(Page { name, dimensions });
+        pages.push(Page::new(entry)?);
     }
 
     pages.sort_by(|a, b| compare_str(&a.name, &b.name));
