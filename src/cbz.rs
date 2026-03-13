@@ -53,12 +53,12 @@ impl Page {
 
 #[derive(Clone, Debug)]
 pub struct Volume {
-    pub archive_path: PathBuf,
+    pub name: String,
     pub pages: Vec<Page>,
 }
 
 impl Volume {
-    pub fn new(path: &Path) -> io::Result<Self> {
+    pub fn new(path: &Path, name: String) -> io::Result<Self> {
         let file = File::open(path)?;
         let mut archive = ZipArchive::new(file).map_err(zip_invalid_data)?;
 
@@ -79,14 +79,7 @@ impl Volume {
             ));
         }
 
-        Ok(Self { archive_path: path.to_path_buf(), pages })
-    }
-
-    pub fn file_name(&self) -> &str {
-        self.archive_path
-            .file_name()
-            .and_then(|name| name.to_str())
-            .expect("loaded volume archive has a UTF-8 file name")
+        Ok(Self { name, pages })
     }
 }
 

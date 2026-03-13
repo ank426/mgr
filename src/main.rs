@@ -2,6 +2,7 @@ mod cbz;
 mod error;
 mod handlers;
 mod image;
+mod manga;
 mod readlist;
 mod server;
 

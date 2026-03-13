@@ -4,7 +4,6 @@ use std::path::{Path, PathBuf};
 use alphanumeric_sort::compare_str;
 use serde::{Deserialize, Serialize};
 
-use crate::cbz::{is_cbz, Volume};
 use crate::error::AppResult;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -31,59 +30,6 @@ impl ReadList {
     pub fn new(path: &Path) -> AppResult<Self> {
         let content = fs::read_to_string(path)?;
         toml::from_str::<ReadList>(&content).map_err(|err| format!("Failed to parse {}: {err}", path.display()).into())
-    }
-
-    pub fn load_volumes(&self, root: &Path) -> AppResult<Vec<Volume>> {
-        if self.files.is_empty() {
-            return Err("Readlist has no files".into());
-        }
-
-        if !self.files.iter().any(|entry| entry.name == self.progress.file) {
-            return Err(format!("progress.file '{}' is not present in files", self.progress.file).into());
-        }
-
-        if !self.progress.scroll.is_finite() || !(0.0..=1.0).contains(&self.progress.scroll) {
-            return Err(format!(
-                "progress.scroll must be a finite value in [0.0, 1.0], found {}",
-                self.progress.scroll
-            )
-            .into());
-        }
-
-        if self.progress.page == 0 {
-            return Err("progress.page must be >= 1".into());
-        }
-
-        let mut volumes = Vec::with_capacity(self.files.len());
-
-        for entry in &self.files {
-            let file_path = root.join(&entry.name);
-            if !file_path.exists() {
-                return Err(format!("Readlist file '{}' does not exist", file_path.display()).into());
-            }
-            if !file_path.is_file() {
-                return Err(format!("Readlist entry '{}' is not a file", file_path.display()).into());
-            }
-            if !is_cbz(&file_path) {
-                return Err(format!("Readlist file '{}' is not a supported archive (.cbz)", file_path.display()).into());
-            }
-
-            let volume = Volume::new(&file_path)?;
-
-            if entry.name == self.progress.file && self.progress.page > volume.pages.len() as u32 {
-                return Err(format!(
-                    "progress.page {} is out of range for '{}' (has {} pages)",
-                    self.progress.page,
-                    entry.name,
-                    volume.pages.len()
-                )
-                .into());
-            }
-
-            volumes.push(volume);
-        }
-
-        Ok(volumes)
     }
 }
 

@@ -1,9 +1,9 @@
 use std::path::{Path, PathBuf};
 
-use crate::cbz::{Volume, is_cbz};
 use crate::error::AppResult;
-use crate::{readlist, server};
+use crate::manga::Manga;
 use crate::readlist::ReadList;
+use crate::{readlist, server};
 
 pub fn handle_generate(path: &Path, readlist_file_name: &str) -> AppResult<()> {
     if !path.exists() {
@@ -19,29 +19,9 @@ pub fn handle_generate(path: &Path, readlist_file_name: &str) -> AppResult<()> {
 }
 
 pub async fn handle_serve_files(paths: &[PathBuf], port: u16, prefetch: (u32, u32)) -> AppResult<()> {
-    if paths.is_empty() {
-        return Err("No files provided".into());
-    }
-
-    let mut volumes = Vec::with_capacity(paths.len());
-    for path in paths {
-        if !is_cbz(path) {
-            return Err(format!("Unsupported file type: {} (expected .cbz)", path.display()).into());
-        }
-        volumes.push(Volume::new(path)?);
-    }
-
-    let title = if volumes.len() == 1 {
-        volumes[0].archive_path.file_name().and_then(|name| name.to_str()).unwrap_or("mgr").to_string()
-    } else {
-        "mgr".to_string()
-    };
-    let progress = readlist::Progress {
-        file: paths[0].file_name().and_then(|name| name.to_str()).unwrap_or_default().to_string(),
-        page: 1,
-        scroll: 0.0,
-    };
-    server::serve(title, volumes, progress, port, prefetch).await;
+    let manga = Manga::new(paths)?;
+    let progress = readlist::Progress { file: paths[0].to_string_lossy().into_owned(), page: 1, scroll: 0.0 };
+    server::serve(manga, progress, port, prefetch).await;
     Ok(())
 }
 
@@ -61,10 +41,8 @@ pub async fn handle_serve_readlist_directory(
         )
         .into());
     }
-
     let readlist = ReadList::new(&readlist_path)?;
-    let volumes = readlist.load_volumes(path)?;
-    let title = path.file_name().and_then(|name| name.to_str()).unwrap_or("mgr").to_string();
-    server::serve(title, volumes, readlist.progress.clone(), port, prefetch).await;
+    let manga = Manga::from_readlist(path, &readlist)?;
+    server::serve(manga, readlist.progress.clone(), port, prefetch).await;
     Ok(())
 }

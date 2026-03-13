@@ -5,7 +5,7 @@ use warp::Filter;
 use warp::Reply;
 use warp::http::{Response, StatusCode};
 
-use crate::cbz::Volume;
+use crate::manga::Manga;
 use crate::readlist::Progress;
 
 #[derive(Serialize)]
@@ -15,11 +15,11 @@ struct ViewerVolume<'a> {
     page_dims: Vec<(u32, u32)>,
 }
 
-pub async fn serve(title: String, volumes: Vec<Volume>, progress: Progress, port: u16, prefetch: (u32, u32)) {
-    let html = build_html(&title, &volumes, &progress, prefetch);
+pub async fn serve(manga: Manga, progress: Progress, port: u16, prefetch: (u32, u32)) {
+    let html = build_html(&manga, &progress, prefetch);
     let html_route = warp::path::end().map(move || warp::reply::html(html.clone()).into_response());
 
-    let state = Arc::new(volumes);
+    let state = Arc::new(manga);
     let state_for_route = Arc::clone(&state);
     let page_route = warp::path!("volume" / String / "page" / u32)
         .and(warp::any().map(move || Arc::clone(&state_for_route)))
@@ -31,18 +31,19 @@ pub async fn serve(title: String, volumes: Vec<Volume>, progress: Progress, port
     warp::serve(routes).run(addr).await;
 }
 
-fn build_html(title: &str, volumes: &[Volume], progress: &Progress, prefetch: (u32, u32)) -> String {
-    let viewer_volumes = volumes
+fn build_html(manga: &Manga, progress: &Progress, prefetch: (u32, u32)) -> String {
+    let viewer_volumes = manga
+        .volumes
         .iter()
         .map(|volume| ViewerVolume {
-            name: volume.file_name(),
+            name: &volume.name,
             page_dims: volume.pages.iter().map(|page| page.dimensions).collect(),
         })
         .collect::<Vec<_>>();
     let volumes_json = serde_json::to_string(&viewer_volumes).expect("valid viewer volumes json");
 
     include_str!("viewer.html")
-        .replace("{title}", title)
+        .replace("{title}", &manga.title)
         .replace("{volumes}", &volumes_json)
         .replace("{prefetch}", &format!("[{}, {}]", prefetch.0, prefetch.1))
         .replace("{initial_volume_name}", &format!("{:?}", progress.file.as_str()))
@@ -54,9 +55,9 @@ fn build_html(title: &str, volumes: &[Volume], progress: &Progress, prefetch: (u
 async fn page_response(
     volume_name: String,
     page_number: u32,
-    state: Arc<Vec<Volume>>,
+    state: Arc<Manga>,
 ) -> Result<Response<Vec<u8>>, warp::Rejection> {
-    let Some(volume) = state.iter().find(|volume| volume.file_name() == volume_name) else {
+    let Some(volume) = state.volumes.iter().find(|volume| volume.name == volume_name) else {
         return Ok(not_found_response());
     };
     let Some(page) = volume.pages.get((page_number - 1) as usize) else {
@@ -71,7 +72,8 @@ async fn page_response(
             )));
         }
     };
-    let data = match page.load_bytes(volume.archive_path.clone()).await {
+    let volume_path = state.path.join(&volume.name);
+    let data = match page.load_bytes(volume_path).await {
         Ok(data) => data,
         Err(err) => {
             return Ok(internal_server_error_response(format!(
