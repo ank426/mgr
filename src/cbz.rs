@@ -47,30 +47,30 @@ impl Volume {
             .and_then(|name| name.to_str())
             .expect("loaded volume archive has a UTF-8 file name")
     }
-}
 
-pub fn load_volume(path: &Path) -> io::Result<Volume> {
-    let file = File::open(path)?;
-    let mut archive = ZipArchive::new(file).map_err(zip_invalid_data)?;
+    pub fn new(path: &Path) -> io::Result<Self> {
+        let file = File::open(path)?;
+        let mut archive = ZipArchive::new(file).map_err(zip_invalid_data)?;
 
-    let mut pages = Vec::with_capacity(archive.len());
-    for idx in 0..archive.len() {
-        let entry = archive.by_index(idx).map_err(zip_invalid_data)?;
-        if entry.is_dir() {
-            continue;
+        let mut pages = Vec::with_capacity(archive.len());
+        for idx in 0..archive.len() {
+            let entry = archive.by_index(idx).map_err(zip_invalid_data)?;
+            if entry.is_dir() {
+                continue;
+            }
+            pages.push(Page::new(entry)?);
         }
-        pages.push(Page::new(entry)?);
-    }
 
-    pages.sort_by(|a, b| compare_str(&a.name, &b.name));
-    if pages.is_empty() {
-        return Err(io::Error::new(
-            io::ErrorKind::InvalidData,
-            format!("No supported image pages found in {}", path.display()),
-        ));
-    }
+        pages.sort_by(|a, b| compare_str(&a.name, &b.name));
+        if pages.is_empty() {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!("No supported image pages found in {}", path.display()),
+            ));
+        }
 
-    Ok(Volume { archive_path: path.to_path_buf(), pages })
+        Ok(Self { archive_path: path.to_path_buf(), pages })
+    }
 }
 
 pub async fn load_page_bytes(archive_path: PathBuf, page_name: String) -> io::Result<Vec<u8>> {

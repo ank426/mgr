@@ -1,6 +1,6 @@
 use std::io::{self, BufRead, Read, Seek, SeekFrom};
 
-use imagesize::{blob_size, reader_size, ImageSize};
+use imagesize::{ImageSize, blob_size, reader_size};
 
 const DIMENSION_CHUNK_SIZE: usize = 32 * 1024;
 const DIMENSION_PREFIX_SIZE: usize = 1024;

@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use alphanumeric_sort::compare_str;
 use serde::{Deserialize, Serialize};
 
-use crate::cbz;
+use crate::cbz::{Volume, is_cbz};
 use crate::error::AppResult;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -28,7 +28,7 @@ pub struct ReadList {
 }
 
 impl ReadList {
-    pub fn load_volumes(&self, root: &Path) -> AppResult<Vec<cbz::Volume>> {
+    pub fn load_volumes(&self, root: &Path) -> AppResult<Vec<Volume>> {
         if self.files.is_empty() {
             return Err("Readlist has no files".into());
         }
@@ -59,11 +59,11 @@ impl ReadList {
             if !file_path.is_file() {
                 return Err(format!("Readlist entry '{}' is not a file", file_path.display()).into());
             }
-            if !cbz::is_cbz(&file_path) {
+            if !is_cbz(&file_path) {
                 return Err(format!("Readlist file '{}' is not a supported archive (.cbz)", file_path.display()).into());
             }
 
-            let volume = cbz::load_volume(&file_path)?;
+            let volume = Volume::new(&file_path)?;
 
             if entry.name == self.progress.file && self.progress.page > volume.pages.len() as u32 {
                 return Err(format!(

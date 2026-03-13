@@ -1,7 +1,8 @@
 use std::path::{Path, PathBuf};
 
+use crate::cbz::{Volume, is_cbz};
 use crate::error::AppResult;
-use crate::{cbz, readlist, server};
+use crate::{readlist, server};
 
 pub fn handle_generate(path: &Path, readlist_file_name: &str) -> AppResult<()> {
     if !path.exists() {
@@ -23,10 +24,10 @@ pub async fn handle_serve_files(paths: &[PathBuf], port: u16, prefetch: (u32, u3
 
     let mut volumes = Vec::with_capacity(paths.len());
     for path in paths {
-        if !cbz::is_cbz(path) {
+        if !is_cbz(path) {
             return Err(format!("Unsupported file type: {} (expected .cbz)", path.display()).into());
         }
-        volumes.push(cbz::load_volume(path)?);
+        volumes.push(Volume::new(path)?);
     }
 
     let title = if volumes.len() == 1 {
