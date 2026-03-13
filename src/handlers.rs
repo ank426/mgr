@@ -3,6 +3,7 @@ use std::path::{Path, PathBuf};
 use crate::cbz::{Volume, is_cbz};
 use crate::error::AppResult;
 use crate::{readlist, server};
+use crate::readlist::ReadList;
 
 pub fn handle_generate(path: &Path, readlist_file_name: &str) -> AppResult<()> {
     if !path.exists() {
@@ -61,7 +62,7 @@ pub async fn handle_serve_readlist_directory(
         .into());
     }
 
-    let readlist = readlist::load(&readlist_path)?;
+    let readlist = ReadList::new(&readlist_path)?;
     let volumes = readlist.load_volumes(path)?;
     let title = path.file_name().and_then(|name| name.to_str()).unwrap_or("manga").to_string();
     server::serve(title, volumes, readlist.progress.clone(), port, prefetch).await;

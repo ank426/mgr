@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use alphanumeric_sort::compare_str;
 use serde::{Deserialize, Serialize};
 
-use crate::cbz::{Volume, is_cbz};
+use crate::cbz::{is_cbz, Volume};
 use crate::error::AppResult;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -28,6 +28,11 @@ pub struct ReadList {
 }
 
 impl ReadList {
+    pub fn new(path: &Path) -> AppResult<Self> {
+        let content = fs::read_to_string(path)?;
+        toml::from_str::<ReadList>(&content).map_err(|err| format!("Failed to parse {}: {err}", path.display()).into())
+    }
+
     pub fn load_volumes(&self, root: &Path) -> AppResult<Vec<Volume>> {
         if self.files.is_empty() {
             return Err("Readlist has no files".into());
@@ -101,7 +106,7 @@ pub fn generate(dir: &Path, readlist_file_name: &str) -> AppResult<PathBuf> {
     cbz_files.sort_by(|a, b| compare_str(a, b));
 
     let mut readlist = if output_path.is_file() {
-        load(&output_path)?
+        ReadList::new(&output_path)?
     } else {
         ReadList {
             progress: Progress { file: cbz_files.first().cloned().unwrap_or_default(), page: 1, scroll: 0.0 },
@@ -124,9 +129,4 @@ pub fn generate(dir: &Path, readlist_file_name: &str) -> AppResult<PathBuf> {
     fs::write(&output_path, output)?;
 
     Ok(output_path)
-}
-
-pub fn load(path: &Path) -> AppResult<ReadList> {
-    let content = fs::read_to_string(path)?;
-    toml::from_str::<ReadList>(&content).map_err(|err| format!("Failed to parse {}: {err}", path.display()).into())
 }
