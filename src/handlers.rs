@@ -29,7 +29,11 @@ pub async fn handle_serve_files(paths: &[PathBuf], port: u16, prefetch: (u32, u3
         volumes.push(cbz::load_volume(path)?);
     }
 
-    let title = if volumes.len() == 1 { volumes[0].title.clone() } else { "mgr".to_string() };
+    let title = if volumes.len() == 1 {
+        volumes[0].archive_path.file_name().and_then(|name| name.to_str()).unwrap_or("mgr").to_string()
+    } else {
+        "mgr".to_string()
+    };
     let progress = readlist::Progress {
         file: paths[0].file_name().and_then(|name| name.to_str()).unwrap_or_default().to_string(),
         page: 1,

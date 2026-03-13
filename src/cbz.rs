@@ -16,7 +16,6 @@ pub struct Page {
 #[derive(Clone, Debug)]
 pub struct Volume {
     pub archive_path: PathBuf,
-    pub title: String,
     pub pages: Vec<Page>,
 }
 
@@ -70,9 +69,7 @@ pub fn load_volume(path: &Path) -> io::Result<Volume> {
         ));
     }
 
-    let title = path.file_name().and_then(|name| name.to_str()).unwrap_or("manga").to_string();
-
-    Ok(Volume { archive_path: path.to_path_buf(), title, pages })
+    Ok(Volume { archive_path: path.to_path_buf(), pages })
 }
 
 pub async fn load_page_bytes(archive_path: PathBuf, page_name: String) -> io::Result<Vec<u8>> {
