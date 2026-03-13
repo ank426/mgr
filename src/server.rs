@@ -1,19 +1,12 @@
 use std::sync::Arc;
 
-use serde::Serialize;
+use serde_json::json;
 use warp::Filter;
 use warp::Reply;
 use warp::http::{Response, StatusCode};
 
 use crate::manga::Manga;
 use crate::readlist::Progress;
-
-#[derive(Serialize)]
-struct ViewerVolume<'a> {
-    name: &'a str,
-    #[serde(rename = "pageDims")]
-    page_dims: Vec<(u32, u32)>,
-}
 
 pub async fn serve(manga: Manga, progress: Progress, port: u16, prefetch: (u32, u32)) {
     let html = build_html(&manga, &progress, prefetch);
@@ -32,15 +25,19 @@ pub async fn serve(manga: Manga, progress: Progress, port: u16, prefetch: (u32, 
 }
 
 fn build_html(manga: &Manga, progress: &Progress, prefetch: (u32, u32)) -> String {
-    let viewer_volumes = manga
-        .volumes
-        .iter()
-        .map(|volume| ViewerVolume {
-            name: &volume.name,
-            page_dims: volume.pages.iter().map(|page| page.dimensions).collect(),
-        })
-        .collect::<Vec<_>>();
-    let volumes_json = serde_json::to_string(&viewer_volumes).expect("valid viewer volumes json");
+    let volumes_json = serde_json::to_string(
+        &manga
+            .volumes
+            .iter()
+            .map(|volume| {
+                json!({
+                    "name": &volume.name,
+                    "pageDims": volume.pages.iter().map(|page| page.dimensions).collect::<Vec<_>>()
+                })
+            })
+            .collect::<Vec<_>>(),
+    )
+    .expect("valid viewer volumes json");
 
     include_str!("viewer.html")
         .replace("{title}", &manga.title)
