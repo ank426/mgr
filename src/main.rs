@@ -22,6 +22,9 @@ struct Args {
     #[arg(short, long, default_value_t = 8080)]
     port: u16,
 
+    #[arg(short = 'o', long = "open")]
+    open: bool,
+
     #[arg(long, default_value_t = 2)]
     prefetch_back: u32,
 
@@ -54,7 +57,13 @@ async fn run(args: Args) -> AppResult<()> {
         if args.paths.len() != 1 {
             return Err("Directory path must be provided alone".into());
         }
-        return handlers::handle_serve_readlist_directory(&args.paths[0], &args.readlist_file, args.port, prefetch)
+        return handlers::handle_serve_readlist_directory(
+            &args.paths[0],
+            &args.readlist_file,
+            args.port,
+            prefetch,
+            args.open,
+        )
             .await;
     }
 
@@ -67,5 +76,5 @@ async fn run(args: Args) -> AppResult<()> {
         }
     }
 
-    handlers::handle_serve_files(args.paths.as_slice(), args.port, prefetch).await
+    handlers::handle_serve_files(args.paths.as_slice(), args.port, prefetch, args.open).await
 }
