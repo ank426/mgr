@@ -31,7 +31,8 @@ impl Manga {
             volumes.push(Volume::new(path, path.to_string_lossy().into_owned())?);
         }
 
-        Ok(Self { path: PathBuf::from("."), title: "mgr".to_string(), volumes })
+        let title = if volumes.len() == 1 { volumes[0].name.clone() } else { "mgr".to_string() };
+        Ok(Self { path: PathBuf::from("."), title, volumes })
     }
 
     pub fn from_readlist(dir_path: &Path, readlist: &ReadList) -> AppResult<Self> {
