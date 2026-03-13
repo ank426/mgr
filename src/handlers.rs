@@ -64,7 +64,7 @@ pub async fn handle_serve_readlist_directory(
 
     let readlist = ReadList::new(&readlist_path)?;
     let volumes = readlist.load_volumes(path)?;
-    let title = path.file_name().and_then(|name| name.to_str()).unwrap_or("manga").to_string();
+    let title = path.file_name().and_then(|name| name.to_str()).unwrap_or("mgr").to_string();
     server::serve(title, volumes, readlist.progress.clone(), port, prefetch).await;
     Ok(())
 }
