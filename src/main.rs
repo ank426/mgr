@@ -53,7 +53,8 @@ async fn run(args: Args) -> AppResult<()> {
         if args.paths.len() != 1 {
             return Err("Directory path must be provided alone".into());
         }
-        return handlers::handle_serve_readlist_directory(&args.paths[0], &args.readlist_file, args.port, prefetch).await;
+        return handlers::handle_serve_readlist_directory(&args.paths[0], &args.readlist_file, args.port, prefetch)
+            .await;
     }
 
     for path in &args.paths {

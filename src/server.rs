@@ -62,7 +62,15 @@ async fn page_response(
     let Some(page) = volume.pages.get((page_number - 1) as usize) else {
         return Ok(not_found_response());
     };
-
+    let mime = match page.mime() {
+        Some(mime) => mime,
+        None => {
+            return Ok(internal_server_error_response(format!(
+                "Unsupported image type for volume {volume_name} page {page_number}: {}",
+                page.name
+            )));
+        }
+    };
     let data = match cbz::load_page_bytes(volume.archive_path.clone(), page.name.clone()).await {
         Ok(data) => data,
         Err(err) => {
@@ -72,7 +80,7 @@ async fn page_response(
         }
     };
 
-    Ok(ok_image_response(page.mime, data))
+    Ok(ok_image_response(mime, data))
 }
 
 fn not_found_response() -> Response<Vec<u8>> {
