@@ -97,10 +97,10 @@ fn build_html(manga: &Manga, prefetch: (u32, u32)) -> String {
 }
 
 fn get_progress(manga: &Manga, shared_readlist: &RwLock<Option<ReadList>>) -> Progress {
-    if let Ok(readlist) = shared_readlist.read() {
-        if let Some(readlist) = readlist.as_ref() {
-            return readlist.progress.clone();
-        }
+    if let Ok(readlist) = shared_readlist.read()
+        && let Some(readlist) = readlist.as_ref()
+    {
+        return readlist.progress.clone();
     }
 
     Progress { file: manga.volumes.first().map(|volume| volume.name.clone()).unwrap_or_default(), page: 1, scroll: 0.0 }
@@ -114,13 +114,13 @@ fn save_progress(
     let mut readlist_to_save = None;
     let mut path_to_save = None;
 
-    if let Ok(mut readlist) = shared_readlist.write() {
-        if let Some(readlist) = readlist.as_mut() {
-            readlist.progress = progress;
-            if let Some(path) = readlist_path.as_ref() {
-                readlist_to_save = Some(readlist.clone());
-                path_to_save = Some(path.clone());
-            }
+    if let Ok(mut readlist) = shared_readlist.write()
+        && let Some(readlist) = readlist.as_mut()
+    {
+        readlist.progress = progress;
+        if let Some(path) = readlist_path.as_ref() {
+            readlist_to_save = Some(readlist.clone());
+            path_to_save = Some(path.clone());
         }
     }
 
