@@ -11,37 +11,61 @@ use crate::manga::Manga;
 use crate::readlist;
 use crate::readlist::Progress;
 
-pub async fn serve(
-    manga: Manga,
-    progress: Progress,
-    port: u16,
-    prefetch: (u32, u32),
-    open: bool,
-    readlist_path: Option<PathBuf>,
-) {
-    let html = build_html(&manga, &progress, prefetch);
+pub async fn serve(manga: Manga, port: u16, prefetch: (u32, u32), open: bool, readlist_path: Option<PathBuf>) {
+    let html = build_html(&manga, prefetch);
     let html_route = warp::path::end().map(move || warp::reply::html(html.clone()).into_response());
 
+    let manga = Arc::new(manga);
+    let readlist_path = Arc::new(readlist_path);
     let save_lock = Arc::new(Mutex::new(()));
 
-    let state = Arc::new(manga);
-    let state_for_route = Arc::clone(&state);
-    let page_route = warp::path!("volume" / String / "page" / u32)
-        .and(warp::any().map(move || Arc::clone(&state_for_route)))
-        .and_then(page_response);
+    let page_route = {
+        let manga = Arc::clone(&manga);
+        warp::path!("volume" / String / "page" / u32)
+            .and(warp::any().map(move || Arc::clone(&manga)))
+            .and_then(page_response)
+    };
 
-    let progress_route =
-        warp::path!("save").and(warp::put()).and(warp::body::json()).map(move |progress: Progress| {
-            if let Some(path) = &readlist_path
+    let save_progress_route = {
+        let readlist_path = Arc::clone(&readlist_path);
+        let save_lock = Arc::clone(&save_lock);
+        warp::path!("api" / "progress").and(warp::put()).and(warp::body::json()).map(move |progress: Progress| {
+            if let Some(path) = readlist_path.as_ref()
                 && let Ok(_guard) = save_lock.lock()
                 && let Err(err) = readlist::update_progress(path, progress)
             {
                 eprintln!("Failed to save progress: {err}");
             }
             StatusCode::NO_CONTENT
-        });
+        })
+    };
 
-    let routes = html_route.or(page_route).or(progress_route);
+    let get_progress_route = {
+        let manga = Arc::clone(&manga);
+        let readlist_path = Arc::clone(&readlist_path);
+        let save_lock = Arc::clone(&save_lock);
+        warp::path!("api" / "progress").and(warp::get()).map(move || {
+            let progress = if let Some(path) = readlist_path.as_ref()
+                && let Ok(_guard) = save_lock.lock()
+                && let Ok(readlist) = readlist::ReadList::new(path)
+            {
+                readlist.progress
+            } else {
+                Progress {
+                    file: manga
+                        .volumes
+                        .first()
+                        .map(|volume| volume.name.clone())
+                        .unwrap_or_default(),
+                    page: 1,
+                    scroll: 0.0,
+                }
+            };
+            warp::reply::json(&progress)
+        })
+    };
+
+    let routes = html_route.or(page_route).or(save_progress_route).or(get_progress_route);
     let addr = ([127, 0, 0, 1], port);
     println!("Open http://127.0.0.1:{port}");
     if open {
@@ -65,7 +89,7 @@ fn open_browser(port: u16) {
     }
 }
 
-fn build_html(manga: &Manga, progress: &Progress, prefetch: (u32, u32)) -> String {
+fn build_html(manga: &Manga, prefetch: (u32, u32)) -> String {
     let volumes_json = serde_json::to_string(
         &manga
             .volumes
@@ -84,7 +108,6 @@ fn build_html(manga: &Manga, progress: &Progress, prefetch: (u32, u32)) -> Strin
         .replace("{title}", &manga.title)
         .replace("{volumes}", &volumes_json)
         .replace("{prefetch}", &format!("[{}, {}]", prefetch.0, prefetch.1))
-        .replace("{initial_progress}", &serde_json::to_string(progress).expect("valid initial progress json"))
         .replace("__VIEWER_SCRIPT__", &include_str!("viewer.js").replace("</script", "<\\/script"))
 }
 

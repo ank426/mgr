@@ -1,6 +1,5 @@
 const volumes = window.MGR_CONFIG.volumes;
 const [prefetchBack, prefetchForward] = window.MGR_CONFIG.prefetch;
-const initialProgress = window.MGR_CONFIG.initialProgress;
 const pagesContainer = document.getElementById("pages");
 
 const pagesByVolume = new Map();
@@ -13,7 +12,7 @@ const state = {
 
 let saveProgressTimeout;
 
-function initializeViewer() {
+async function initializeViewer() {
   if (!pagesContainer) {
     throw new Error("Missing pages container");
   }
@@ -21,6 +20,7 @@ function initializeViewer() {
   buildDom();
   recomputeAllSlotHeights();
 
+  const initialProgress = await fetch("/api/progress").then((response) => response.json());
   const initialPage = pagesByVolume.get(initialProgress.file).get(initialProgress.page);
   window.scrollTo({ top: initialPage.slot.offsetTop + initialProgress.scroll * initialPage.slot.offsetHeight });
 
@@ -150,7 +150,7 @@ function saveProgress() {
     }
   }
 
-  fetch("/save", {
+  fetch("/api/progress", {
     method: "PUT",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
@@ -229,4 +229,6 @@ function unloadPage(page) {
   page.status = "unloaded";
 }
 
-initializeViewer();
+initializeViewer().catch((error) => {
+  console.error(error);
+});
