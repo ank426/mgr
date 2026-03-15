@@ -8,12 +8,14 @@ const pagesByVolume = new Map();
 const state = {
   nearVisiblePages: new Set(),
   loadedPages: new Set(),
+  activePage: null,
   expandedStart: 0,
   expandedEnd: -1,
   reconcileScheduled: false,
 };
 
 let pageObserver;
+let activePageObserver;
 let saveProgressTimeout;
 
 async function initializeViewer() {
@@ -34,6 +36,11 @@ async function initializeViewer() {
     rootMargin: `${prefetchBack * 100}% 0px ${prefetchForward * 100}% 0px`,
     threshold: 0,
   });
+  activePageObserver = new IntersectionObserver(handleActivePageIntersections, {
+    root: null,
+    rootMargin: "0px 0px -99.9% 0px",
+    threshold: 0,
+  });
 
   const initialVolumeIndex = volumeByName.get(initialProgress.file).index;
   state.expandedStart = Math.max(0, initialVolumeIndex - 1);
@@ -42,11 +49,16 @@ async function initializeViewer() {
     expandVolume(idx);
   }
 
-  const initialPage = pagesByVolume.get(initialProgress.file).get(initialProgress.page);
-  window.scrollTo({ top: initialPage.slot.offsetTop + initialProgress.scroll * initialPage.slot.offsetHeight });
+  state.activePage = pagesByVolume.get(initialProgress.file).get(initialProgress.page);
+  window.scrollTo({ top: state.activePage.slot.offsetTop + initialProgress.scroll * state.activePage.slot.offsetHeight });
 
-  window.addEventListener("resize", handleViewportChange);
-  window.addEventListener("scroll", handleViewportChange, { passive: true });
+  window.addEventListener("resize", () => {
+    scheduleReconcile();
+    scheduleProgressSave();
+  });
+  window.addEventListener("scroll", () => {
+    scheduleProgressSave();
+  }, { passive: true });
 }
 
 function buildDom() {
@@ -82,9 +94,23 @@ function handleIntersections(entries) {
   scheduleReconcile();
 }
 
-function handleViewportChange() {
-  scheduleReconcile();
-  scheduleProgressSave();
+function handleActivePageIntersections(entries) {
+  for (const entry of entries) {
+    if (!entry.isIntersecting) {
+      continue;
+    }
+    const section = entry.target.closest("section");
+    if (!section) {
+      continue;
+    }
+    const page = pagesByVolume
+      .get(section.dataset.volume)
+      .get(Number(entry.target.dataset.page));
+    if (page !== state.activePage) {
+      state.activePage = page;
+      scheduleReconcile();
+    }
+  }
 }
 
 function scheduleReconcile() {
@@ -105,7 +131,7 @@ function reconcileVolumes() {
     return;
   }
 
-  const activeVolumeIndex = volumeByName.get(getActivePage().volumeName).index;
+  const activeVolumeIndex = volumeByName.get(state.activePage.volumeName).index;
   const start = Math.max(0, activeVolumeIndex - 1);
   const end = Math.min(volumes.length - 1, activeVolumeIndex + 1);
 
@@ -148,7 +174,10 @@ function scheduleProgressSave() {
 }
 
 function saveProgress() {
-  const activePage = getActivePage();
+  if (!state.activePage) {
+    throw new Error("Missing active page");
+  }
+  const activePage = state.activePage;
   const top = window.scrollY || window.pageYOffset || 0;
 
   fetch("/api/progress", {
@@ -190,6 +219,7 @@ function expandVolume(index) {
     };
     volumePages.set(pageNumber, page);
     pageObserver.observe(slot);
+    activePageObserver.observe(slot);
   }
 
   section.replaceChildren(fragment);
@@ -203,21 +233,10 @@ function collapseVolume(index) {
     state.loadedPages.delete(page);
     state.nearVisiblePages.delete(page);
     pageObserver.unobserve(page.slot);
+    activePageObserver.unobserve(page.slot);
   }
   volumeByName.get(volumeName).section.replaceChildren();
   pagesByVolume.delete(volumeName);
-}
-
-function getActivePage() {
-  const top = window.scrollY || window.pageYOffset || 0;
-  for (let idx = state.expandedStart; idx <= state.expandedEnd; idx++) {
-    for (const page of pagesByVolume.get(volumes[idx].name).values()) {
-      if (top >= page.slot.offsetTop && top < page.slot.offsetTop + page.slot.offsetHeight) {
-        return page;
-      }
-    }
-  }
-  throw new Error("No active page found");
 }
 
 function loadPage(page) {
