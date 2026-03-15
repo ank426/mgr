@@ -135,7 +135,7 @@ function applyWindow(start, end) {
     unloadPage(pageIndex);
   }
 
-  for (let pageIndex = Math.max(state.loadedStart, end + 1); pageIndex <= state.loadedEnd; pageIndex++) {
+  for (let pageIndex = state.loadedEnd; pageIndex >= Math.max(state.loadedStart, end + 1); pageIndex--) {
     unloadPage(pageIndex);
   }
 
@@ -143,7 +143,7 @@ function applyWindow(start, end) {
     loadPage(pageIndex);
   }
 
-  for (let pageIndex = Math.max(start, state.loadedEnd + 1); pageIndex <= end; pageIndex++) {
+  for (let pageIndex = end; pageIndex >= Math.max(start, state.loadedEnd + 1); pageIndex--) {
     loadPage(pageIndex);
   }
 
