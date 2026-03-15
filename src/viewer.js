@@ -131,19 +131,19 @@ function reconcileWindow() {
 }
 
 function applyWindow(start, end) {
-  for (let pageIndex = state.loadedStart; pageIndex <= Math.min(state.loadedEnd, start - 1); pageIndex++) {
+  for (let pageIndex = state.loadedStart; pageIndex <= state.loadedEnd && pageIndex < start; pageIndex++) {
     unloadPage(pageIndex);
   }
 
-  for (let pageIndex = state.loadedEnd; pageIndex >= Math.max(state.loadedStart, end + 1); pageIndex--) {
+  for (let pageIndex = state.loadedEnd; pageIndex >= state.loadedStart && pageIndex > end; pageIndex--) {
     unloadPage(pageIndex);
   }
 
-  for (let pageIndex = start; pageIndex <= Math.min(end, state.loadedStart - 1); pageIndex++) {
+  for (let pageIndex = start; pageIndex <= end && pageIndex < state.loadedStart; pageIndex++) {
     loadPage(pageIndex);
   }
 
-  for (let pageIndex = end; pageIndex >= Math.max(start, state.loadedEnd + 1); pageIndex--) {
+  for (let pageIndex = end; pageIndex >= start && pageIndex > state.loadedEnd; pageIndex--) {
     loadPage(pageIndex);
   }
 
