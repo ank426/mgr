@@ -25,7 +25,7 @@ function initializeViewer() {
 
   const observer = new IntersectionObserver(handleIntersections, {
     root: null,
-    rootMargin: "100% 0px 100% 0px",
+    rootMargin: `${prefetchBack * 100}% 0px ${prefetchForward * 100}% 0px`,
     threshold: 0,
   });
 
@@ -33,7 +33,7 @@ function initializeViewer() {
     observer.observe(page.slot);
   }
 
-  applyWindow(0, Math.min(pageSlots.length - 1, prefetchForward));
+  applyWindow(0, 0);
 
   window.addEventListener("resize", () => {
     recomputeAllSlotHeights();
@@ -123,20 +123,11 @@ function reconcileWindow() {
     return;
   }
 
-  let minIndex = pageSlots.length - 1;
-  let maxIndex = 0;
-  for (const pageIndex of state.nearVisibleIndices) {
-    if (pageIndex < minIndex) {
-      minIndex = pageIndex;
-    }
-    if (pageIndex > maxIndex) {
-      maxIndex = pageIndex;
-    }
-  }
+  const indices = Array.from(state.nearVisibleIndices);
+  const minIndex = Math.min(...indices);
+  const maxIndex = Math.max(...indices);
 
-  const nextStart = Math.max(0, minIndex - prefetchBack);
-  const nextEnd = Math.min(pageSlots.length - 1, maxIndex + prefetchForward);
-  applyWindow(nextStart, nextEnd);
+  applyWindow(minIndex, maxIndex);
 }
 
 function applyWindow(start, end) {
