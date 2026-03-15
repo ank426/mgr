@@ -204,16 +204,18 @@ function collapseVolume(index) {
 
 function getActivePage() {
   const top = window.scrollY || window.pageYOffset || 0;
-  for (const page of state.nearVisiblePages) {
-    if (top >= page.slot.offsetTop && top < page.slot.offsetTop + page.slot.offsetHeight) {
-      return page;
+  for (let idx = state.expandedStart; idx <= state.expandedEnd; idx++) {
+    for (const page of pagesByVolume.get(volumes[idx].name).values()) {
+      if (top >= page.slot.offsetTop && top < page.slot.offsetTop + page.slot.offsetHeight) {
+        return page;
+      }
     }
   }
   throw new Error("No active page found");
 }
 
 function loadPage(page) {
-  if (!page || page.status === "loading" || page.status === "loaded" || page.status === "failed") {
+  if (page.status === "loading" || page.status === "loaded" || page.status === "failed") {
     return;
   }
 
@@ -256,10 +258,6 @@ function loadPage(page) {
 }
 
 function unloadPage(page) {
-  if (!page || page.status === "failed") {
-    return;
-  }
-
   if (page.image) {
     page.image.removeAttribute("srcset");
     page.image.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==";
