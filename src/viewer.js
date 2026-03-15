@@ -1,5 +1,6 @@
 const volumes = window.MGR_CONFIG.volumes;
 const [prefetchBack, prefetchForward] = window.MGR_CONFIG.prefetch;
+const initialProgress = window.MGR_CONFIG.initialProgress;
 const pagesContainer = document.getElementById("pages");
 
 const pagesByVolume = new Map();
@@ -17,6 +18,8 @@ function initializeViewer() {
 
   buildDom();
   recomputeAllSlotHeights();
+
+  pagesByVolume.get(initialProgress.file).get(initialProgress.page).slot.scrollIntoView();
 
   const observer = new IntersectionObserver(handleIntersections, {
     root: null,
