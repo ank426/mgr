@@ -13,11 +13,11 @@ use crate::readlist::Progress;
 
 pub async fn serve(manga: Manga, port: u16, prefetch: (u32, u32), open: bool, readlist_path: Option<PathBuf>) {
     let html = build_html(&manga, prefetch);
-    let html_route = warp::path::end().map(move || warp::reply::html(html.clone()).into_response());
-
     let manga = Arc::new(manga);
     let readlist_path = Arc::new(readlist_path);
     let save_lock = Arc::new(Mutex::new(()));
+
+    let html_route = warp::path::end().map(move || warp::reply::html(html.clone()).into_response());
 
     let page_route = {
         let manga = Arc::clone(&manga);
@@ -26,46 +26,25 @@ pub async fn serve(manga: Manga, port: u16, prefetch: (u32, u32), open: bool, re
             .and_then(page_response)
     };
 
-    let save_progress_route = {
-        let readlist_path = Arc::clone(&readlist_path);
-        let save_lock = Arc::clone(&save_lock);
-        warp::path!("api" / "progress").and(warp::put()).and(warp::body::json()).map(move |progress: Progress| {
-            if let Some(path) = readlist_path.as_ref()
-                && let Ok(_guard) = save_lock.lock()
-                && let Err(err) = readlist::update_progress(path, progress)
-            {
-                eprintln!("Failed to save progress: {err}");
-            }
-            StatusCode::NO_CONTENT
-        })
-    };
-
     let get_progress_route = {
         let manga = Arc::clone(&manga);
         let readlist_path = Arc::clone(&readlist_path);
         let save_lock = Arc::clone(&save_lock);
-        warp::path!("api" / "progress").and(warp::get()).map(move || {
-            let progress = if let Some(path) = readlist_path.as_ref()
-                && let Ok(_guard) = save_lock.lock()
-                && let Ok(readlist) = readlist::ReadList::new(path)
-            {
-                readlist.progress
-            } else {
-                Progress {
-                    file: manga
-                        .volumes
-                        .first()
-                        .map(|volume| volume.name.clone())
-                        .unwrap_or_default(),
-                    page: 1,
-                    scroll: 0.0,
-                }
-            };
-            warp::reply::json(&progress)
-        })
+        warp::path!("api" / "progress")
+            .and(warp::get())
+            .map(move || warp::reply::json(&get_progress(&manga, &readlist_path, &save_lock)))
     };
 
-    let routes = html_route.or(page_route).or(save_progress_route).or(get_progress_route);
+    let save_progress_route = {
+        let readlist_path = Arc::clone(&readlist_path);
+        let save_lock = Arc::clone(&save_lock);
+        warp::path!("api" / "progress")
+            .and(warp::put())
+            .and(warp::body::json())
+            .map(move |progress: Progress| save_progress(progress, &readlist_path, &save_lock))
+    };
+
+    let routes = html_route.or(page_route).or(get_progress_route).or(save_progress_route);
     let addr = ([127, 0, 0, 1], port);
     println!("Open http://127.0.0.1:{port}");
     if open {
@@ -109,6 +88,28 @@ fn build_html(manga: &Manga, prefetch: (u32, u32)) -> String {
         .replace("{volumes}", &volumes_json)
         .replace("{prefetch}", &format!("[{}, {}]", prefetch.0, prefetch.1))
         .replace("__VIEWER_SCRIPT__", &include_str!("viewer.js").replace("</script", "<\\/script"))
+}
+
+fn get_progress(manga: &Manga, readlist_path: &Option<PathBuf>, save_lock: &Mutex<()>) -> Progress {
+    if let Some(path) = readlist_path.as_ref()
+        && let Ok(_guard) = save_lock.lock()
+        && let Ok(readlist) = readlist::ReadList::new(path)
+    {
+        return readlist.progress;
+    }
+
+    Progress { file: manga.volumes.first().map(|volume| volume.name.clone()).unwrap_or_default(), page: 1, scroll: 0.0 }
+}
+
+fn save_progress(progress: Progress, readlist_path: &Option<PathBuf>, save_lock: &Mutex<()>) -> StatusCode {
+    if let Some(path) = readlist_path.as_ref()
+        && let Ok(_guard) = save_lock.lock()
+        && let Err(err) = readlist::update_progress(path, progress)
+    {
+        eprintln!("Failed to save progress: {err}");
+    }
+
+    StatusCode::NO_CONTENT
 }
 
 async fn page_response(
