@@ -2,6 +2,7 @@ use std::path::PathBuf;
 use std::process::Command;
 use std::sync::{Arc, RwLock};
 
+use percent_encoding::percent_decode_str;
 use serde_json::json;
 use warp::Filter;
 use warp::Reply;
@@ -139,7 +140,8 @@ async fn page_response(
     page_number: u32,
     state: Arc<Manga>,
 ) -> Result<Response<Vec<u8>>, warp::Rejection> {
-    let Some(volume) = state.volumes.iter().find(|volume| volume.name == volume_name) else {
+    let decoded_volume_name = percent_decode_str(&volume_name).decode_utf8_lossy();
+    let Some(volume) = state.volumes.iter().find(|volume| volume.name == decoded_volume_name) else {
         return Ok(not_found_response());
     };
     let Some(page) = volume.pages.get((page_number - 1) as usize) else {

@@ -648,6 +648,7 @@ dependencies = [
  "alphanumeric-sort",
  "clap",
  "imagesize",
+ "percent-encoding",
  "serde",
  "serde_json",
  "thiserror",
