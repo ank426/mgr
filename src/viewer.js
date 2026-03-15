@@ -6,8 +6,8 @@ const pageSlots = [];
 
 const state = {
   nearVisibleIndices: new Set(),
-  windowStart: 0,
-  windowEnd: -1,
+  loadedStart: 0,
+  loadedEnd: -1,
   reconcileScheduled: false,
 };
 
@@ -131,24 +131,24 @@ function reconcileWindow() {
 }
 
 function applyWindow(start, end) {
-  for (let pageIndex = state.windowStart; pageIndex <= Math.min(state.windowEnd, start - 1); pageIndex++) {
+  for (let pageIndex = state.loadedStart; pageIndex <= Math.min(state.loadedEnd, start - 1); pageIndex++) {
     unloadPage(pageIndex);
   }
 
-  for (let pageIndex = Math.max(state.windowStart, end + 1); pageIndex <= state.windowEnd; pageIndex++) {
+  for (let pageIndex = Math.max(state.loadedStart, end + 1); pageIndex <= state.loadedEnd; pageIndex++) {
     unloadPage(pageIndex);
   }
 
-  for (let pageIndex = start; pageIndex <= Math.min(end, state.windowStart - 1); pageIndex++) {
+  for (let pageIndex = start; pageIndex <= Math.min(end, state.loadedStart - 1); pageIndex++) {
     loadPage(pageIndex);
   }
 
-  for (let pageIndex = Math.max(start, state.windowEnd + 1); pageIndex <= end; pageIndex++) {
+  for (let pageIndex = Math.max(start, state.loadedEnd + 1); pageIndex <= end; pageIndex++) {
     loadPage(pageIndex);
   }
 
-  state.windowStart = start;
-  state.windowEnd = end;
+  state.loadedStart = start;
+  state.loadedEnd = end;
 }
 
 function loadPage(pageIndex) {
