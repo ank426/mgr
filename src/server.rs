@@ -62,9 +62,7 @@ fn build_html(manga: &Manga, progress: &Progress, prefetch: (u32, u32)) -> Strin
         .replace("{title}", &manga.title)
         .replace("{volumes}", &volumes_json)
         .replace("{prefetch}", &format!("[{}, {}]", prefetch.0, prefetch.1))
-        .replace("{initial_volume_name}", &format!("{:?}", progress.file.as_str()))
-        .replace("{initial_page_number}", &progress.page.to_string())
-        .replace("{initial_scroll}", &progress.scroll.to_string())
+        .replace("{initial_progress}", &serde_json::to_string(progress).expect("valid initial progress json"))
         .replace("__VIEWER_SCRIPT__", &include_str!("viewer.js").replace("</script", "<\\/script"))
 }
 
