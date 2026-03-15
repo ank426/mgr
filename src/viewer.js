@@ -137,7 +137,7 @@ function reconcileWindow() {
 
 function scheduleProgressSave() {
   clearTimeout(saveProgressTimeout);
-  saveProgressTimeout = setTimeout(saveProgress, 500);
+  saveProgressTimeout = setTimeout(saveProgress, 200);
 }
 
 function saveProgress() {
