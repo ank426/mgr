@@ -41,19 +41,8 @@ async function initializeViewer() {
   const initialPage = pagesByVolume.get(initialProgress.file).get(initialProgress.page);
   window.scrollTo({ top: initialPage.slot.offsetTop + initialProgress.scroll * initialPage.slot.offsetHeight });
 
-  window.addEventListener("resize", () => {
-    scheduleReconcile();
-    scheduleProgressSave();
-  });
-
-  window.addEventListener(
-    "scroll",
-    () => {
-      scheduleReconcile();
-      scheduleProgressSave();
-    },
-    { passive: true },
-  );
+  window.addEventListener("resize", handleViewportChange);
+  window.addEventListener("scroll", handleViewportChange, { passive: true });
 }
 
 function buildDom() {
@@ -83,6 +72,11 @@ function handleIntersections(entries) {
   }
 
   scheduleReconcile();
+}
+
+function handleViewportChange() {
+  scheduleReconcile();
+  scheduleProgressSave();
 }
 
 function scheduleReconcile() {
