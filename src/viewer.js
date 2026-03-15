@@ -64,8 +64,12 @@ function buildDom() {
 
 function handleIntersections(entries) {
   for (const entry of entries) {
+    const section = entry.target.closest("section");
+    if (!section) {
+      continue;
+    }
     const page = pagesByVolume
-      .get(entry.target.closest("section").dataset.volume)
+      .get(section.dataset.volume)
       .get(Number(entry.target.dataset.page));
 
     if (entry.isIntersecting) {
