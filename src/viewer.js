@@ -47,16 +47,15 @@ function buildDom() {
 
   for (const volume of volumes) {
     const volumeSection = document.createElement("section");
-    volumeSection.dataset.volumeName = volume.name;
+    volumeSection.dataset.volume = volume.name;
 
     for (let pageNumber = 1; pageNumber <= volume.pageDims.length; pageNumber++) {
       const dimensions = volume.pageDims[pageNumber - 1];
       const slot = document.createElement("div");
 
-      slot.dataset.pageSlot = "1";
-      slot.dataset.pageIndex = String(pageIndex);
-      slot.dataset.volumeName = volume.name;
-      slot.dataset.pageNumber = String(pageNumber);
+      slot.className = "page-slot";
+      slot.dataset.index = String(pageIndex);
+      slot.dataset.page = String(pageNumber);
 
       volumeSection.appendChild(slot);
       pageSlots.push({
@@ -92,7 +91,7 @@ function recomputeAllSlotHeights() {
 
 function handleIntersections(entries) {
   for (const entry of entries) {
-    const pageIndex = Number(entry.target.dataset.pageIndex);
+    const pageIndex = Number(entry.target.dataset.index);
     if (Number.isNaN(pageIndex)) {
       continue;
     }
