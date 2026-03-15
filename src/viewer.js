@@ -8,14 +8,16 @@ const pagesByVolume = new Map();
 const state = {
   nearVisiblePages: new Set(),
   loadedPages: new Set(),
-  activePage: null,
+  firstVisiblePage: null,
+  lastVisiblePage: null,
   expandedStart: 0,
   expandedEnd: -1,
   reconcileScheduled: false,
 };
 
 let pageObserver;
-let activePageObserver;
+let firstVisiblePageObserver;
+let lastVisiblePageObserver;
 let saveProgressTimeout;
 
 async function initializeViewer() {
@@ -36,9 +38,14 @@ async function initializeViewer() {
     rootMargin: `${prefetchBack * 100}% 0px ${prefetchForward * 100}% 0px`,
     threshold: 0,
   });
-  activePageObserver = new IntersectionObserver(handleActivePageIntersections, {
+  firstVisiblePageObserver = new IntersectionObserver(handleVisiblePageIntersections, {
     root: null,
     rootMargin: "0px 0px -99.9% 0px",
+    threshold: 0,
+  });
+  lastVisiblePageObserver = new IntersectionObserver(handleVisiblePageIntersections, {
+    root: null,
+    rootMargin: "-99.9% 0px 0px 0px",
     threshold: 0,
   });
 
@@ -49,8 +56,9 @@ async function initializeViewer() {
     expandVolume(idx);
   }
 
-  state.activePage = pagesByVolume.get(initialProgress.file).get(initialProgress.page);
-  window.scrollTo({ top: state.activePage.slot.offsetTop + initialProgress.scroll * state.activePage.slot.offsetHeight });
+  state.firstVisiblePage = pagesByVolume.get(initialProgress.file).get(initialProgress.page);
+  state.lastVisiblePage = state.firstVisiblePage;
+  window.scrollTo({ top: state.firstVisiblePage.slot.offsetTop + initialProgress.scroll * state.firstVisiblePage.slot.offsetHeight });
 
   window.addEventListener("resize", () => {
     scheduleReconcile();
@@ -94,7 +102,8 @@ function handleIntersections(entries) {
   scheduleReconcile();
 }
 
-function handleActivePageIntersections(entries) {
+function handleVisiblePageIntersections(entries, observer) {
+  let reconcile = false;
   for (const entry of entries) {
     if (!entry.isIntersecting) {
       continue;
@@ -106,10 +115,15 @@ function handleActivePageIntersections(entries) {
     const page = pagesByVolume
       .get(section.dataset.volume)
       .get(Number(entry.target.dataset.page));
-    if (page !== state.activePage) {
-      state.activePage = page;
-      scheduleReconcile();
+    if (observer === firstVisiblePageObserver && page !== state.firstVisiblePage) {
+      state.firstVisiblePage = page;
+      reconcile = true;
+    } else if (observer === lastVisiblePageObserver && page !== state.lastVisiblePage) {
+      state.lastVisiblePage = page;
     }
+  }
+  if (reconcile) {
+      scheduleReconcile();
   }
 }
 
@@ -131,7 +145,7 @@ function reconcileVolumes() {
     return;
   }
 
-  const activeVolumeIndex = volumeByName.get(state.activePage.volumeName).index;
+  const activeVolumeIndex = volumeByName.get(state.firstVisiblePage.volumeName).index;
   const start = Math.max(0, activeVolumeIndex - 1);
   const end = Math.min(volumes.length - 1, activeVolumeIndex + 1);
 
@@ -174,10 +188,7 @@ function scheduleProgressSave() {
 }
 
 function saveProgress() {
-  if (!state.activePage) {
-    throw new Error("Missing active page");
-  }
-  const activePage = state.activePage;
+  const activePage = state.firstVisiblePage;
   const top = window.scrollY || window.pageYOffset || 0;
 
   fetch("/api/progress", {
@@ -219,7 +230,8 @@ function expandVolume(index) {
     };
     volumePages.set(pageNumber, page);
     pageObserver.observe(slot);
-    activePageObserver.observe(slot);
+    firstVisiblePageObserver.observe(slot);
+    lastVisiblePageObserver.observe(slot);
   }
 
   section.replaceChildren(fragment);
@@ -233,7 +245,8 @@ function collapseVolume(index) {
     state.loadedPages.delete(page);
     state.nearVisiblePages.delete(page);
     pageObserver.unobserve(page.slot);
-    activePageObserver.unobserve(page.slot);
+    firstVisiblePageObserver.unobserve(page.slot);
+    lastVisiblePageObserver.unobserve(page.slot);
   }
   volumeByName.get(volumeName).section.replaceChildren();
   pagesByVolume.delete(volumeName);
