@@ -1,5 +1,6 @@
+use std::path::PathBuf;
 use std::process::Command;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use serde_json::json;
 use warp::Filter;
@@ -7,11 +8,21 @@ use warp::Reply;
 use warp::http::{Response, StatusCode};
 
 use crate::manga::Manga;
+use crate::readlist;
 use crate::readlist::Progress;
 
-pub async fn serve(manga: Manga, progress: Progress, port: u16, prefetch: (u32, u32), open: bool) {
+pub async fn serve(
+    manga: Manga,
+    progress: Progress,
+    port: u16,
+    prefetch: (u32, u32),
+    open: bool,
+    readlist_path: Option<PathBuf>,
+) {
     let html = build_html(&manga, &progress, prefetch);
     let html_route = warp::path::end().map(move || warp::reply::html(html.clone()).into_response());
+
+    let save_lock = Arc::new(Mutex::new(()));
 
     let state = Arc::new(manga);
     let state_for_route = Arc::clone(&state);
@@ -19,7 +30,18 @@ pub async fn serve(manga: Manga, progress: Progress, port: u16, prefetch: (u32, 
         .and(warp::any().map(move || Arc::clone(&state_for_route)))
         .and_then(page_response);
 
-    let routes = html_route.or(page_route);
+    let progress_route =
+        warp::path!("save").and(warp::put()).and(warp::body::json()).map(move |progress: Progress| {
+            if let Some(path) = &readlist_path
+                && let Ok(_guard) = save_lock.lock()
+                && let Err(err) = readlist::update_progress(path, progress)
+            {
+                eprintln!("Failed to save progress: {err}");
+            }
+            StatusCode::NO_CONTENT
+        });
+
+    let routes = html_route.or(page_route).or(progress_route);
     let addr = ([127, 0, 0, 1], port);
     println!("Open http://127.0.0.1:{port}");
     if open {

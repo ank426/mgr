@@ -31,6 +31,12 @@ impl ReadList {
         let content = fs::read_to_string(path)?;
         toml::from_str::<ReadList>(&content).map_err(|err| format!("Failed to parse {}: {err}", path.display()).into())
     }
+
+    pub fn save(&self, path: &Path) -> AppResult<()> {
+        let output = toml::to_string(self).map_err(|err| format!("Failed to serialize readlist: {err}"))?;
+        fs::write(path, output)?;
+        Ok(())
+    }
 }
 
 pub fn generate(dir: &Path, readlist_file_name: &str) -> AppResult<PathBuf> {
@@ -71,8 +77,13 @@ pub fn generate(dir: &Path, readlist_file_name: &str) -> AppResult<PathBuf> {
         })
         .collect();
 
-    let output = toml::to_string(&readlist).map_err(|err| format!("Failed to serialize readlist: {err}"))?;
-    fs::write(&output_path, output)?;
-
+    readlist.save(&output_path)?;
     Ok(output_path)
+}
+
+pub fn update_progress(path: &Path, progress: Progress) -> AppResult<()> {
+    let mut readlist = ReadList::new(path)?;
+    readlist.progress = progress;
+    readlist.save(path)?;
+    Ok(())
 }

@@ -11,6 +11,8 @@ const state = {
   reconcileScheduled: false,
 };
 
+let saveProgressTimeout;
+
 function initializeViewer() {
   if (!pagesContainer) {
     throw new Error("Missing pages container");
@@ -33,7 +35,10 @@ function initializeViewer() {
   window.addEventListener("resize", () => {
     recomputeAllSlotHeights();
     scheduleReconcile();
+    scheduleProgressSave();
   });
+
+  window.addEventListener("scroll", scheduleProgressSave, { passive: true });
 }
 
 function buildDom() {
@@ -128,6 +133,32 @@ function reconcileWindow() {
       state.loadedPages.add(page);
     }
   }
+}
+
+function scheduleProgressSave() {
+  clearTimeout(saveProgressTimeout);
+  saveProgressTimeout = setTimeout(saveProgress, 500);
+}
+
+function saveProgress() {
+  const top = window.scrollY || window.pageYOffset || 0;
+  let activePage;
+  for (const page of state.nearVisiblePages) {
+    if (top >= page.slot.offsetTop && top < page.slot.offsetTop + page.slot.offsetHeight) {
+      activePage = page;
+      break;
+    }
+  }
+
+  fetch("/save", {
+    method: "PUT",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      file: activePage.volumeName,
+      page: activePage.pageNumber,
+      scroll: Math.min(1, Math.max(0, (top - activePage.slot.offsetTop) / activePage.slot.offsetHeight)),
+    }),
+  });
 }
 
 function forEachPage(callback) {
