@@ -23,7 +23,11 @@ async function initializeViewer() {
 
   buildDom();
 
-  const initialProgress = await fetch("/api/progress").then((response) => response.json());
+  const initialProgressResponse = await fetch("/api/progress");
+  if (!initialProgressResponse.ok) {
+    throw new Error(`Failed to fetch initial progress: ${initialProgressResponse.status}`);
+  }
+  const initialProgress = await initialProgressResponse.json();
 
   pageObserver = new IntersectionObserver(handleIntersections, {
     root: null,
