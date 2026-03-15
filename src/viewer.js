@@ -153,17 +153,17 @@ function reconcileVolumes() {
 }
 
 function reconcilePages() {
-  for (const page of state.loadedPages) {
-    if (!state.nearVisiblePages.has(page)) {
-      unloadPage(page);
-      state.loadedPages.delete(page);
-    }
-  }
-
   for (const page of state.nearVisiblePages) {
     if (!state.loadedPages.has(page)) {
       loadPage(page);
       state.loadedPages.add(page);
+    }
+  }
+
+  for (const page of state.loadedPages) {
+    if (!state.nearVisiblePages.has(page)) {
+      unloadPage(page);
+      state.loadedPages.delete(page);
     }
   }
 }
