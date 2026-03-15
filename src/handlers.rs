@@ -20,7 +20,7 @@ pub fn handle_generate(path: &Path, readlist_file_name: &str) -> AppResult<()> {
 
 pub async fn handle_serve_files(paths: &[PathBuf], port: u16, prefetch: (u32, u32), open: bool) -> AppResult<()> {
     let manga = Manga::new(paths)?;
-    server::serve(manga, port, prefetch, open, None).await;
+    server::serve(manga, port, prefetch, open, None, None).await;
     Ok(())
 }
 
@@ -41,6 +41,6 @@ pub async fn handle_serve_readlist_directory(
     }
     let readlist = ReadList::new(&readlist_path)?;
     let manga = Manga::from_readlist(path, &readlist)?;
-    server::serve(manga, port, prefetch, open, Some(readlist_path)).await;
+    server::serve(manga, port, prefetch, open, Some(readlist_path), Some(readlist)).await;
     Ok(())
 }

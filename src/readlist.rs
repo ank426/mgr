@@ -80,10 +80,3 @@ pub fn generate(dir: &Path, readlist_file_name: &str) -> AppResult<PathBuf> {
     readlist.save(&output_path)?;
     Ok(output_path)
 }
-
-pub fn update_progress(path: &Path, progress: Progress) -> AppResult<()> {
-    let mut readlist = ReadList::new(path)?;
-    readlist.progress = progress;
-    readlist.save(path)?;
-    Ok(())
-}

@@ -8,14 +8,20 @@ use warp::Reply;
 use warp::http::{Response, StatusCode};
 
 use crate::manga::Manga;
-use crate::readlist;
-use crate::readlist::Progress;
+use crate::readlist::{Progress, ReadList};
 
-pub async fn serve(manga: Manga, port: u16, prefetch: (u32, u32), open: bool, readlist_path: Option<PathBuf>) {
+pub async fn serve(
+    manga: Manga,
+    port: u16,
+    prefetch: (u32, u32),
+    open: bool,
+    readlist_path: Option<PathBuf>,
+    readlist: Option<ReadList>,
+) {
     let html = build_html(&manga, prefetch);
     let manga = Arc::new(manga);
     let readlist_path = Arc::new(readlist_path);
-    let save_lock = Arc::new(Mutex::new(()));
+    let shared_readlist = Arc::new(Mutex::new(readlist));
 
     let html_route = warp::path::end().map(move || warp::reply::html(html.clone()).into_response());
 
@@ -28,20 +34,19 @@ pub async fn serve(manga: Manga, port: u16, prefetch: (u32, u32), open: bool, re
 
     let get_progress_route = {
         let manga = Arc::clone(&manga);
-        let readlist_path = Arc::clone(&readlist_path);
-        let save_lock = Arc::clone(&save_lock);
+        let shared_readlist = Arc::clone(&shared_readlist);
         warp::path!("api" / "progress")
             .and(warp::get())
-            .map(move || warp::reply::json(&get_progress(&manga, &readlist_path, &save_lock)))
+            .map(move || warp::reply::json(&get_progress(&manga, &shared_readlist)))
     };
 
     let save_progress_route = {
         let readlist_path = Arc::clone(&readlist_path);
-        let save_lock = Arc::clone(&save_lock);
+        let shared_readlist = Arc::clone(&shared_readlist);
         warp::path!("api" / "progress")
             .and(warp::put())
             .and(warp::body::json())
-            .map(move |progress: Progress| save_progress(progress, &readlist_path, &save_lock))
+            .map(move |progress: Progress| save_progress(progress, &readlist_path, &shared_readlist))
     };
 
     let routes = html_route.or(page_route).or(get_progress_route).or(save_progress_route);
@@ -90,23 +95,30 @@ fn build_html(manga: &Manga, prefetch: (u32, u32)) -> String {
         .replace("__VIEWER_SCRIPT__", &include_str!("viewer.js").replace("</script", "<\\/script"))
 }
 
-fn get_progress(manga: &Manga, readlist_path: &Option<PathBuf>, save_lock: &Mutex<()>) -> Progress {
-    if let Some(path) = readlist_path.as_ref()
-        && let Ok(_guard) = save_lock.lock()
-        && let Ok(readlist) = readlist::ReadList::new(path)
-    {
-        return readlist.progress;
+fn get_progress(manga: &Manga, shared_readlist: &Mutex<Option<ReadList>>) -> Progress {
+    if let Ok(readlist) = shared_readlist.lock() {
+        if let Some(readlist) = readlist.as_ref() {
+            return readlist.progress.clone();
+        }
     }
 
     Progress { file: manga.volumes.first().map(|volume| volume.name.clone()).unwrap_or_default(), page: 1, scroll: 0.0 }
 }
 
-fn save_progress(progress: Progress, readlist_path: &Option<PathBuf>, save_lock: &Mutex<()>) -> StatusCode {
-    if let Some(path) = readlist_path.as_ref()
-        && let Ok(_guard) = save_lock.lock()
-        && let Err(err) = readlist::update_progress(path, progress)
-    {
-        eprintln!("Failed to save progress: {err}");
+fn save_progress(
+    progress: Progress,
+    readlist_path: &Option<PathBuf>,
+    shared_readlist: &Mutex<Option<ReadList>>,
+) -> StatusCode {
+    if let Ok(mut readlist) = shared_readlist.lock() {
+        if let Some(readlist) = readlist.as_mut() {
+            readlist.progress = progress;
+            if let Some(path) = readlist_path.as_ref() {
+                if let Err(err) = readlist.save(path) {
+                    eprintln!("Failed to save progress: {err}");
+                }
+            }
+        }
     }
 
     StatusCode::NO_CONTENT
