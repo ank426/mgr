@@ -2,12 +2,11 @@ const volumes = window.MGR_CONFIG.volumes;
 const [prefetchBack, prefetchForward] = window.MGR_CONFIG.prefetch;
 const pagesContainer = document.getElementById("pages");
 
-const pageSlots = [];
+const pagesByVolume = new Map();
 
 const state = {
-  nearVisibleIndices: new Set(),
-  loadedStart: 0,
-  loadedEnd: -1,
+  nearVisiblePages: new Set(),
+  loadedPages: new Set(),
   reconcileScheduled: false,
 };
 
@@ -19,19 +18,13 @@ function initializeViewer() {
   buildDom();
   recomputeAllSlotHeights();
 
-  if (pageSlots.length === 0) {
-    return;
-  }
-
   const observer = new IntersectionObserver(handleIntersections, {
     root: null,
     rootMargin: `${prefetchBack * 100}% 0px ${prefetchForward * 100}% 0px`,
     threshold: 0,
   });
 
-  for (const page of pageSlots) {
-    observer.observe(page.slot);
-  }
+  forEachPage((page) => observer.observe(page.slot));
 
   window.addEventListener("resize", () => {
     recomputeAllSlotHeights();
@@ -41,22 +34,21 @@ function initializeViewer() {
 
 function buildDom() {
   const fragment = document.createDocumentFragment();
-  let pageIndex = 0;
 
   for (const volume of volumes) {
     const volumeSection = document.createElement("section");
     volumeSection.dataset.volume = volume.name;
+    const volumePages = new Map();
 
     for (let pageNumber = 1; pageNumber <= volume.pageDims.length; pageNumber++) {
       const dimensions = volume.pageDims[pageNumber - 1];
       const slot = document.createElement("div");
 
       slot.className = "page-slot";
-      slot.dataset.index = String(pageIndex);
       slot.dataset.page = String(pageNumber);
 
       volumeSection.appendChild(slot);
-      pageSlots.push({
+      volumePages.set(pageNumber, {
         slot,
         volumeName: volume.name,
         pageNumber,
@@ -65,10 +57,9 @@ function buildDom() {
         status: "unloaded",
         image: null,
       });
-
-      pageIndex++;
     }
 
+    pagesByVolume.set(volume.name, volumePages);
     fragment.appendChild(volumeSection);
   }
 
@@ -78,26 +69,25 @@ function buildDom() {
 function recomputeAllSlotHeights() {
   const containerWidth = pagesContainer.clientWidth || window.innerWidth || 1;
 
-  for (const page of pageSlots) {
+  forEachPage((page) => {
     const [sourceWidth, sourceHeight] = page.dimensions;
     const safeWidth = Math.max(sourceWidth || 1, 1);
     const safeHeight = Math.max(sourceHeight || 1, 1);
     const slotHeight = Math.max(1, Math.round((containerWidth * safeHeight) / safeWidth));
     page.slot.style.height = `${slotHeight}px`;
-  }
+  });
 }
 
 function handleIntersections(entries) {
   for (const entry of entries) {
-    const pageIndex = Number(entry.target.dataset.index);
-    if (Number.isNaN(pageIndex)) {
-      continue;
-    }
+    const page = pagesByVolume
+      .get(entry.target.closest("section").dataset.volume)
+      .get(Number(entry.target.dataset.page));
 
     if (entry.isIntersecting) {
-      state.nearVisibleIndices.add(pageIndex);
+      state.nearVisiblePages.add(page);
     } else {
-      state.nearVisibleIndices.delete(pageIndex);
+      state.nearVisiblePages.delete(page);
     }
   }
 
@@ -117,36 +107,34 @@ function scheduleReconcile() {
 }
 
 function reconcileWindow() {
-  if (pageSlots.length === 0 || state.nearVisibleIndices.size === 0) {
+  if (state.nearVisiblePages.size === 0) {
     return;
   }
 
-  const indices = Array.from(state.nearVisibleIndices);
-  const start = Math.min(...indices);
-  const end = Math.max(...indices);
-
-  for (let pageIndex = state.loadedStart; pageIndex <= state.loadedEnd && pageIndex < start; pageIndex++) {
-    unloadPage(pageIndex);
+  for (const page of Array.from(state.loadedPages)) {
+    if (!state.nearVisiblePages.has(page)) {
+      unloadPage(page);
+      state.loadedPages.delete(page);
+    }
   }
 
-  for (let pageIndex = state.loadedEnd; pageIndex >= state.loadedStart && pageIndex > end; pageIndex--) {
-    unloadPage(pageIndex);
+  for (const page of state.nearVisiblePages) {
+    if (!state.loadedPages.has(page)) {
+      loadPage(page);
+      state.loadedPages.add(page);
+    }
   }
-
-  for (let pageIndex = start; pageIndex <= end && pageIndex < state.loadedStart; pageIndex++) {
-    loadPage(pageIndex);
-  }
-
-  for (let pageIndex = end; pageIndex >= start && pageIndex > state.loadedEnd; pageIndex--) {
-    loadPage(pageIndex);
-  }
-
-  state.loadedStart = start;
-  state.loadedEnd = end;
 }
 
-function loadPage(pageIndex) {
-  const page = pageSlots[pageIndex];
+function forEachPage(callback) {
+  for (const volumePages of pagesByVolume.values()) {
+    for (const page of volumePages.values()) {
+      callback(page);
+    }
+  }
+}
+
+function loadPage(page) {
   if (!page || page.status === "loading" || page.status === "loaded" || page.status === "failed") {
     return;
   }
@@ -189,8 +177,7 @@ function loadPage(pageIndex) {
   image.src = page.url;
 }
 
-function unloadPage(pageIndex) {
-  const page = pageSlots[pageIndex];
+function unloadPage(page) {
   if (!page || page.status === "failed") {
     return;
   }
