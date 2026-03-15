@@ -127,11 +127,7 @@ function reconcileVolumes() {
 }
 
 function reconcilePages() {
-  if (state.nearVisiblePages.size === 0) {
-    return;
-  }
-
-  for (const page of Array.from(state.loadedPages)) {
+  for (const page of state.loadedPages) {
     if (!state.nearVisiblePages.has(page)) {
       unloadPage(page);
       state.loadedPages.delete(page);
