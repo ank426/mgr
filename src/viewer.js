@@ -19,7 +19,8 @@ function initializeViewer() {
   buildDom();
   recomputeAllSlotHeights();
 
-  pagesByVolume.get(initialProgress.file).get(initialProgress.page).slot.scrollIntoView();
+  const initialPage = pagesByVolume.get(initialProgress.file).get(initialProgress.page);
+  window.scrollTo({ top: initialPage.slot.offsetTop + initialProgress.scroll * initialPage.slot.offsetHeight });
 
   const observer = new IntersectionObserver(handleIntersections, {
     root: null,
