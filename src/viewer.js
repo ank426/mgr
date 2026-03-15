@@ -155,6 +155,8 @@ function saveProgress() {
       page: activePage.pageNumber,
       scroll: Math.min(1, Math.max(0, (top - activePage.slot.offsetTop) / activePage.slot.offsetHeight)),
     }),
+  }).catch((error) => {
+    console.error("Failed to save progress:", error);
   });
 }
 
