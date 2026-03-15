@@ -18,7 +18,6 @@ async function initializeViewer() {
   }
 
   buildDom();
-  recomputeAllSlotHeights();
 
   const initialProgress = await fetch("/api/progress").then((response) => response.json());
   const initialPage = pagesByVolume.get(initialProgress.file).get(initialProgress.page);
@@ -33,7 +32,6 @@ async function initializeViewer() {
   forEachPage((page) => observer.observe(page.slot));
 
   window.addEventListener("resize", () => {
-    recomputeAllSlotHeights();
     scheduleReconcile();
     scheduleProgressSave();
   });
@@ -55,6 +53,7 @@ function buildDom() {
 
       slot.className = "page-slot";
       slot.dataset.page = String(pageNumber);
+      slot.style.aspectRatio = `${dimensions[0]} / ${dimensions[1]}`;
 
       volumeSection.appendChild(slot);
       volumePages.set(pageNumber, {
@@ -73,18 +72,6 @@ function buildDom() {
   }
 
   pagesContainer.replaceChildren(fragment);
-}
-
-function recomputeAllSlotHeights() {
-  const containerWidth = pagesContainer.clientWidth || window.innerWidth || 1;
-
-  forEachPage((page) => {
-    const [sourceWidth, sourceHeight] = page.dimensions;
-    const safeWidth = Math.max(sourceWidth || 1, 1);
-    const safeHeight = Math.max(sourceHeight || 1, 1);
-    const slotHeight = Math.max(1, Math.round((containerWidth * safeHeight) / safeWidth));
-    page.slot.style.height = `${slotHeight}px`;
-  });
 }
 
 function handleIntersections(entries) {

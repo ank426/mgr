@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 use std::process::Command;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, RwLock};
 
 use serde_json::json;
 use warp::Filter;
@@ -21,7 +21,7 @@ pub async fn serve(
     let html = build_html(&manga, prefetch);
     let manga = Arc::new(manga);
     let readlist_path = Arc::new(readlist_path);
-    let shared_readlist = Arc::new(Mutex::new(readlist));
+    let shared_readlist = Arc::new(RwLock::new(readlist));
 
     let html_route = warp::path::end().map(move || warp::reply::html(html.clone()).into_response());
 
@@ -95,8 +95,8 @@ fn build_html(manga: &Manga, prefetch: (u32, u32)) -> String {
         .replace("__VIEWER_SCRIPT__", &include_str!("viewer.js").replace("</script", "<\\/script"))
 }
 
-fn get_progress(manga: &Manga, shared_readlist: &Mutex<Option<ReadList>>) -> Progress {
-    if let Ok(readlist) = shared_readlist.lock() {
+fn get_progress(manga: &Manga, shared_readlist: &RwLock<Option<ReadList>>) -> Progress {
+    if let Ok(readlist) = shared_readlist.read() {
         if let Some(readlist) = readlist.as_ref() {
             return readlist.progress.clone();
         }
@@ -108,17 +108,27 @@ fn get_progress(manga: &Manga, shared_readlist: &Mutex<Option<ReadList>>) -> Pro
 fn save_progress(
     progress: Progress,
     readlist_path: &Option<PathBuf>,
-    shared_readlist: &Mutex<Option<ReadList>>,
+    shared_readlist: &RwLock<Option<ReadList>>,
 ) -> StatusCode {
-    if let Ok(mut readlist) = shared_readlist.lock() {
+    let mut readlist_to_save = None;
+    let mut path_to_save = None;
+
+    if let Ok(mut readlist) = shared_readlist.write() {
         if let Some(readlist) = readlist.as_mut() {
             readlist.progress = progress;
             if let Some(path) = readlist_path.as_ref() {
-                if let Err(err) = readlist.save(path) {
-                    eprintln!("Failed to save progress: {err}");
-                }
+                readlist_to_save = Some(readlist.clone());
+                path_to_save = Some(path.clone());
             }
         }
+    }
+
+    if let (Some(readlist), Some(path)) = (readlist_to_save, path_to_save) {
+        tokio::task::spawn_blocking(move || {
+            if let Err(err) = readlist.save(&path) {
+                eprintln!("Failed to save progress: {err}");
+            }
+        });
     }
 
     StatusCode::NO_CONTENT
