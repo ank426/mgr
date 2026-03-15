@@ -33,8 +33,6 @@ function initializeViewer() {
     observer.observe(page.slot);
   }
 
-  applyWindow(0, 0);
-
   window.addEventListener("resize", () => {
     recomputeAllSlotHeights();
     scheduleReconcile();
@@ -122,11 +120,11 @@ function reconcileWindow() {
   if (pageSlots.length === 0 || state.nearVisibleIndices.size === 0) {
     return;
   }
-  const indices = Array.from(state.nearVisibleIndices);
-  applyWindow(Math.min(...indices), Math.max(...indices));
-}
 
-function applyWindow(start, end) {
+  const indices = Array.from(state.nearVisibleIndices);
+  const start = Math.min(...indices);
+  const end = Math.max(...indices);
+
   for (let pageIndex = state.loadedStart; pageIndex <= state.loadedEnd && pageIndex < start; pageIndex++) {
     unloadPage(pageIndex);
   }
