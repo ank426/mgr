@@ -2,14 +2,18 @@ const volumes = window.MGR_CONFIG.volumes;
 const [prefetchBack, prefetchForward] = window.MGR_CONFIG.prefetch;
 const pagesContainer = document.getElementById("pages");
 
+const volumeByName = new Map();
 const pagesByVolume = new Map();
 
 const state = {
   nearVisiblePages: new Set(),
   loadedPages: new Set(),
+  expandedStart: 0,
+  expandedEnd: -1,
   reconcileScheduled: false,
 };
 
+let pageObserver;
 let saveProgressTimeout;
 
 async function initializeViewer() {
@@ -20,55 +24,46 @@ async function initializeViewer() {
   buildDom();
 
   const initialProgress = await fetch("/api/progress").then((response) => response.json());
-  const initialPage = pagesByVolume.get(initialProgress.file).get(initialProgress.page);
-  window.scrollTo({ top: initialPage.slot.offsetTop + initialProgress.scroll * initialPage.slot.offsetHeight });
 
-  const observer = new IntersectionObserver(handleIntersections, {
+  pageObserver = new IntersectionObserver(handleIntersections, {
     root: null,
     rootMargin: `${prefetchBack * 100}% 0px ${prefetchForward * 100}% 0px`,
     threshold: 0,
   });
 
-  forEachPage((page) => observer.observe(page.slot));
+  const initialVolumeIndex = volumeByName.get(initialProgress.file).index;
+  state.expandedStart = Math.max(0, initialVolumeIndex - 1);
+  state.expandedEnd = Math.min(volumes.length - 1, initialVolumeIndex + 1);
+  for (let idx = state.expandedStart; idx <= state.expandedEnd; idx++) {
+    expandVolume(idx);
+  }
+
+  const initialPage = pagesByVolume.get(initialProgress.file).get(initialProgress.page);
+  window.scrollTo({ top: initialPage.slot.offsetTop + initialProgress.scroll * initialPage.slot.offsetHeight });
 
   window.addEventListener("resize", () => {
     scheduleReconcile();
     scheduleProgressSave();
   });
 
-  window.addEventListener("scroll", scheduleProgressSave, { passive: true });
+  window.addEventListener(
+    "scroll",
+    () => {
+      scheduleReconcile();
+      scheduleProgressSave();
+    },
+    { passive: true },
+  );
 }
 
 function buildDom() {
   const fragment = document.createDocumentFragment();
 
-  for (const volume of volumes) {
-    const volumeSection = document.createElement("section");
-    volumeSection.dataset.volume = volume.name;
-    const volumePages = new Map();
-
-    for (let pageNumber = 1; pageNumber <= volume.pageDims.length; pageNumber++) {
-      const dimensions = volume.pageDims[pageNumber - 1];
-      const slot = document.createElement("div");
-
-      slot.className = "page-slot";
-      slot.dataset.page = String(pageNumber);
-      slot.style.aspectRatio = `${dimensions[0]} / ${dimensions[1]}`;
-
-      volumeSection.appendChild(slot);
-      volumePages.set(pageNumber, {
-        slot,
-        volumeName: volume.name,
-        pageNumber,
-        dimensions,
-        url: `/volume/${encodeURIComponent(volume.name)}/page/${pageNumber}`,
-        status: "unloaded",
-        image: null,
-      });
-    }
-
-    pagesByVolume.set(volume.name, volumePages);
-    fragment.appendChild(volumeSection);
+  for (const [index, volume] of volumes.entries()) {
+    const section = document.createElement("section");
+    section.dataset.volume = volume.name;
+    volumeByName.set(volume.name, { index, section });
+    fragment.appendChild(section);
   }
 
   pagesContainer.replaceChildren(fragment);
@@ -98,11 +93,38 @@ function scheduleReconcile() {
   state.reconcileScheduled = true;
   requestAnimationFrame(() => {
     state.reconcileScheduled = false;
-    reconcileWindow();
+    reconcileVolumes();
+    reconcilePages();
   });
 }
 
-function reconcileWindow() {
+function reconcileVolumes() {
+  if (state.expandedEnd < state.expandedStart) {
+    return;
+  }
+
+  const activeVolumeIndex = volumeByName.get(getActivePage().volumeName).index;
+  const start = Math.max(0, activeVolumeIndex - 1);
+  const end = Math.min(volumes.length - 1, activeVolumeIndex + 1);
+
+  for (let idx = start; idx <= end && idx < state.expandedStart; idx++) {
+    expandVolume(idx);
+  }
+  for (let idx = end; idx >= start && idx > state.expandedEnd; idx--) {
+    expandVolume(idx);
+  }
+  for (let idx = state.expandedStart; idx < start && idx <= state.expandedEnd; idx++) {
+    collapseVolume(idx);
+  }
+  for (let idx = state.expandedEnd; idx > end && idx >= state.expandedStart; idx--) {
+    collapseVolume(idx);
+  }
+
+  state.expandedStart = start;
+  state.expandedEnd = end;
+}
+
+function reconcilePages() {
   if (state.nearVisiblePages.size === 0) {
     return;
   }
@@ -128,14 +150,8 @@ function scheduleProgressSave() {
 }
 
 function saveProgress() {
+  const activePage = getActivePage();
   const top = window.scrollY || window.pageYOffset || 0;
-  let activePage;
-  for (const page of state.nearVisiblePages) {
-    if (top >= page.slot.offsetTop && top < page.slot.offsetTop + page.slot.offsetHeight) {
-      activePage = page;
-      break;
-    }
-  }
 
   fetch("/api/progress", {
     method: "PUT",
@@ -148,12 +164,58 @@ function saveProgress() {
   });
 }
 
-function forEachPage(callback) {
-  for (const volumePages of pagesByVolume.values()) {
-    for (const page of volumePages.values()) {
-      callback(page);
+function expandVolume(index) {
+  const volume = volumes[index];
+  const section = volumeByName.get(volume.name).section;
+  const volumePages = new Map();
+  const fragment = document.createDocumentFragment();
+
+  for (let pageNumber = 1; pageNumber <= volume.pageDims.length; pageNumber++) {
+    const dimensions = volume.pageDims[pageNumber - 1];
+    const slot = document.createElement("div");
+
+    slot.className = "page-slot";
+    slot.dataset.page = String(pageNumber);
+    slot.style.aspectRatio = `${dimensions[0]} / ${dimensions[1]}`;
+
+    fragment.appendChild(slot);
+    const page = {
+      slot,
+      volumeName: volume.name,
+      pageNumber,
+      dimensions,
+      url: `/volume/${encodeURIComponent(volume.name)}/page/${pageNumber}`,
+      status: "unloaded",
+      image: null,
+    };
+    volumePages.set(pageNumber, page);
+    pageObserver.observe(slot);
+  }
+
+  section.replaceChildren(fragment);
+  pagesByVolume.set(volume.name, volumePages);
+}
+
+function collapseVolume(index) {
+  const volumeName = volumes[index].name;
+  for (const page of pagesByVolume.get(volumeName).values()) {
+    unloadPage(page);
+    state.loadedPages.delete(page);
+    state.nearVisiblePages.delete(page);
+    pageObserver.unobserve(page.slot);
+  }
+  volumeByName.get(volumeName).section.replaceChildren();
+  pagesByVolume.delete(volumeName);
+}
+
+function getActivePage() {
+  const top = window.scrollY || window.pageYOffset || 0;
+  for (const page of state.nearVisiblePages) {
+    if (top >= page.slot.offsetTop && top < page.slot.offsetTop + page.slot.offsetHeight) {
+      return page;
     }
   }
+  throw new Error("No active page found");
 }
 
 function loadPage(page) {
