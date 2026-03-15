@@ -122,12 +122,8 @@ function reconcileWindow() {
   if (pageSlots.length === 0 || state.nearVisibleIndices.size === 0) {
     return;
   }
-
   const indices = Array.from(state.nearVisibleIndices);
-  const minIndex = Math.min(...indices);
-  const maxIndex = Math.max(...indices);
-
-  applyWindow(minIndex, maxIndex);
+  applyWindow(Math.min(...indices), Math.max(...indices));
 }
 
 function applyWindow(start, end) {
