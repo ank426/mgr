@@ -89,11 +89,11 @@ fn build_html(manga: &Manga, prefetch: (u32, u32)) -> String {
     )
     .expect("valid viewer volumes json");
 
-    include_str!("viewer.html")
+    include_str!("../assets/viewer.html")
         .replace("{title}", &manga.title)
         .replace("{volumes}", &volumes_json)
         .replace("{prefetch}", &format!("[{}, {}]", prefetch.0, prefetch.1))
-        .replace("__VIEWER_SCRIPT__", &include_str!("viewer.js").replace("</script", "<\\/script"))
+        .replace("__VIEWER_SCRIPT__", &include_str!("../assets/viewer.js").replace("</script", "<\\/script"))
 }
 
 fn get_progress(manga: &Manga, shared_readlist: &RwLock<Option<ReadList>>) -> Progress {
