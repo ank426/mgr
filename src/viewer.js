@@ -10,6 +10,7 @@ const state = {
   loadedPages: new Set(),
   firstVisiblePage: null,
   lastVisiblePage: null,
+  scroll: null,
   expandedStart: 0,
   expandedEnd: -1,
   reconcileScheduled: false,
@@ -58,14 +59,22 @@ async function initializeViewer() {
 
   state.firstVisiblePage = pagesByVolume.get(initialProgress.file).get(initialProgress.page);
   state.lastVisiblePage = state.firstVisiblePage;
-  window.scrollTo({ top: state.firstVisiblePage.slot.offsetTop + initialProgress.scroll * state.firstVisiblePage.slot.offsetHeight });
+  state.scroll = initialProgress.scroll;
+  restoreProgress(state.firstVisiblePage, initialProgress.scroll);
 
   window.addEventListener("resize", () => {
+    const activePage = state.firstVisiblePage;
+    const scroll = state.scroll;
     scheduleReconcile();
-    scheduleProgressSave();
+    requestAnimationFrame(() => {
+      restoreProgress(activePage, scroll);
+    });
   });
+
   window.addEventListener("scroll", () => {
-    scheduleProgressSave();
+    setScroll();
+    clearTimeout(saveProgressTimeout);
+    saveProgressTimeout = setTimeout(saveProgress, 200);
   }, { passive: true });
 }
 
@@ -117,6 +126,7 @@ function handleVisiblePageIntersections(entries, observer) {
       .get(Number(entry.target.dataset.page));
     if (observer === firstVisiblePageObserver && page !== state.firstVisiblePage) {
       state.firstVisiblePage = page;
+      setScroll(page);
       reconcile = true;
     } else if (observer === lastVisiblePageObserver && page !== state.lastVisiblePage) {
       state.lastVisiblePage = page;
@@ -182,22 +192,23 @@ function reconcilePages() {
   }
 }
 
-function scheduleProgressSave() {
-  clearTimeout(saveProgressTimeout);
-  saveProgressTimeout = setTimeout(saveProgress, 200);
+function setScroll(activePage = state.firstVisiblePage) {
+  const top = window.scrollY || window.pageYOffset || 0;
+  state.scroll = Math.min(1, Math.max(0, (top - activePage.slot.offsetTop) / activePage.slot.offsetHeight));
+}
+
+function restoreProgress(page, scroll) {
+  window.scrollTo({ top: page.slot.offsetTop + scroll * page.slot.offsetHeight });
 }
 
 function saveProgress() {
-  const activePage = state.firstVisiblePage;
-  const top = window.scrollY || window.pageYOffset || 0;
-
   fetch("/api/progress", {
     method: "PUT",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
-      file: activePage.volumeName,
-      page: activePage.pageNumber,
-      scroll: Math.min(1, Math.max(0, (top - activePage.slot.offsetTop) / activePage.slot.offsetHeight)),
+      file: state.firstVisiblePage.volumeName,
+      page: state.firstVisiblePage.pageNumber,
+      scroll: state.scroll,
     }),
   }).catch((error) => {
     console.error("Failed to save progress:", error);
