@@ -9,7 +9,6 @@ const state = {
   nearVisiblePages: new Set(),
   loadedPages: new Set(),
   firstVisiblePage: null,
-  lastVisiblePage: null,
   scroll: null,
   expandedStart: 0,
   expandedEnd: -1,
@@ -18,7 +17,6 @@ const state = {
 
 let pageObserver;
 let firstVisiblePageObserver;
-let lastVisiblePageObserver;
 let saveProgressTimeout;
 
 async function initializeViewer() {
@@ -44,11 +42,6 @@ async function initializeViewer() {
     rootMargin: "0px 0px -99.9% 0px",
     threshold: 0,
   });
-  lastVisiblePageObserver = new IntersectionObserver(handleVisiblePageIntersections, {
-    root: null,
-    rootMargin: "-99.9% 0px 0px 0px",
-    threshold: 0,
-  });
 
   const initialVolumeIndex = volumeByName.get(initialProgress.file).index;
   state.expandedStart = Math.max(0, initialVolumeIndex - 1);
@@ -58,7 +51,6 @@ async function initializeViewer() {
   }
 
   state.firstVisiblePage = pagesByVolume.get(initialProgress.file).get(initialProgress.page);
-  state.lastVisiblePage = state.firstVisiblePage;
   state.scroll = initialProgress.scroll;
   restoreProgress(state.firstVisiblePage, initialProgress.scroll);
 
@@ -111,7 +103,7 @@ function handleIntersections(entries) {
   scheduleReconcile();
 }
 
-function handleVisiblePageIntersections(entries, observer) {
+function handleVisiblePageIntersections(entries) {
   let reconcile = false;
   for (const entry of entries) {
     if (!entry.isIntersecting) {
@@ -124,12 +116,10 @@ function handleVisiblePageIntersections(entries, observer) {
     const page = pagesByVolume
       .get(section.dataset.volume)
       .get(Number(entry.target.dataset.page));
-    if (observer === firstVisiblePageObserver && page !== state.firstVisiblePage) {
+    if (page !== state.firstVisiblePage) {
       state.firstVisiblePage = page;
       setScroll(page);
       reconcile = true;
-    } else if (observer === lastVisiblePageObserver && page !== state.lastVisiblePage) {
-      state.lastVisiblePage = page;
     }
   }
   if (reconcile) {
@@ -242,7 +232,6 @@ function expandVolume(index) {
     volumePages.set(pageNumber, page);
     pageObserver.observe(slot);
     firstVisiblePageObserver.observe(slot);
-    lastVisiblePageObserver.observe(slot);
   }
 
   section.replaceChildren(fragment);
@@ -257,7 +246,6 @@ function collapseVolume(index) {
     state.nearVisiblePages.delete(page);
     pageObserver.unobserve(page.slot);
     firstVisiblePageObserver.unobserve(page.slot);
-    lastVisiblePageObserver.unobserve(page.slot);
   }
   volumeByName.get(volumeName).section.replaceChildren();
   pagesByVolume.delete(volumeName);
