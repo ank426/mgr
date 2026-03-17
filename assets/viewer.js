@@ -91,8 +91,10 @@ function handleIntersections(entries) {
     }
     const page = pagesByVolume
       .get(section.dataset.volume)
-      .get(Number(entry.target.dataset.page));
-
+      ?.get(Number(entry.target.dataset.page));
+    if (!page) {
+      continue;
+    }
     if (entry.isIntersecting) {
       state.nearVisiblePages.add(page);
     } else {
@@ -115,7 +117,10 @@ function handleVisiblePageIntersections(entries) {
     }
     const page = pagesByVolume
       .get(section.dataset.volume)
-      .get(Number(entry.target.dataset.page));
+      ?.get(Number(entry.target.dataset.page));
+    if (!page) {
+      continue;
+    }
     if (page !== state.progress.page) {
       updateProgress(page);
       reconcile = true;
@@ -182,7 +187,7 @@ function reconcilePages() {
 }
 
 function updateProgress(activePage = state.progress.page) {
-  const top = window.scrollY || window.pageYOffset || 0;
+  const top = window.scrollY || 0;
   state.progress = {
     page: activePage,
     scroll: Math.min(1, Math.max(0, (top - activePage.slot.offsetTop) / activePage.slot.offsetHeight)),
