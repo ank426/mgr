@@ -12,6 +12,8 @@ const state = {
     expandedStart: 0,
     expandedEnd: -1,
     reconcileScheduled: false,
+    progressLocked: false,
+    zoom: 100,
 };
 
 let pageObserver;
@@ -57,9 +59,11 @@ async function initializeViewer() {
 
     window.addEventListener("resize", () => {
         const progress = state.progress;
+        lockProgressUpdates();
         scheduleReconcile();
         requestAnimationFrame(() => {
             restoreProgress(progress);
+            unlockProgressUpdates();
         });
     });
 
@@ -72,6 +76,14 @@ async function initializeViewer() {
         },
         { passive: true },
     );
+
+    window.addEventListener("keydown", (event) => {
+        if (event.key === "=" || event.key === "+") {
+            updateZoom(5);
+        } else if (event.key === "-") {
+            updateZoom(-5);
+        }
+    });
 }
 
 function buildDom() {
@@ -108,6 +120,9 @@ function handleIntersections(entries) {
 }
 
 function handleVisiblePageIntersections(entries) {
+    if (state.progressLocked) {
+        return;
+    }
     let reconcile = false;
     for (const entry of entries) {
         if (!entry.isIntersecting) {
@@ -187,6 +202,9 @@ function reconcilePages() {
 }
 
 function updateProgress(activePage = state.progress.page) {
+    if (state.progressLocked) {
+        return;
+    }
     const top = window.scrollY || 0;
     state.progress = {
         page: activePage,
@@ -197,6 +215,28 @@ function updateProgress(activePage = state.progress.page) {
 function restoreProgress(progress) {
     window.scrollTo({
         top: progress.page.slot.offsetTop + progress.scroll * progress.page.slot.offsetHeight,
+    });
+}
+
+function updateZoom(delta) {
+    state.zoom = Math.min(500, Math.max(10, state.zoom + delta));
+    lockProgressUpdates();
+    document.documentElement.style.setProperty("--viewer-zoom", `${state.zoom}%`);
+    requestAnimationFrame(() => {
+        if (state.progress) {
+            restoreProgress(state.progress);
+        }
+        unlockProgressUpdates();
+    });
+}
+
+function lockProgressUpdates() {
+    state.progressLocked = true;
+}
+
+function unlockProgressUpdates() {
+    requestAnimationFrame(() => {
+        state.progressLocked = false;
     });
 }
 
