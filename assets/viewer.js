@@ -317,6 +317,9 @@ function saveProgress() {
 
 function expandVolume(index) {
     const volume = volumes[index];
+    if (pagesByVolume.has(volume.name)) {
+        return;
+    }
     const section = volumeByName.get(volume.name).section;
     const volumePages = new Map();
     const fragment = document.createDocumentFragment();
