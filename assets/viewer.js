@@ -224,22 +224,59 @@ function updateZoom(delta) {
     });
 }
 
+function jumpToVolumePage(volumeIndex, pageNumber, scrollToEnd = false) {
+    const volume = volumes[volumeIndex];
+    if (!pagesByVolume.has(volume.name)) {
+        expandVolume(volumeIndex);
+    }
+    lockProgressUpdates();
+    state.progress = {
+        page: pagesByVolume.get(volume.name).get(pageNumber),
+        scroll: scrollToEnd ? 1 : 0,
+    };
+    scheduleReconcile();
+    requestAnimationFrame(() => {
+        restoreProgress(state.progress);
+        unlockProgressUpdates();
+    });
+}
+
 function handleKeydown(event) {
     switch (event.key) {
-        case "j":
-            event.preventDefault();
-            window.scrollBy({ top: window.innerHeight / 2, behavior: "auto" });
-            break;
-        case "k":
-            event.preventDefault();
-            window.scrollBy({ top: -(window.innerHeight / 2), behavior: "auto" });
-            break;
         case "=":
+        case "+":
             updateZoom(5);
             break;
         case "-":
             updateZoom(-5);
             break;
+        case "j":
+            event.preventDefault();
+            window.scrollTo({ top: window.scrollY + window.innerHeight / 2, behavior: "auto" });
+            break;
+        case "k":
+            event.preventDefault();
+            window.scrollTo({ top: window.scrollY - window.innerHeight / 2, behavior: "auto" });
+            break;
+        case "h": {
+            event.preventDefault();
+            const currentIndex = volumeByName.get(state.progress.page.volumeName).index;
+            const atVolumeStart = state.progress.page.pageNumber === 1 && state.progress.scroll <= 0.001;
+            const targetIndex = atVolumeStart ? Math.max(0, currentIndex - 1) : currentIndex;
+            jumpToVolumePage(targetIndex, 1);
+            break;
+        }
+        case "l": {
+            event.preventDefault();
+            const currentIndex = volumeByName.get(state.progress.page.volumeName).index;
+            if (currentIndex < volumes.length - 1) {
+                jumpToVolumePage(currentIndex + 1, 1);
+            } else {
+                const lastPage = volumes[currentIndex].pageDims.length;
+                jumpToVolumePage(currentIndex, lastPage, true);
+            }
+            break;
+        }
         default:
             break;
     }
