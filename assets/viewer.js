@@ -272,9 +272,18 @@ function handleKeydown(event) {
             if (currentIndex < volumes.length - 1) {
                 jumpToVolumePage(currentIndex + 1, 1);
             } else {
-                const lastPage = volumes[currentIndex].pageDims.length;
-                jumpToVolumePage(currentIndex, lastPage, true);
+                jumpToVolumePage(currentIndex, volumes[currentIndex].pageDims.length, true);
             }
+            break;
+        }
+        case "g":
+            event.preventDefault();
+            jumpToVolumePage(0, 1);
+            break;
+        case "G": {
+            event.preventDefault();
+            const lastVolumeIndex = volumes.length - 1;
+            jumpToVolumePage(lastVolumeIndex, volumes[lastVolumeIndex].pageDims.length, true);
             break;
         }
         default:
