@@ -58,18 +58,15 @@ async function initializeViewer() {
     restoreProgress(state.progress);
 
     window.addEventListener("resize", () => {
-        const progress = state.progress;
-        lockProgressUpdates();
-        scheduleReconcile();
-        requestAnimationFrame(() => {
-            restoreProgress(progress);
-            unlockProgressUpdates();
-        });
+        withProgressLock(scheduleReconcile);
     });
 
     window.addEventListener(
         "scroll",
         () => {
+            if (state.progressLocked) {
+                return;
+            }
             updateProgress();
             clearTimeout(saveProgressTimeout);
             saveProgressTimeout = setTimeout(saveProgress, 200);
@@ -148,8 +145,10 @@ function scheduleReconcile() {
     state.reconcileScheduled = true;
     requestAnimationFrame(() => {
         state.reconcileScheduled = false;
-        reconcileVolumes();
-        reconcilePages();
+        withProgressLock(() => {
+            reconcileVolumes();
+            reconcilePages();
+        });
     });
 }
 
@@ -214,13 +213,8 @@ function restoreProgress(progress) {
 
 function updateZoom(delta) {
     state.zoom = Math.min(500, Math.max(10, state.zoom + delta));
-    lockProgressUpdates();
-    document.documentElement.style.setProperty("--viewer-zoom", `${state.zoom}%`);
-    requestAnimationFrame(() => {
-        if (state.progress) {
-            restoreProgress(state.progress);
-        }
-        unlockProgressUpdates();
+    withProgressLock(() => {
+        document.documentElement.style.setProperty("--viewer-zoom", `${state.zoom}%`);
     });
 }
 
@@ -229,15 +223,12 @@ function jumpToVolumePage(volumeIndex, pageNumber, scrollToEnd = false) {
     if (!pagesByVolume.has(volume.name)) {
         expandVolume(volumeIndex);
     }
-    lockProgressUpdates();
-    state.progress = {
-        page: pagesByVolume.get(volume.name).get(pageNumber),
-        scroll: scrollToEnd ? 1 : 0,
-    };
-    scheduleReconcile();
-    requestAnimationFrame(() => {
-        restoreProgress(state.progress);
-        unlockProgressUpdates();
+    withProgressLock(() => {
+        state.progress = {
+            page: pagesByVolume.get(volume.name).get(pageNumber),
+            scroll: scrollToEnd ? 1 : 0,
+        };
+        scheduleReconcile();
     });
 }
 
@@ -298,6 +289,21 @@ function lockProgressUpdates() {
 function unlockProgressUpdates() {
     requestAnimationFrame(() => {
         state.progressLocked = false;
+    });
+}
+
+function withProgressLock(action) {
+    if (state.progressLocked) {
+        action();
+        return;
+    }
+    lockProgressUpdates();
+    action();
+    requestAnimationFrame(() => {
+        if (state.progress) {
+            restoreProgress(state.progress);
+        }
+        unlockProgressUpdates();
     });
 }
 
