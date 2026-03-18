@@ -77,13 +77,7 @@ async function initializeViewer() {
         { passive: true },
     );
 
-    window.addEventListener("keydown", (event) => {
-        if (event.key === "=" || event.key === "+") {
-            updateZoom(5);
-        } else if (event.key === "-") {
-            updateZoom(-5);
-        }
-    });
+    window.addEventListener("keydown", handleKeydown);
 }
 
 function buildDom() {
@@ -228,6 +222,27 @@ function updateZoom(delta) {
         }
         unlockProgressUpdates();
     });
+}
+
+function handleKeydown(event) {
+    switch (event.key) {
+        case "j":
+            event.preventDefault();
+            window.scrollBy({ top: window.innerHeight / 2, behavior: "auto" });
+            break;
+        case "k":
+            event.preventDefault();
+            window.scrollBy({ top: -(window.innerHeight / 2), behavior: "auto" });
+            break;
+        case "=":
+            updateZoom(5);
+            break;
+        case "-":
+            updateZoom(-5);
+            break;
+        default:
+            break;
+    }
 }
 
 function lockProgressUpdates() {
