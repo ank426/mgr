@@ -137,101 +137,6 @@ function handleVisiblePageIntersections(entries) {
     }
 }
 
-function scheduleReconcile() {
-    if (state.reconcileScheduled) {
-        return;
-    }
-
-    state.reconcileScheduled = true;
-    requestAnimationFrame(() => {
-        state.reconcileScheduled = false;
-        withProgressLock(() => {
-            reconcileVolumes();
-            reconcilePages();
-        });
-    });
-}
-
-function reconcileVolumes() {
-    if (state.expandedEnd < state.expandedStart) {
-        return;
-    }
-
-    const activeVolumeIndex = volumeByName.get(state.progress.page.volumeName).index;
-    const start = Math.max(0, activeVolumeIndex - 1);
-    const end = Math.min(volumes.length - 1, activeVolumeIndex + 1);
-
-    for (let idx = start; idx <= end && idx < state.expandedStart; idx++) {
-        expandVolume(idx);
-    }
-    for (let idx = end; idx >= start && idx > state.expandedEnd; idx--) {
-        expandVolume(idx);
-    }
-    for (let idx = state.expandedStart; idx < start && idx <= state.expandedEnd; idx++) {
-        collapseVolume(idx);
-    }
-    for (let idx = state.expandedEnd; idx > end && idx >= state.expandedStart; idx--) {
-        collapseVolume(idx);
-    }
-
-    state.expandedStart = start;
-    state.expandedEnd = end;
-}
-
-function reconcilePages() {
-    for (const page of state.nearVisiblePages) {
-        if (!state.loadedPages.has(page)) {
-            loadPage(page);
-            state.loadedPages.add(page);
-        }
-    }
-
-    for (const page of state.loadedPages) {
-        if (!state.nearVisiblePages.has(page)) {
-            unloadPage(page);
-            state.loadedPages.delete(page);
-        }
-    }
-}
-
-function updateProgress(activePage = state.progress.page) {
-    if (state.progressLocked) {
-        return;
-    }
-    const top = window.scrollY || 0;
-    state.progress = {
-        page: activePage,
-        scroll: Math.min(1, Math.max(0, (top - activePage.slot.offsetTop) / activePage.slot.offsetHeight)),
-    };
-}
-
-function restoreProgress(progress) {
-    window.scrollTo({
-        top: progress.page.slot.offsetTop + progress.scroll * progress.page.slot.offsetHeight,
-    });
-}
-
-function updateZoom(delta) {
-    state.zoom = Math.min(500, Math.max(10, state.zoom + delta));
-    withProgressLock(() => {
-        document.documentElement.style.setProperty("--viewer-zoom", `${state.zoom}%`);
-    });
-}
-
-function jumpToVolumePage(volumeIndex, pageNumber, scrollToEnd = false) {
-    const volume = volumes[volumeIndex];
-    if (!pagesByVolume.has(volume.name)) {
-        expandVolume(volumeIndex);
-    }
-    withProgressLock(() => {
-        state.progress = {
-            page: pagesByVolume.get(volume.name).get(pageNumber),
-            scroll: scrollToEnd ? 1 : 0,
-        };
-        scheduleReconcile();
-    });
-}
-
 function handleKeydown(event) {
     switch (event.key) {
         case "=":
@@ -307,6 +212,23 @@ function withProgressLock(action) {
     });
 }
 
+function updateProgress(activePage = state.progress.page) {
+    if (state.progressLocked) {
+        return;
+    }
+    const top = window.scrollY || 0;
+    state.progress = {
+        page: activePage,
+        scroll: Math.min(1, Math.max(0, (top - activePage.slot.offsetTop) / activePage.slot.offsetHeight)),
+    };
+}
+
+function restoreProgress(progress) {
+    window.scrollTo({
+        top: progress.page.slot.offsetTop + progress.scroll * progress.page.slot.offsetHeight,
+    });
+}
+
 function saveProgress() {
     fetch("/api/progress", {
         method: "PUT",
@@ -319,6 +241,84 @@ function saveProgress() {
     }).catch((error) => {
         console.error("Failed to save progress:", error);
     });
+}
+
+function updateZoom(delta) {
+    state.zoom = Math.min(500, Math.max(10, state.zoom + delta));
+    withProgressLock(() => {
+        document.documentElement.style.setProperty("--viewer-zoom", `${state.zoom}%`);
+    });
+}
+
+function jumpToVolumePage(volumeIndex, pageNumber, scrollToEnd = false) {
+    const volume = volumes[volumeIndex];
+    if (!pagesByVolume.has(volume.name)) {
+        expandVolume(volumeIndex);
+    }
+    withProgressLock(() => {
+        state.progress = {
+            page: pagesByVolume.get(volume.name).get(pageNumber),
+            scroll: scrollToEnd ? 1 : 0,
+        };
+        scheduleReconcile();
+    });
+}
+
+function scheduleReconcile() {
+    if (state.reconcileScheduled) {
+        return;
+    }
+
+    state.reconcileScheduled = true;
+    requestAnimationFrame(() => {
+        state.reconcileScheduled = false;
+        withProgressLock(() => {
+            reconcileVolumes();
+            reconcilePages();
+        });
+    });
+}
+
+function reconcileVolumes() {
+    if (state.expandedEnd < state.expandedStart) {
+        return;
+    }
+
+    const activeVolumeIndex = volumeByName.get(state.progress.page.volumeName).index;
+    const start = Math.max(0, activeVolumeIndex - 1);
+    const end = Math.min(volumes.length - 1, activeVolumeIndex + 1);
+
+    for (let idx = start; idx <= end && idx < state.expandedStart; idx++) {
+        expandVolume(idx);
+    }
+    for (let idx = end; idx >= start && idx > state.expandedEnd; idx--) {
+        expandVolume(idx);
+    }
+    for (let idx = state.expandedStart; idx < start && idx <= state.expandedEnd; idx++) {
+        collapseVolume(idx);
+    }
+    for (let idx = state.expandedEnd; idx > end && idx >= state.expandedStart; idx--) {
+        collapseVolume(idx);
+    }
+
+    state.expandedStart = start;
+    state.expandedEnd = end;
+}
+
+function reconcilePages() {
+    for (const page of state.nearVisiblePages) {
+        if (!state.loadedPages.has(page)) {
+            loadPage(page);
+            state.loadedPages.add(page);
+        }
+    }
+
+    for (const page of state.loadedPages) {
+        if (!state.nearVisiblePages.has(page)) {
+            unloadPage(page);
+            state.loadedPages.delete(page);
+        }
+    }
 }
 
 function expandVolume(index) {
