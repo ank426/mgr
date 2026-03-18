@@ -21,16 +21,13 @@ let firstVisiblePageObserver;
 let saveProgressTimeout;
 
 async function initializeViewer() {
-    if (!pagesContainer) {
-        throw new Error("Missing pages container");
-    }
+    if (!pagesContainer) throw new Error("Missing pages container");
 
     buildDom();
 
     const initialProgressResponse = await fetch("/api/progress");
-    if (!initialProgressResponse.ok) {
+    if (!initialProgressResponse.ok)
         throw new Error(`Failed to fetch initial progress: ${initialProgressResponse.status}`);
-    }
     const initialProgress = await initialProgressResponse.json();
 
     pageObserver = new IntersectionObserver(handleIntersections, {
@@ -47,9 +44,7 @@ async function initializeViewer() {
     const initialVolumeIndex = volumeByName.get(initialProgress.file).index;
     state.expandedStart = Math.max(0, initialVolumeIndex - 1);
     state.expandedEnd = Math.min(volumes.length - 1, initialVolumeIndex + 1);
-    for (let idx = state.expandedStart; idx <= state.expandedEnd; idx++) {
-        expandVolume(idx);
-    }
+    for (let idx = state.expandedStart; idx <= state.expandedEnd; idx++) expandVolume(idx);
 
     state.progress = {
         page: pagesByVolume.get(initialProgress.file).get(initialProgress.page),
@@ -57,16 +52,12 @@ async function initializeViewer() {
     };
     restoreProgress(state.progress);
 
-    window.addEventListener("resize", () => {
-        withProgressLock(scheduleReconcile);
-    });
+    window.addEventListener("resize", () => withProgressLock(scheduleReconcile));
 
     window.addEventListener(
         "scroll",
         () => {
-            if (state.progressLocked) {
-                return;
-            }
+            if (state.progressLocked) return;
             updateProgress();
             clearTimeout(saveProgressTimeout);
             saveProgressTimeout = setTimeout(saveProgress, 200);
@@ -93,48 +84,31 @@ function buildDom() {
 function handleIntersections(entries) {
     for (const entry of entries) {
         const section = entry.target.closest("section");
-        if (!section) {
-            continue;
-        }
+        if (!section) continue;
         const page = pagesByVolume.get(section.dataset.volume)?.get(Number(entry.target.dataset.page));
-        if (!page) {
-            continue;
-        }
-        if (entry.isIntersecting) {
-            state.nearVisiblePages.add(page);
-        } else {
-            state.nearVisiblePages.delete(page);
-        }
+        if (!page) continue;
+        if (entry.isIntersecting) state.nearVisiblePages.add(page);
+        else state.nearVisiblePages.delete(page);
     }
 
     scheduleReconcile();
 }
 
 function handleVisiblePageIntersections(entries) {
-    if (state.progressLocked) {
-        return;
-    }
+    if (state.progressLocked) return;
     let reconcile = false;
     for (const entry of entries) {
-        if (!entry.isIntersecting) {
-            continue;
-        }
+        if (!entry.isIntersecting) continue;
         const section = entry.target.closest("section");
-        if (!section) {
-            continue;
-        }
+        if (!section) continue;
         const page = pagesByVolume.get(section.dataset.volume)?.get(Number(entry.target.dataset.page));
-        if (!page) {
-            continue;
-        }
+        if (!page) continue;
         if (page !== state.progress.page) {
             updateProgress(page);
             reconcile = true;
         }
     }
-    if (reconcile) {
-        scheduleReconcile();
-    }
+    if (reconcile) scheduleReconcile();
 }
 
 function handleKeydown(event) {
@@ -165,11 +139,8 @@ function handleKeydown(event) {
         case "l": {
             event.preventDefault();
             const currentIndex = volumeByName.get(state.progress.page.volumeName).index;
-            if (currentIndex < volumes.length - 1) {
-                jumpToVolumePage(currentIndex + 1, 1);
-            } else {
-                jumpToVolumePage(currentIndex, volumes[currentIndex].pageDims.length, true);
-            }
+            if (currentIndex < volumes.length - 1) jumpToVolumePage(currentIndex + 1, 1);
+            else jumpToVolumePage(currentIndex, volumes[currentIndex].pageDims.length, true);
             break;
         }
         case "g":
@@ -205,17 +176,13 @@ function withProgressLock(action) {
     lockProgressUpdates();
     action();
     requestAnimationFrame(() => {
-        if (state.progress) {
-            restoreProgress(state.progress);
-        }
+        if (state.progress) restoreProgress(state.progress);
         unlockProgressUpdates();
     });
 }
 
 function updateProgress(activePage = state.progress.page) {
-    if (state.progressLocked) {
-        return;
-    }
+    if (state.progressLocked) return;
     const top = window.scrollY || 0;
     state.progress = {
         page: activePage,
@@ -245,16 +212,12 @@ function saveProgress() {
 
 function updateZoom(delta) {
     state.zoom = Math.min(500, Math.max(10, state.zoom + delta));
-    withProgressLock(() => {
-        document.documentElement.style.setProperty("--viewer-zoom", `${state.zoom}%`);
-    });
+    withProgressLock(() => document.documentElement.style.setProperty("--viewer-zoom", `${state.zoom}%`));
 }
 
 function jumpToVolumePage(volumeIndex, pageNumber, scrollToEnd = false) {
     const volume = volumes[volumeIndex];
-    if (!pagesByVolume.has(volume.name)) {
-        expandVolume(volumeIndex);
-    }
+    if (!pagesByVolume.has(volume.name)) expandVolume(volumeIndex);
     withProgressLock(() => {
         state.progress = {
             page: pagesByVolume.get(volume.name).get(pageNumber),
@@ -265,9 +228,7 @@ function jumpToVolumePage(volumeIndex, pageNumber, scrollToEnd = false) {
 }
 
 function scheduleReconcile() {
-    if (state.reconcileScheduled) {
-        return;
-    }
+    if (state.reconcileScheduled) return;
 
     state.reconcileScheduled = true;
     requestAnimationFrame(() => {
@@ -280,26 +241,16 @@ function scheduleReconcile() {
 }
 
 function reconcileVolumes() {
-    if (state.expandedEnd < state.expandedStart) {
-        return;
-    }
+    if (state.expandedEnd < state.expandedStart) return;
 
     const activeVolumeIndex = volumeByName.get(state.progress.page.volumeName).index;
     const start = Math.max(0, activeVolumeIndex - 1);
     const end = Math.min(volumes.length - 1, activeVolumeIndex + 1);
 
-    for (let idx = start; idx <= end && idx < state.expandedStart; idx++) {
-        expandVolume(idx);
-    }
-    for (let idx = end; idx >= start && idx > state.expandedEnd; idx--) {
-        expandVolume(idx);
-    }
-    for (let idx = state.expandedStart; idx < start && idx <= state.expandedEnd; idx++) {
-        collapseVolume(idx);
-    }
-    for (let idx = state.expandedEnd; idx > end && idx >= state.expandedStart; idx--) {
-        collapseVolume(idx);
-    }
+    for (let idx = start; idx <= end && idx < state.expandedStart; idx++) expandVolume(idx);
+    for (let idx = end; idx >= start && idx > state.expandedEnd; idx--) expandVolume(idx);
+    for (let idx = state.expandedStart; idx < start && idx <= state.expandedEnd; idx++) collapseVolume(idx);
+    for (let idx = state.expandedEnd; idx > end && idx >= state.expandedStart; idx--) collapseVolume(idx);
 
     state.expandedStart = start;
     state.expandedEnd = end;
@@ -323,9 +274,7 @@ function reconcilePages() {
 
 function expandVolume(index) {
     const volume = volumes[index];
-    if (pagesByVolume.has(volume.name)) {
-        return;
-    }
+    if (pagesByVolume.has(volume.name)) return;
     const section = volumeByName.get(volume.name).section;
     const volumePages = new Map();
     const fragment = document.createDocumentFragment();
@@ -371,9 +320,7 @@ function collapseVolume(index) {
 }
 
 function loadPage(page) {
-    if (page.status === "loading" || page.status === "loaded" || page.status === "failed") {
-        return;
-    }
+    if (page.status === "loading" || page.status === "loaded" || page.status === "failed") return;
 
     const image = new Image();
     image.decoding = "async";
@@ -385,9 +332,7 @@ function loadPage(page) {
     image.addEventListener(
         "load",
         () => {
-            if (page.image !== image) {
-                return;
-            }
+            if (page.image !== image) return;
 
             page.status = "loaded";
             page.slot.replaceChildren(image);
@@ -398,9 +343,7 @@ function loadPage(page) {
     image.addEventListener(
         "error",
         () => {
-            if (page.image !== image) {
-                return;
-            }
+            if (page.image !== image) return;
 
             page.status = "failed";
             page.image = null;
@@ -426,6 +369,4 @@ function unloadPage(page) {
     page.status = "unloaded";
 }
 
-initializeViewer().catch((error) => {
-    console.error(error);
-});
+initializeViewer().catch((error) => console.error(error));
