@@ -36,7 +36,7 @@ export function jumpToProgress(viewer, progress) {
             top:
                 progress.page.slot.offsetTop + progress.scroll * progress.page.slot.offsetHeight,
         });
-    }, null);
+    }, () => {});
 }
 
 function reconcileVolumes(viewer) {
