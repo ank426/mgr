@@ -1,16 +1,15 @@
-import { pagesByVolume, state, volumeByName, volumes } from "./globals.js";
 import { scheduleReconcile } from "./reconcile.js";
-import { withProgressLock } from "./progress.js";
+import { updateZoom, withProgressLock } from "./progress.js";
 import { expandVolume } from "./volume.js";
 
-export function handleKeydown(event) {
+export function handleKeydown(viewer, event) {
     switch (event.key) {
         case "=":
         case "+":
-            updateZoom(5);
+            updateZoom(viewer, 5);
             break;
         case "-":
-            updateZoom(-5);
+            updateZoom(viewer, -5);
             break;
         case "j":
             event.preventDefault();
@@ -22,27 +21,27 @@ export function handleKeydown(event) {
             break;
         case "h": {
             event.preventDefault();
-            const currentIndex = volumeByName.get(state.progress.page.volumeName).index;
-            const atVolumeStart = state.progress.page.pageNumber === 1 && state.progress.scroll <= 0.001;
+            const currentIndex = viewer.volumeByName.get(viewer.state.progress.page.volumeName).index;
+            const atVolumeStart = viewer.state.progress.page.pageNumber === 1 && viewer.state.progress.scroll <= 0.001;
             const targetIndex = atVolumeStart ? Math.max(0, currentIndex - 1) : currentIndex;
-            jumpToVolumePage(targetIndex, 1);
+            jumpToVolumePage(viewer, targetIndex, 1);
             break;
         }
         case "l": {
             event.preventDefault();
-            const currentIndex = volumeByName.get(state.progress.page.volumeName).index;
-            if (currentIndex < volumes.length - 1) jumpToVolumePage(currentIndex + 1, 1);
-            else jumpToVolumePage(currentIndex, volumes[currentIndex].pageDims.length, true);
+            const currentIndex = viewer.volumeByName.get(viewer.state.progress.page.volumeName).index;
+            if (currentIndex < viewer.config.volumes.length - 1) jumpToVolumePage(viewer, currentIndex + 1, 1);
+            else jumpToVolumePage(viewer, currentIndex, viewer.config.volumes[currentIndex].pageDims.length, true);
             break;
         }
         case "g":
             event.preventDefault();
-            jumpToVolumePage(0, 1);
+            jumpToVolumePage(viewer, 0, 1);
             break;
         case "G": {
             event.preventDefault();
-            const lastVolumeIndex = volumes.length - 1;
-            jumpToVolumePage(lastVolumeIndex, volumes[lastVolumeIndex].pageDims.length, true);
+            const lastVolumeIndex = viewer.config.volumes.length - 1;
+            jumpToVolumePage(viewer, lastVolumeIndex, viewer.config.volumes[lastVolumeIndex].pageDims.length, true);
             break;
         }
         default:
@@ -50,19 +49,14 @@ export function handleKeydown(event) {
     }
 }
 
-function jumpToVolumePage(volumeIndex, pageNumber, scrollToEnd = false) {
-    const volume = volumes[volumeIndex];
-    if (!pagesByVolume.has(volume.name)) expandVolume(volumeIndex);
-    withProgressLock(() => {
-        state.progress = {
-            page: pagesByVolume.get(volume.name).get(pageNumber),
+function jumpToVolumePage(viewer, volumeIndex, pageNumber, scrollToEnd = false) {
+    const volume = viewer.config.volumes[volumeIndex];
+    if (!viewer.pagesByVolume.has(volume.name)) expandVolume(viewer, volumeIndex);
+    withProgressLock(viewer, () => {
+        viewer.state.progress = {
+            page: viewer.pagesByVolume.get(volume.name).get(pageNumber),
             scroll: scrollToEnd ? 1 : 0,
         };
-        scheduleReconcile();
+        scheduleReconcile(viewer);
     });
-}
-
-function updateZoom(delta) {
-    state.zoom = Math.min(500, Math.max(10, state.zoom + delta));
-    withProgressLock(() => document.documentElement.style.setProperty("--viewer-zoom", `${state.zoom}%`));
 }

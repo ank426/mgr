@@ -198,6 +198,7 @@ async fn asset_response(asset_name: String) -> Result<Response<Vec<u8>>, warp::R
     match asset_name.as_str() {
         "main.js" => Ok(ok_js_response(include_str!("../assets/main.js").as_bytes().to_vec())),
         "globals.js" => Ok(ok_js_response(include_str!("../assets/globals.js").as_bytes().to_vec())),
+        "viewer.js" => Ok(ok_js_response(include_str!("../assets/viewer.js").as_bytes().to_vec())),
         "navigation.js" => Ok(ok_js_response(include_str!("../assets/navigation.js").as_bytes().to_vec())),
         "observers.js" => Ok(ok_js_response(include_str!("../assets/observers.js").as_bytes().to_vec())),
         "pages.js" => Ok(ok_js_response(include_str!("../assets/pages.js").as_bytes().to_vec())),

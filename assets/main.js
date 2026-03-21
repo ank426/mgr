@@ -1,50 +1,51 @@
-import { pagesByVolume, state, volumeByName, volumes } from "./globals.js";
-import { createObservers } from "./observers.js";
+import { loadConfig } from "./globals.js";
+import { createViewer } from "./viewer.js";
+import { initObservers } from "./observers.js";
 import { handleKeydown } from "./navigation.js";
 import { initializeVolumeWindow, scheduleReconcile } from "./reconcile.js";
 import { fetchProgress, restoreProgress, saveProgress, updateProgress, withProgressLock } from "./progress.js";
 
 async function initializeViewer() {
-    buildDom();
+    const viewer = createViewer(loadConfig());
+    buildDom(viewer);
+
+    initObservers(viewer);
 
     const initialProgress = await fetchProgress();
+    initializeVolumeWindow(viewer, initialProgress);
 
-    createObservers();
-
-    initializeVolumeWindow(initialProgress);
-
-    state.progress = {
-        page: pagesByVolume.get(initialProgress.file).get(initialProgress.page),
+    viewer.state.progress = {
+        page: viewer.pagesByVolume.get(initialProgress.file).get(initialProgress.page),
         scroll: initialProgress.scroll,
     };
-    restoreProgress(state.progress);
+    restoreProgress(viewer, viewer.state.progress);
 
-    window.addEventListener("resize", () => withProgressLock(scheduleReconcile));
+    window.addEventListener("resize", () => withProgressLock(viewer, () => scheduleReconcile(viewer)));
 
     window.addEventListener(
         "scroll",
         () => {
-            if (state.progressLocked) return;
-            updateProgress();
-            const timeout = state.timeouts.saveProgress;
+            if (viewer.state.progressLocked) return;
+            updateProgress(viewer);
+            const timeout = viewer.timeouts.saveProgress;
             if (timeout) clearTimeout(timeout);
-            state.timeouts.saveProgress = setTimeout(saveProgress, 200);
+            viewer.timeouts.saveProgress = setTimeout(() => saveProgress(viewer), 200);
         },
         { passive: true },
     );
 
-    window.addEventListener("keydown", handleKeydown);
+    window.addEventListener("keydown", (event) => handleKeydown(viewer, event));
 }
 
-function buildDom() {
+function buildDom(viewer) {
     const fragment = document.createDocumentFragment();
-    for (const [index, volume] of volumes.entries()) {
+    for (const [index, volume] of viewer.config.volumes.entries()) {
         const section = document.createElement("section");
         section.dataset.volume = volume.name;
-        volumeByName.set(volume.name, { index, section });
+        viewer.volumeByName.set(volume.name, { index, section });
         fragment.appendChild(section);
     }
-    document.getElementById("pages").replaceChildren(fragment);
+    viewer.elements.pages.replaceChildren(fragment);
 }
 
 initializeViewer().catch((error) => console.error(error));

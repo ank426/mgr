@@ -1,10 +1,10 @@
-import { pagesByVolume, state, volumeByName, volumes } from "./globals.js";
+import { observeSlot, unobserveSlot } from "./observers.js";
 import { unloadPage } from "./pages.js";
 
-export function expandVolume(index) {
-    const volume = volumes[index];
-    if (pagesByVolume.has(volume.name)) return;
-    const section = volumeByName.get(volume.name).section;
+export function expandVolume(viewer, index) {
+    const volume = viewer.config.volumes[index];
+    if (viewer.pagesByVolume.has(volume.name)) return;
+    const section = viewer.volumeByName.get(volume.name).section;
     const volumePages = new Map();
     const fragment = document.createDocumentFragment();
 
@@ -27,23 +27,21 @@ export function expandVolume(index) {
             image: null,
         };
         volumePages.set(pageNumber, page);
-        state.observers.page.observe(slot);
-        state.observers.firstVisiblePage.observe(slot);
+        observeSlot(viewer, slot);
     }
 
     section.replaceChildren(fragment);
-    pagesByVolume.set(volume.name, volumePages);
+    viewer.pagesByVolume.set(volume.name, volumePages);
 }
 
-export function collapseVolume(index) {
-    const volumeName = volumes[index].name;
-    for (const page of pagesByVolume.get(volumeName).values()) {
+export function collapseVolume(viewer, index) {
+    const volumeName = viewer.config.volumes[index].name;
+    for (const page of viewer.pagesByVolume.get(volumeName).values()) {
         unloadPage(page);
-        state.loadedPages.delete(page);
-        state.nearVisiblePages.delete(page);
-        state.observers.page.unobserve(page.slot);
-        state.observers.firstVisiblePage.unobserve(page.slot);
+        viewer.state.loadedPages.delete(page);
+        viewer.state.nearVisiblePages.delete(page);
+        unobserveSlot(viewer, page.slot);
     }
-    volumeByName.get(volumeName).section.replaceChildren();
-    pagesByVolume.delete(volumeName);
+    viewer.volumeByName.get(volumeName).section.replaceChildren();
+    viewer.pagesByVolume.delete(volumeName);
 }

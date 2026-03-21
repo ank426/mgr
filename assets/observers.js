@@ -1,47 +1,59 @@
-import { pagesByVolume, prefetchBack, prefetchForward, state } from "./globals.js";
 import { scheduleReconcile } from "./reconcile.js";
 import { updateProgress } from "./progress.js";
 
-export function createObservers() {
-    state.observers.page = new IntersectionObserver(handleIntersections, {
+export function initObservers(viewer) {
+    viewer.observers.page = new IntersectionObserver((entries) => handleIntersections(viewer, entries), {
         root: null,
-        rootMargin: `${prefetchBack * 100}% 0px ${prefetchForward * 100}% 0px`,
+        rootMargin: `${viewer.config.prefetchBack * 100}% 0px ${viewer.config.prefetchForward * 100}% 0px`,
         threshold: 0,
     });
 
-    state.observers.firstVisiblePage = new IntersectionObserver(handleVisiblePageIntersections, {
-        root: null,
-        rootMargin: "0px 0px -99.9% 0px",
-        threshold: 0,
-    });
+    viewer.observers.firstVisiblePage = new IntersectionObserver(
+        (entries) => handleVisiblePageIntersections(viewer, entries),
+        {
+            root: null,
+            rootMargin: "0px 0px -99.9% 0px",
+            threshold: 0,
+        },
+    );
 }
 
-function handleIntersections(entries) {
+export function observeSlot(viewer, slot) {
+    viewer.observers.page.observe(slot);
+    viewer.observers.firstVisiblePage.observe(slot);
+}
+
+export function unobserveSlot(viewer, slot) {
+    viewer.observers.page.unobserve(slot);
+    viewer.observers.firstVisiblePage.unobserve(slot);
+}
+
+function handleIntersections(viewer, entries) {
     for (const entry of entries) {
         const section = entry.target.closest("section");
         if (!section) continue;
-        const page = pagesByVolume.get(section.dataset.volume)?.get(Number(entry.target.dataset.page));
+        const page = viewer.pagesByVolume.get(section.dataset.volume)?.get(Number(entry.target.dataset.page));
         if (!page) continue;
-        if (entry.isIntersecting) state.nearVisiblePages.add(page);
-        else state.nearVisiblePages.delete(page);
+        if (entry.isIntersecting) viewer.state.nearVisiblePages.add(page);
+        else viewer.state.nearVisiblePages.delete(page);
     }
 
-    scheduleReconcile();
+    scheduleReconcile(viewer);
 }
 
-function handleVisiblePageIntersections(entries) {
-    if (state.progressLocked) return;
+function handleVisiblePageIntersections(viewer, entries) {
+    if (viewer.state.progressLocked) return;
     let reconcile = false;
     for (const entry of entries) {
         if (!entry.isIntersecting) continue;
         const section = entry.target.closest("section");
         if (!section) continue;
-        const page = pagesByVolume.get(section.dataset.volume)?.get(Number(entry.target.dataset.page));
+        const page = viewer.pagesByVolume.get(section.dataset.volume)?.get(Number(entry.target.dataset.page));
         if (!page) continue;
-        if (page !== state.progress.page) {
-            updateProgress(page);
+        if (page !== viewer.state.progress.page) {
+            updateProgress(viewer, page);
             reconcile = true;
         }
     }
-    if (reconcile) scheduleReconcile();
+    if (reconcile) scheduleReconcile(viewer);
 }
