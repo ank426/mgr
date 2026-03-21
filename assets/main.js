@@ -16,7 +16,7 @@ async function initializeViewer() {
         page: viewer.pagesByVolume.get(initialProgress.file).get(initialProgress.page),
         scroll: initialProgress.scroll,
     };
-    restoreProgress(viewer, viewer.state.progress);
+    restoreProgress(viewer.state.progress);
 
     window.addEventListener("resize", () => withProgressLock(viewer, () => scheduleReconcile(viewer)));
 

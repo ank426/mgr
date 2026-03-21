@@ -13,7 +13,7 @@ export function withProgressLock(viewer, action) {
     viewer.state.progressLocked = true;
     action();
     requestAnimationFrame(() => {
-        if (viewer.state.progress) restoreProgress(viewer, viewer.state.progress);
+        if (viewer.state.progress) restoreProgress(viewer.state.progress);
         viewer.state.progressLocked = false;
     });
 }
@@ -27,7 +27,7 @@ export function updateProgress(viewer, activePage = viewer.state.progress.page) 
     };
 }
 
-export function restoreProgress(viewer, progress) {
+export function restoreProgress(progress) {
     window.scrollTo({
         top: progress.page.slot.offsetTop + progress.scroll * progress.page.slot.offsetHeight,
     });
