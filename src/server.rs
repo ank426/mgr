@@ -101,7 +101,7 @@ fn build_html(manga: &Manga, prefetch: (u32, u32)) -> String {
     )
     .expect("valid viewer volumes json");
 
-    include_str!("../assets/viewer.html")
+    include_str!("../assets/index.html")
         .replace("{title}", &manga.title)
         .replace("{volumes}", &volumes_json)
         .replace("{prefetch}", &format!("[{}, {}]", prefetch.0, prefetch.1))
@@ -196,7 +196,14 @@ async fn mokuro_response(volume_name: String, state: Arc<Manga>) -> Result<Respo
 
 async fn asset_response(asset_name: String) -> Result<Response<Vec<u8>>, warp::Rejection> {
     match asset_name.as_str() {
-        "viewer.js" => Ok(ok_js_response(include_str!("../assets/viewer.js").as_bytes().to_vec())),
+        "main.js" => Ok(ok_js_response(include_str!("../assets/main.js").as_bytes().to_vec())),
+        "globals.js" => Ok(ok_js_response(include_str!("../assets/globals.js").as_bytes().to_vec())),
+        "navigation.js" => Ok(ok_js_response(include_str!("../assets/navigation.js").as_bytes().to_vec())),
+        "observers.js" => Ok(ok_js_response(include_str!("../assets/observers.js").as_bytes().to_vec())),
+        "pages.js" => Ok(ok_js_response(include_str!("../assets/pages.js").as_bytes().to_vec())),
+        "progress.js" => Ok(ok_js_response(include_str!("../assets/progress.js").as_bytes().to_vec())),
+        "reconcile.js" => Ok(ok_js_response(include_str!("../assets/reconcile.js").as_bytes().to_vec())),
+        "volume.js" => Ok(ok_js_response(include_str!("../assets/volume.js").as_bytes().to_vec())),
         _ => Ok(not_found_response()),
     }
 }
