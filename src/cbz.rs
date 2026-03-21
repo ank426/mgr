@@ -54,11 +54,12 @@ impl Page {
 #[derive(Clone, Debug)]
 pub struct Volume {
     pub name: String,
+    pub mokuro: Option<String>,
     pub pages: Vec<Page>,
 }
 
 impl Volume {
-    pub fn new(path: &Path, name: String) -> io::Result<Self> {
+    pub fn new(path: &Path, name: String, mokuro: Option<String>) -> io::Result<Self> {
         let file = File::open(path)?;
         let mut archive = ZipArchive::new(file).map_err(zip_invalid_data)?;
 
@@ -79,7 +80,7 @@ impl Volume {
             ));
         }
 
-        Ok(Self { name, pages })
+        Ok(Self { name, pages, mokuro })
     }
 }
 

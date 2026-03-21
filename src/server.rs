@@ -4,6 +4,7 @@ use std::sync::{Arc, RwLock};
 
 use percent_encoding::percent_decode_str;
 use serde_json::json;
+use tokio::fs;
 use warp::Filter;
 use warp::Reply;
 use warp::http::{Response, StatusCode};
@@ -33,6 +34,13 @@ pub async fn serve(
             .and_then(page_response)
     };
 
+    let mokuro_route = {
+        let manga = Arc::clone(&manga);
+        warp::path!("volume" / String / "mokuro")
+            .and(warp::any().map(move || Arc::clone(&manga)))
+            .and_then(mokuro_response)
+    };
+
     let get_progress_route = {
         let manga = Arc::clone(&manga);
         let shared_readlist = Arc::clone(&shared_readlist);
@@ -50,7 +58,7 @@ pub async fn serve(
             .map(move |progress: Progress| save_progress(progress, &readlist_path, &shared_readlist))
     };
 
-    let routes = html_route.or(page_route).or(get_progress_route).or(save_progress_route);
+    let routes = html_route.or(page_route).or(mokuro_route).or(get_progress_route).or(save_progress_route);
     let addr = ([127, 0, 0, 1], port);
     println!("Open http://127.0.0.1:{port}");
     if open {
@@ -82,6 +90,7 @@ fn build_html(manga: &Manga, prefetch: (u32, u32)) -> String {
             .map(|volume| {
                 json!({
                     "name": &volume.name,
+                    "mokuro": &volume.mokuro,
                     "pageDims": volume.pages.iter().map(|page| page.dimensions).collect::<Vec<_>>()
                 })
             })
@@ -156,17 +165,31 @@ async fn page_response(
             )));
         }
     };
-    let volume_path = state.path.join(&volume.name);
-    let data = match page.load_bytes(volume_path).await {
-        Ok(data) => data,
+    match page.load_bytes(state.path.join(&volume.name)).await {
+        Ok(data) => Ok(ok_image_response(mime, data)),
         Err(err) => {
-            return Ok(internal_server_error_response(format!(
-                "Failed to load volume {volume_name} page {page_number}: {err}"
-            )));
+            Ok(internal_server_error_response(format!("Failed to load volume {volume_name} page {page_number}: {err}")))
         }
-    };
+    }
+}
 
-    Ok(ok_image_response(mime, data))
+async fn mokuro_response(volume_name: String, state: Arc<Manga>) -> Result<Response<Vec<u8>>, warp::Rejection> {
+    let decoded_volume_name = percent_decode_str(&volume_name).decode_utf8_lossy();
+    let Some(volume) = state.volumes.iter().find(|volume| volume.name == decoded_volume_name) else {
+        return Ok(not_found_response());
+    };
+    let Some(mokuro_name) = volume.mokuro.as_ref() else {
+        return Ok(ok_json_response(b"{}".to_vec()));
+    };
+    let mokuro_path = PathBuf::from(mokuro_name);
+    let mokuro_path = if mokuro_path.is_absolute() { mokuro_path } else { state.path.join(mokuro_name) };
+    match fs::read(&mokuro_path).await {
+        Ok(data) => Ok(ok_json_response(data)),
+        Err(err) if err.kind() == std::io::ErrorKind::NotFound => Ok(not_found_response()),
+        Err(err) => {
+            Ok(internal_server_error_response(format!("Failed to load mokuro file {}: {err}", mokuro_path.display())))
+        }
+    }
 }
 
 fn not_found_response() -> Response<Vec<u8>> {
@@ -189,6 +212,17 @@ fn ok_image_response(mime: &str, data: Vec<u8>) -> Response<Vec<u8>> {
     Response::builder()
         .status(StatusCode::OK)
         .header("content-type", mime)
+        .header("cache-control", "no-store, no-cache, must-revalidate, max-age=0")
+        .header("pragma", "no-cache")
+        .header("expires", "0")
+        .body(data)
+        .expect("valid response")
+}
+
+fn ok_json_response(data: Vec<u8>) -> Response<Vec<u8>> {
+    Response::builder()
+        .status(StatusCode::OK)
+        .header("content-type", "application/json; charset=utf-8")
         .header("cache-control", "no-store, no-cache, must-revalidate, max-age=0")
         .header("pragma", "no-cache")
         .header("expires", "0")

@@ -28,7 +28,9 @@ impl Manga {
                 return Err(format!("Unsupported file type: {} (expected .cbz)", path.display()).into());
             }
 
-            volumes.push(Volume::new(path, path.to_string_lossy().into_owned())?);
+            let mokuro_path = path.with_extension("mokuro");
+            let mokuro = mokuro_path.is_file().then_some(mokuro_path.to_string_lossy().into_owned());
+            volumes.push(Volume::new(path, path.to_string_lossy().into_owned(), mokuro)?);
         }
 
         let title = if volumes.len() == 1 { volumes[0].name.clone() } else { "mgr".to_string() };
@@ -70,7 +72,7 @@ impl Manga {
                 return Err(format!("Readlist file '{}' is not a supported archive (.cbz)", file_path.display()).into());
             }
 
-            let volume = Volume::new(&file_path, entry.name.clone())?;
+            let volume = Volume::new(&file_path, entry.name.clone(), entry.mokuro.clone())?;
 
             if entry.name == readlist.progress.file && readlist.progress.page > volume.pages.len() as u32 {
                 return Err(format!(
