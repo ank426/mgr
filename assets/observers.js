@@ -7,7 +7,6 @@ export function initObservers(viewer) {
         rootMargin: `${viewer.config.prefetch[0] * 100}% 0px ${viewer.config.prefetch[1] * 100}% 0px`,
         threshold: 0,
     });
-
     viewer.observers.activePage = new IntersectionObserver((entries) => onActiveIntersect(viewer, entries), {
         root: null,
         rootMargin: "0px 0px -99.9% 0px",
@@ -28,7 +27,6 @@ function onNearIntersect(viewer, entries) {
 }
 
 function onActiveIntersect(viewer, entries) {
-    let reconcile = false;
     for (const entry of entries) {
         if (!entry.isIntersecting) continue;
         const section = entry.target.closest("section");
@@ -37,8 +35,7 @@ function onActiveIntersect(viewer, entries) {
         if (!page) continue;
         if (page !== viewer.state.progress.page) {
             updateProgress(viewer, page);
-            reconcile = true;
+            scheduleReconcile(viewer);
         }
     }
-    if (reconcile) scheduleReconcile(viewer);
 }
