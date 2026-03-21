@@ -1,4 +1,3 @@
-import { loadConfig } from "./globals.js";
 import { createViewer } from "./viewer.js";
 import { initObservers } from "./observers.js";
 import { handleKeydown } from "./navigation.js";
@@ -6,9 +5,8 @@ import { initializeVolumeWindow, scheduleReconcile } from "./reconcile.js";
 import { fetchProgress, restoreProgress, saveProgress, updateProgress, withProgressLock } from "./progress.js";
 
 async function initializeViewer() {
-    const viewer = createViewer(loadConfig());
+    const viewer = createViewer(window.MGR_CONFIG);
     buildDom(viewer);
-
     initObservers(viewer);
 
     const initialProgress = await fetchProgress();
