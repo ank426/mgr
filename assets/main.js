@@ -29,7 +29,7 @@ function createViewer(config) {
             zoom: 100,
         },
         observers: {
-            page: null,
+            nearPage: null,
             activePage: null,
         },
     };

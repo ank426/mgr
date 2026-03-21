@@ -2,7 +2,7 @@ import { scheduleReconcile } from "./reconcile.js";
 import { updateProgress } from "./progress.js";
 
 export function initObservers(viewer) {
-    viewer.observers.page = new IntersectionObserver((entries) => onIntersect(viewer, entries), {
+    viewer.observers.nearPage = new IntersectionObserver((entries) => onIntersect(viewer, entries), {
         root: null,
         rootMargin: `${viewer.config.prefetch[0] * 100}% 0px ${viewer.config.prefetch[1] * 100}% 0px`,
         threshold: 0,

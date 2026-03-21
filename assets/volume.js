@@ -26,7 +26,7 @@ export function expandVolume(viewer, index) {
             image: null,
         };
         volumePages.set(pageNumber, page);
-        viewer.observers.page.observe(slot);
+        viewer.observers.nearPage.observe(slot);
         viewer.observers.activePage.observe(slot);
     }
 
@@ -40,7 +40,7 @@ export function collapseVolume(viewer, index) {
         unloadPage(page);
         viewer.state.loadedPages.delete(page);
         viewer.state.nearPages.delete(page);
-        viewer.observers.page.unobserve(page.slot);
+        viewer.observers.nearPage.unobserve(page.slot);
         viewer.observers.activePage.unobserve(page.slot);
     }
     viewer.volumeByName.get(volumeName).section.replaceChildren();
