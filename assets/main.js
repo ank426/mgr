@@ -1,22 +1,15 @@
 import { createViewer } from "./viewer.js";
 import { initObservers } from "./observers.js";
 import { onKey } from "./navigation.js";
-import { initVolumes, scheduleReconcile } from "./reconcile.js";
-import { fetchProgress, restoreScroll, saveProgress, updateProgress, withLock } from "./progress.js";
+import { jumpToProgress, scheduleReconcile } from "./reconcile.js";
+import { fetchProgress, saveProgress, updateProgress, withLock } from "./progress.js";
 
 async function init() {
     const viewer = createViewer(window.MGR_CONFIG);
+
     initDom(viewer);
     initObservers(viewer);
-
-    const initialProgress = await fetchProgress();
-    initVolumes(viewer, initialProgress);
-
-    viewer.state.progress = {
-        page: viewer.pagesByVolume.get(initialProgress.file).get(initialProgress.page),
-        scroll: initialProgress.scroll,
-    };
-    restoreScroll(viewer.state.progress);
+    jumpToProgress(viewer, await fetchProgress());
 
     window.addEventListener("resize", () => withLock(viewer.state, () => scheduleReconcile(viewer)));
 

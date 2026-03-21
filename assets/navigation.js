@@ -1,6 +1,5 @@
-import { scheduleReconcile } from "./reconcile.js";
-import { withLock, zoomBy } from "./progress.js";
-import { expandVolume } from "./volume.js";
+import { jumpToProgress } from "./reconcile.js";
+import { zoomBy } from "./progress.js";
 
 export function onKey(viewer, event) {
     switch (event.key) {
@@ -24,39 +23,38 @@ export function onKey(viewer, event) {
             const currentIndex = viewer.volumeByName.get(viewer.state.progress.page.volumeName).index;
             const atVolumeStart = viewer.state.progress.page.pageNumber === 1 && viewer.state.progress.scroll <= 0.001;
             const targetIndex = atVolumeStart ? Math.max(0, currentIndex - 1) : currentIndex;
-            jumpTo(viewer, targetIndex, 1, false);
+            jumpToProgress(viewer, { file: viewer.config.volumes[targetIndex].name, page: 1, scroll: 0 });
             break;
         }
         case "l": {
             event.preventDefault();
             const currentIndex = viewer.volumeByName.get(viewer.state.progress.page.volumeName).index;
-            if (currentIndex < viewer.config.volumes.length - 1) jumpTo(viewer, currentIndex + 1, 1, false);
-            else jumpTo(viewer, currentIndex, viewer.config.volumes[currentIndex].pageDims.length, true);
+            if (currentIndex < viewer.config.volumes.length - 1) {
+                jumpToProgress(viewer, { file: viewer.config.volumes[currentIndex + 1].name, page: 1, scroll: 0 });
+            } else {
+                jumpToProgress(viewer, {
+                    file: viewer.config.volumes[currentIndex].name,
+                    page: viewer.config.volumes[currentIndex].pageDims.length,
+                    scroll: 1,
+                });
+            }
             break;
         }
         case "g":
             event.preventDefault();
-            jumpTo(viewer, 0, 1, false);
+            jumpToProgress(viewer, { file: viewer.config.volumes[0].name, page: 1, scroll: 0 });
             break;
         case "G": {
             event.preventDefault();
             const lastVolumeIndex = viewer.config.volumes.length - 1;
-            jumpTo(viewer, lastVolumeIndex, viewer.config.volumes[lastVolumeIndex].pageDims.length, true);
+            jumpToProgress(viewer, {
+                file: viewer.config.volumes[lastVolumeIndex].name,
+                page: viewer.config.volumes[lastVolumeIndex].pageDims.length,
+                scroll: 1,
+            });
             break;
         }
         default:
             break;
     }
-}
-
-function jumpTo(viewer, volumeIndex, pageNumber, scrollToEnd) {
-    const volume = viewer.config.volumes[volumeIndex];
-    if (!viewer.pagesByVolume.has(volume.name)) expandVolume(viewer, volumeIndex);
-    withLock(viewer.state, () => {
-        viewer.state.progress = {
-            page: viewer.pagesByVolume.get(volume.name).get(pageNumber),
-            scroll: scrollToEnd ? 1 : 0,
-        };
-        scheduleReconcile(viewer);
-    });
 }
