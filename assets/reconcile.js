@@ -1,4 +1,4 @@
-import { withAnchor, withMutation } from "./mutations.js";
+import { withMutation } from "./mutations.js";
 import { collapseVolume, expandVolume } from "./volume.js";
 import { loadPage, unloadPage } from "./pages.js";
 
@@ -8,10 +8,8 @@ export function scheduleReconcile(viewer) {
     viewer.state.reconcilePending = true;
     requestAnimationFrame(() => {
         viewer.state.reconcilePending = false;
-        withAnchor(viewer, () => {
-            reconcileVolumes(viewer);
-            reconcilePages(viewer);
-        });
+        reconcileVolumes(viewer);
+        reconcilePages(viewer);
     });
 }
 
