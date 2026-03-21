@@ -8,11 +8,6 @@ export function withMutation(viewer, action, restore) {
 }
 
 export function withAnchor(viewer, action) {
-    if (viewer.state.lockDepth > 0) {
-        withMutation(viewer, action, null);
-        return;
-    }
-
     const anchor = viewer.state.progress?.page?.slot;
     const anchorTop = anchor?.getBoundingClientRect().top;
 
