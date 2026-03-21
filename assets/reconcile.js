@@ -3,7 +3,6 @@ import { loadPage, unloadPage } from "./pages.js";
 
 export function scheduleReconcile(viewer) {
     if (viewer.state.reconcilePending) return;
-
     viewer.state.reconcilePending = true;
     requestAnimationFrame(() => {
         viewer.state.reconcilePending = false;
@@ -21,12 +20,10 @@ function reconcileVolumes(viewer) {
 
     for (let idx = start; idx <= end && idx < viewer.state.expandedStart; idx++) expandVolume(viewer, idx);
     for (let idx = end; idx >= start && idx > viewer.state.expandedEnd; idx--) expandVolume(viewer, idx);
-    for (let idx = viewer.state.expandedStart; idx < start && idx <= viewer.state.expandedEnd; idx++) {
+    for (let idx = viewer.state.expandedStart; idx < start && idx <= viewer.state.expandedEnd; idx++)
         collapseVolume(viewer, idx);
-    }
-    for (let idx = viewer.state.expandedEnd; idx > end && idx >= viewer.state.expandedStart; idx--) {
+    for (let idx = viewer.state.expandedEnd; idx > end && idx >= viewer.state.expandedStart; idx--)
         collapseVolume(viewer, idx);
-    }
 
     viewer.state.expandedStart = start;
     viewer.state.expandedEnd = end;
