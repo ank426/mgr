@@ -18,13 +18,7 @@ export function scheduleReconcile(viewer) {
 export function jumpToProgress(viewer, progress) {
     const volumeIndex = viewer.volumeByName.get(progress.file).index;
     const volume = viewer.config.volumes[volumeIndex];
-    if (!viewer.pagesByVolume.has(volume.name)) expandVolume(viewer, volumeIndex);
-
-    viewer.state.expandedStart = Math.max(0, volumeIndex - 1);
-    viewer.state.expandedEnd = Math.min(viewer.config.volumes.length - 1, volumeIndex + 1);
-    for (let idx = viewer.state.expandedStart; idx <= viewer.state.expandedEnd; idx++) {
-        expandVolume(viewer, idx);
-    }
+    expandVolume(viewer, volumeIndex);
 
     withMutation(
         viewer,
@@ -33,10 +27,8 @@ export function jumpToProgress(viewer, progress) {
                 page: viewer.pagesByVolume.get(volume.name).get(progress.page),
                 scroll: progress.scroll,
             };
-            reconcilePages(viewer);
-            window.scrollTo({
-                top: progress.page.slot.offsetTop + progress.scroll * progress.page.slot.offsetHeight,
-            });
+            window.scrollTo({ top: progress.page.slot.offsetTop + progress.scroll * progress.page.slot.offsetHeight });
+            scheduleReconcile(viewer);
         },
         () => {},
     );
