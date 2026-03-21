@@ -28,9 +28,7 @@ export function updateProgress(state, activePage) {
 }
 
 export function restoreScroll(progress) {
-    window.scrollTo({
-        top: progress.page.slot.offsetTop + progress.scroll * progress.page.slot.offsetHeight,
-    });
+    window.scrollTo({ top: progress.page.slot.offsetTop + progress.scroll * progress.page.slot.offsetHeight });
 }
 
 export function saveProgress(progress) {
@@ -49,7 +47,5 @@ export function saveProgress(progress) {
 
 export function zoomBy(state, delta) {
     state.zoom = Math.min(500, Math.max(10, state.zoom + delta));
-    withLock(state, () =>
-        document.documentElement.style.setProperty("--viewer-zoom", `${state.zoom}%`),
-    );
+    withLock(state, () => document.documentElement.style.setProperty("--viewer-zoom", `${state.zoom}%`));
 }
