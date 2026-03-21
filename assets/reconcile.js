@@ -26,17 +26,20 @@ export function jumpToProgress(viewer, progress) {
         expandVolume(viewer, idx);
     }
 
-    withMutation(viewer, () => {
-        viewer.state.progress = {
-            page: viewer.pagesByVolume.get(volume.name).get(progress.page),
-            scroll: progress.scroll,
-        };
-        reconcilePages(viewer);
-        window.scrollTo({
-            top:
-                progress.page.slot.offsetTop + progress.scroll * progress.page.slot.offsetHeight,
-        });
-    }, () => {});
+    withMutation(
+        viewer,
+        () => {
+            viewer.state.progress = {
+                page: viewer.pagesByVolume.get(volume.name).get(progress.page),
+                scroll: progress.scroll,
+            };
+            reconcilePages(viewer);
+            window.scrollTo({
+                top: progress.page.slot.offsetTop + progress.scroll * progress.page.slot.offsetHeight,
+            });
+        },
+        () => {},
+    );
 }
 
 function reconcileVolumes(viewer) {
