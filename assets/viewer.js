@@ -8,21 +8,21 @@ export function createViewer(config) {
         volumeByName: new Map(),
         pagesByVolume: new Map(),
         state: {
-            nearVisiblePages: new Set(),
+            nearPages: new Set(),
             loadedPages: new Set(),
             progress: null,
             expandedStart: 0,
             expandedEnd: -1,
-            reconcileScheduled: false,
-            progressLocked: false,
+            reconcilePending: false,
+            locked: false,
             zoom: 100,
         },
         observers: {
             page: null,
-            firstVisiblePage: null,
+            activePage: null,
         },
         timeouts: {
-            saveProgress: null,
+            save: null,
         },
     };
 }

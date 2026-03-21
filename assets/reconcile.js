@@ -1,21 +1,21 @@
-import { withProgressLock } from "./progress.js";
+import { withLock } from "./progress.js";
 import { collapseVolume, expandVolume } from "./volume.js";
 import { loadPage, unloadPage } from "./pages.js";
 
 export function scheduleReconcile(viewer) {
-    if (viewer.state.reconcileScheduled) return;
+    if (viewer.state.reconcilePending) return;
 
-    viewer.state.reconcileScheduled = true;
+    viewer.state.reconcilePending = true;
     requestAnimationFrame(() => {
-        viewer.state.reconcileScheduled = false;
-        withProgressLock(viewer.state, () => {
+        viewer.state.reconcilePending = false;
+        withLock(viewer.state, () => {
             reconcileVolumes(viewer);
             reconcilePages(viewer);
         });
     });
 }
 
-export function initializeVolumeWindow(viewer, progress) {
+export function initVolumes(viewer, progress) {
     const initialVolumeIndex = viewer.volumeByName.get(progress.file).index;
     viewer.state.expandedStart = Math.max(0, initialVolumeIndex - 1);
     viewer.state.expandedEnd = Math.min(viewer.config.volumes.length - 1, initialVolumeIndex + 1);
@@ -45,7 +45,7 @@ function reconcileVolumes(viewer) {
 }
 
 function reconcilePages(viewer) {
-    for (const page of viewer.state.nearVisiblePages) {
+    for (const page of viewer.state.nearPages) {
         if (!viewer.state.loadedPages.has(page)) {
             loadPage(page);
             viewer.state.loadedPages.add(page);
@@ -53,7 +53,7 @@ function reconcilePages(viewer) {
     }
 
     for (const page of viewer.state.loadedPages) {
-        if (!viewer.state.nearVisiblePages.has(page)) {
+        if (!viewer.state.nearPages.has(page)) {
             unloadPage(page);
             viewer.state.loadedPages.delete(page);
         }

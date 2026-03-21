@@ -4,22 +4,22 @@ export async function fetchProgress() {
     return response.json();
 }
 
-export function withProgressLock(state, action) {
-    if (state.progressLocked) {
+export function withLock(state, action) {
+    if (state.locked) {
         action();
         return;
     }
 
-    state.progressLocked = true;
+    state.locked = true;
     action();
     requestAnimationFrame(() => {
-        if (state.progress) restoreProgress(state.progress);
-        state.progressLocked = false;
+        if (state.progress) restoreScroll(state.progress);
+        state.locked = false;
     });
 }
 
 export function updateProgress(state, activePage = state.progress.page) {
-    if (state.progressLocked) return;
+    if (state.locked) return;
     const top = window.scrollY || 0;
     state.progress = {
         page: activePage,
@@ -27,7 +27,7 @@ export function updateProgress(state, activePage = state.progress.page) {
     };
 }
 
-export function restoreProgress(progress) {
+export function restoreScroll(progress) {
     window.scrollTo({
         top: progress.page.slot.offsetTop + progress.scroll * progress.page.slot.offsetHeight,
     });
@@ -47,9 +47,9 @@ export function saveProgress(progress) {
     });
 }
 
-export function updateZoom(state, delta) {
+export function zoomBy(state, delta) {
     state.zoom = Math.min(500, Math.max(10, state.zoom + delta));
-    withProgressLock(state, () =>
+    withLock(state, () =>
         document.documentElement.style.setProperty("--viewer-zoom", `${state.zoom}%`),
     );
 }

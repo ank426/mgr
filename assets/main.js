@@ -1,41 +1,41 @@
 import { createViewer } from "./viewer.js";
 import { initObservers } from "./observers.js";
-import { handleKeydown } from "./navigation.js";
-import { initializeVolumeWindow, scheduleReconcile } from "./reconcile.js";
-import { fetchProgress, restoreProgress, saveProgress, updateProgress, withProgressLock } from "./progress.js";
+import { onKey } from "./navigation.js";
+import { initVolumes, scheduleReconcile } from "./reconcile.js";
+import { fetchProgress, restoreScroll, saveProgress, updateProgress, withLock } from "./progress.js";
 
-async function initializeViewer() {
+async function init() {
     const viewer = createViewer(window.MGR_CONFIG);
-    buildDom(viewer);
+    initDom(viewer);
     initObservers(viewer);
 
     const initialProgress = await fetchProgress();
-    initializeVolumeWindow(viewer, initialProgress);
+    initVolumes(viewer, initialProgress);
 
     viewer.state.progress = {
         page: viewer.pagesByVolume.get(initialProgress.file).get(initialProgress.page),
         scroll: initialProgress.scroll,
     };
-    restoreProgress(viewer.state.progress);
+    restoreScroll(viewer.state.progress);
 
-    window.addEventListener("resize", () => withProgressLock(viewer.state, () => scheduleReconcile(viewer)));
+    window.addEventListener("resize", () => withLock(viewer.state, () => scheduleReconcile(viewer)));
 
     window.addEventListener(
         "scroll",
         () => {
-            if (viewer.state.progressLocked) return;
+            if (viewer.state.locked) return;
             updateProgress(viewer.state);
-            const timeout = viewer.timeouts.saveProgress;
+            const timeout = viewer.timeouts.save;
             if (timeout) clearTimeout(timeout);
-            viewer.timeouts.saveProgress = setTimeout(() => saveProgress(viewer.state.progress), 200);
+            viewer.timeouts.save = setTimeout(() => saveProgress(viewer.state.progress), 200);
         },
         { passive: true },
     );
 
-    window.addEventListener("keydown", (event) => handleKeydown(viewer, event));
+    window.addEventListener("keydown", (event) => onKey(viewer, event));
 }
 
-function buildDom(viewer) {
+function initDom(viewer) {
     const fragment = document.createDocumentFragment();
     for (const [index, volume] of viewer.config.volumes.entries()) {
         const section = document.createElement("section");
@@ -46,4 +46,4 @@ function buildDom(viewer) {
     viewer.elements.pages.replaceChildren(fragment);
 }
 
-initializeViewer().catch((error) => console.error(error));
+init().catch((error) => console.error(error));
