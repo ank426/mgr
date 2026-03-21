@@ -1,4 +1,3 @@
-import { observeSlot, unobserveSlot } from "./observers.js";
 import { unloadPage } from "./pages.js";
 
 export function expandVolume(viewer, index) {
@@ -27,7 +26,8 @@ export function expandVolume(viewer, index) {
             image: null,
         };
         volumePages.set(pageNumber, page);
-        observeSlot(viewer, slot);
+        viewer.observers.page.observe(slot);
+        viewer.observers.firstVisiblePage.observe(slot);
     }
 
     section.replaceChildren(fragment);
@@ -40,7 +40,8 @@ export function collapseVolume(viewer, index) {
         unloadPage(page);
         viewer.state.loadedPages.delete(page);
         viewer.state.nearVisiblePages.delete(page);
-        unobserveSlot(viewer, page.slot);
+        viewer.observers.page.unobserve(page.slot);
+        viewer.observers.firstVisiblePage.unobserve(page.slot);
     }
     viewer.volumeByName.get(volumeName).section.replaceChildren();
     viewer.pagesByVolume.delete(volumeName);

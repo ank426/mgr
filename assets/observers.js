@@ -18,16 +18,6 @@ export function initObservers(viewer) {
     );
 }
 
-export function observeSlot(viewer, slot) {
-    viewer.observers.page.observe(slot);
-    viewer.observers.firstVisiblePage.observe(slot);
-}
-
-export function unobserveSlot(viewer, slot) {
-    viewer.observers.page.unobserve(slot);
-    viewer.observers.firstVisiblePage.unobserve(slot);
-}
-
 function handleIntersections(viewer, entries) {
     for (const entry of entries) {
         const section = entry.target.closest("section");
