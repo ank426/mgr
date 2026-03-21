@@ -18,16 +18,16 @@ async function initializeViewer() {
     };
     restoreProgress(viewer.state.progress);
 
-    window.addEventListener("resize", () => withProgressLock(viewer, () => scheduleReconcile(viewer)));
+    window.addEventListener("resize", () => withProgressLock(viewer.state, () => scheduleReconcile(viewer)));
 
     window.addEventListener(
         "scroll",
         () => {
             if (viewer.state.progressLocked) return;
-            updateProgress(viewer);
+            updateProgress(viewer.state);
             const timeout = viewer.timeouts.saveProgress;
             if (timeout) clearTimeout(timeout);
-            viewer.timeouts.saveProgress = setTimeout(() => saveProgress(viewer), 200);
+            viewer.timeouts.saveProgress = setTimeout(() => saveProgress(viewer.state.progress), 200);
         },
         { passive: true },
     );

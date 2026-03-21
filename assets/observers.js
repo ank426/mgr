@@ -41,7 +41,7 @@ function handleVisiblePageIntersections(viewer, entries) {
         const page = viewer.pagesByVolume.get(section.dataset.volume)?.get(Number(entry.target.dataset.page));
         if (!page) continue;
         if (page !== viewer.state.progress.page) {
-            updateProgress(viewer, page);
+            updateProgress(viewer.state, page);
             reconcile = true;
         }
     }

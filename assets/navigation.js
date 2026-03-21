@@ -6,10 +6,10 @@ export function handleKeydown(viewer, event) {
     switch (event.key) {
         case "=":
         case "+":
-            updateZoom(viewer, 5);
+            updateZoom(viewer.state, 5);
             break;
         case "-":
-            updateZoom(viewer, -5);
+            updateZoom(viewer.state, -5);
             break;
         case "j":
             event.preventDefault();
@@ -52,7 +52,7 @@ export function handleKeydown(viewer, event) {
 function jumpToVolumePage(viewer, volumeIndex, pageNumber, scrollToEnd = false) {
     const volume = viewer.config.volumes[volumeIndex];
     if (!viewer.pagesByVolume.has(volume.name)) expandVolume(viewer, volumeIndex);
-    withProgressLock(viewer, () => {
+    withProgressLock(viewer.state, () => {
         viewer.state.progress = {
             page: viewer.pagesByVolume.get(volume.name).get(pageNumber),
             scroll: scrollToEnd ? 1 : 0,

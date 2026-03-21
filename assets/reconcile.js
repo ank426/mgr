@@ -8,7 +8,7 @@ export function scheduleReconcile(viewer) {
     viewer.state.reconcileScheduled = true;
     requestAnimationFrame(() => {
         viewer.state.reconcileScheduled = false;
-        withProgressLock(viewer, () => {
+        withProgressLock(viewer.state, () => {
             reconcileVolumes(viewer);
             reconcilePages(viewer);
         });
