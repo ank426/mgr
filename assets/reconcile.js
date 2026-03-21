@@ -1,4 +1,4 @@
-import { withLock } from "./progress.js";
+import { withAnchor, withMutation } from "./mutations.js";
 import { collapseVolume, expandVolume } from "./volume.js";
 import { loadPage, unloadPage } from "./pages.js";
 
@@ -8,7 +8,7 @@ export function scheduleReconcile(viewer) {
     viewer.state.reconcilePending = true;
     requestAnimationFrame(() => {
         viewer.state.reconcilePending = false;
-        withLock(viewer.state, () => {
+        withAnchor(viewer, () => {
             reconcileVolumes(viewer);
             reconcilePages(viewer);
         });
@@ -26,13 +26,17 @@ export function jumpToProgress(viewer, progress) {
         expandVolume(viewer, idx);
     }
 
-    withLock(viewer.state, () => {
+    withMutation(viewer, () => {
         viewer.state.progress = {
             page: viewer.pagesByVolume.get(volume.name).get(progress.page),
             scroll: progress.scroll,
         };
-        scheduleReconcile(viewer);
-    });
+        reconcilePages(viewer);
+        window.scrollTo({
+            top:
+                progress.page.slot.offsetTop + progress.scroll * progress.page.slot.offsetHeight,
+        });
+    }, null);
 }
 
 function reconcileVolumes(viewer) {

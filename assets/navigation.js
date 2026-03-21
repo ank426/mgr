@@ -1,14 +1,14 @@
 import { jumpToProgress } from "./reconcile.js";
-import { zoomBy } from "./progress.js";
+import { withAnchor } from "./mutations.js";
 
 export function onKey(viewer, event) {
     switch (event.key) {
         case "=":
         case "+":
-            zoomBy(viewer.state, 5);
+            zoomBy(viewer, 5);
             break;
         case "-":
-            zoomBy(viewer.state, -5);
+            zoomBy(viewer, -5);
             break;
         case "j":
             event.preventDefault();
@@ -57,4 +57,9 @@ export function onKey(viewer, event) {
         default:
             break;
     }
+}
+
+function zoomBy(viewer, delta) {
+    viewer.state.zoom = Math.min(500, Math.max(10, viewer.state.zoom + delta));
+    withAnchor(viewer, () => document.documentElement.style.setProperty("--viewer-zoom", `${viewer.state.zoom}%`));
 }

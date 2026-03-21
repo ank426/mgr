@@ -4,34 +4,17 @@ export async function fetchProgress() {
     return response.json();
 }
 
-export function withLock(state, action) {
-    if (state.locked) {
-        action();
-        return;
-    }
-
-    state.locked = true;
-    action();
-    requestAnimationFrame(() => {
-        if (state.progress) restoreScroll(state.progress);
-        state.locked = false;
-    });
-}
-
-export function updateProgress(state, activePage) {
-    if (state.locked) return;
-    const top = window.scrollY || 0;
-    state.progress = {
+export function updateProgress(viewer, activePage) {
+    if (viewer.state.lockDepth > 0) return;
+    viewer.state.progress = {
         page: activePage,
-        scroll: Math.min(1, Math.max(0, (top - activePage.slot.offsetTop) / activePage.slot.offsetHeight)),
+        scroll: Math.min(1, Math.max(0, (window.scrollY - activePage.slot.offsetTop) / activePage.slot.offsetHeight)),
     };
+    if (viewer.saveTimer) clearTimeout(viewer.saveTimer);
+    viewer.saveTimer = setTimeout(() => saveProgress(viewer.state.progress), 200);
 }
 
-export function restoreScroll(progress) {
-    window.scrollTo({ top: progress.page.slot.offsetTop + progress.scroll * progress.page.slot.offsetHeight });
-}
-
-export function saveProgress(progress) {
+function saveProgress(progress) {
     fetch("/api/progress", {
         method: "PUT",
         headers: { "content-type": "application/json" },
@@ -43,9 +26,4 @@ export function saveProgress(progress) {
     }).catch((error) => {
         console.error("Failed to save progress:", error);
     });
-}
-
-export function zoomBy(state, delta) {
-    state.zoom = Math.min(500, Math.max(10, state.zoom + delta));
-    withLock(state, () => document.documentElement.style.setProperty("--viewer-zoom", `${state.zoom}%`));
 }
