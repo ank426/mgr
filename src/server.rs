@@ -41,6 +41,8 @@ pub async fn serve(
             .and_then(mokuro_response)
     };
 
+    let assets_route = warp::path!("assets" / String).and_then(asset_response);
+
     let get_progress_route = {
         let manga = Arc::clone(&manga);
         let shared_readlist = Arc::clone(&shared_readlist);
@@ -58,7 +60,8 @@ pub async fn serve(
             .map(move |progress: Progress| save_progress(progress, &readlist_path, &shared_readlist))
     };
 
-    let routes = html_route.or(page_route).or(mokuro_route).or(get_progress_route).or(save_progress_route);
+    let routes =
+        html_route.or(page_route).or(mokuro_route).or(assets_route).or(get_progress_route).or(save_progress_route);
     let addr = ([127, 0, 0, 1], port);
     println!("Open http://127.0.0.1:{port}");
     if open {
@@ -102,7 +105,6 @@ fn build_html(manga: &Manga, prefetch: (u32, u32)) -> String {
         .replace("{title}", &manga.title)
         .replace("{volumes}", &volumes_json)
         .replace("{prefetch}", &format!("[{}, {}]", prefetch.0, prefetch.1))
-        .replace("__VIEWER_SCRIPT__", &include_str!("../assets/viewer.js").replace("</script", "<\\/script"))
 }
 
 fn get_progress(manga: &Manga, shared_readlist: &RwLock<Option<ReadList>>) -> Progress {
@@ -192,6 +194,13 @@ async fn mokuro_response(volume_name: String, state: Arc<Manga>) -> Result<Respo
     }
 }
 
+async fn asset_response(asset_name: String) -> Result<Response<Vec<u8>>, warp::Rejection> {
+    match asset_name.as_str() {
+        "viewer.js" => Ok(ok_js_response(include_str!("../assets/viewer.js").as_bytes().to_vec())),
+        _ => Ok(not_found_response()),
+    }
+}
+
 fn not_found_response() -> Response<Vec<u8>> {
     Response::builder()
         .status(StatusCode::NOT_FOUND)
@@ -223,6 +232,17 @@ fn ok_json_response(data: Vec<u8>) -> Response<Vec<u8>> {
     Response::builder()
         .status(StatusCode::OK)
         .header("content-type", "application/json; charset=utf-8")
+        .header("cache-control", "no-store, no-cache, must-revalidate, max-age=0")
+        .header("pragma", "no-cache")
+        .header("expires", "0")
+        .body(data)
+        .expect("valid response")
+}
+
+fn ok_js_response(data: Vec<u8>) -> Response<Vec<u8>> {
+    Response::builder()
+        .status(StatusCode::OK)
+        .header("content-type", "application/javascript; charset=utf-8")
         .header("cache-control", "no-store, no-cache, must-revalidate, max-age=0")
         .header("pragma", "no-cache")
         .header("expires", "0")
