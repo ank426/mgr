@@ -24,12 +24,10 @@ function onNearIntersect(viewer, entries) {
         if (entry.isIntersecting) viewer.state.nearPages.add(page);
         else viewer.state.nearPages.delete(page);
     }
-
     scheduleReconcile(viewer);
 }
 
 function onActiveIntersect(viewer, entries) {
-    if (viewer.state.lockDepth > 0) return;
     let reconcile = false;
     for (const entry of entries) {
         if (!entry.isIntersecting) continue;
@@ -38,7 +36,7 @@ function onActiveIntersect(viewer, entries) {
         const page = viewer.pagesByVolume.get(section.dataset.volume)?.get(Number(entry.target.dataset.page));
         if (!page) continue;
         if (page !== viewer.state.progress.page) {
-            updateProgress(viewer.state, page);
+            updateProgress(viewer, page);
             reconcile = true;
         }
     }
