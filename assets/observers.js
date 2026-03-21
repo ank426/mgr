@@ -16,9 +16,7 @@ export function initObservers(viewer) {
 
 function onNearIntersect(viewer, entries) {
     for (const entry of entries) {
-        const section = entry.target.closest("section");
-        if (!section) continue;
-        const page = viewer.pagesByVolume.get(section.dataset.volume)?.get(Number(entry.target.dataset.page));
+        const page = getPageFromEntry(viewer, entry);
         if (!page) continue;
         if (entry.isIntersecting) viewer.state.nearPages.add(page);
         else viewer.state.nearPages.delete(page);
@@ -29,13 +27,17 @@ function onNearIntersect(viewer, entries) {
 function onActiveIntersect(viewer, entries) {
     for (const entry of entries) {
         if (!entry.isIntersecting) continue;
-        const section = entry.target.closest("section");
-        if (!section) continue;
-        const page = viewer.pagesByVolume.get(section.dataset.volume)?.get(Number(entry.target.dataset.page));
+        const page = getPageFromEntry(viewer, entry);
         if (!page) continue;
         if (page !== viewer.state.progress.page) {
             updateProgress(viewer, page);
             scheduleReconcile(viewer);
         }
     }
+}
+
+function getPageFromEntry(viewer, entry) {
+    const section = entry.target.closest("section");
+    if (!section) return;
+    return viewer.pagesByVolume.get(section.dataset.volume)?.get(Number(entry.target.dataset.page));
 }
