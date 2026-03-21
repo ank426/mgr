@@ -18,7 +18,7 @@ export function withLock(state, action) {
     });
 }
 
-export function updateProgress(state, activePage = state.progress.page) {
+export function updateProgress(state, activePage) {
     if (state.locked) return;
     const top = window.scrollY || 0;
     state.progress = {

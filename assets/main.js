@@ -24,7 +24,7 @@ async function init() {
         "scroll",
         () => {
             if (viewer.state.locked) return;
-            updateProgress(viewer.state);
+            updateProgress(viewer.state, viewer.state.progress.page);
             const timeout = viewer.timeouts.save;
             if (timeout) clearTimeout(timeout);
             viewer.timeouts.save = setTimeout(() => saveProgress(viewer.state.progress), 200);

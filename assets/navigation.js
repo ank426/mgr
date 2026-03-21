@@ -24,19 +24,19 @@ export function onKey(viewer, event) {
             const currentIndex = viewer.volumeByName.get(viewer.state.progress.page.volumeName).index;
             const atVolumeStart = viewer.state.progress.page.pageNumber === 1 && viewer.state.progress.scroll <= 0.001;
             const targetIndex = atVolumeStart ? Math.max(0, currentIndex - 1) : currentIndex;
-            jumpTo(viewer, targetIndex, 1);
+            jumpTo(viewer, targetIndex, 1, false);
             break;
         }
         case "l": {
             event.preventDefault();
             const currentIndex = viewer.volumeByName.get(viewer.state.progress.page.volumeName).index;
-            if (currentIndex < viewer.config.volumes.length - 1) jumpTo(viewer, currentIndex + 1, 1);
+            if (currentIndex < viewer.config.volumes.length - 1) jumpTo(viewer, currentIndex + 1, 1, false);
             else jumpTo(viewer, currentIndex, viewer.config.volumes[currentIndex].pageDims.length, true);
             break;
         }
         case "g":
             event.preventDefault();
-            jumpTo(viewer, 0, 1);
+            jumpTo(viewer, 0, 1, false);
             break;
         case "G": {
             event.preventDefault();
@@ -49,7 +49,7 @@ export function onKey(viewer, event) {
     }
 }
 
-function jumpTo(viewer, volumeIndex, pageNumber, scrollToEnd = false) {
+function jumpTo(viewer, volumeIndex, pageNumber, scrollToEnd) {
     const volume = viewer.config.volumes[volumeIndex];
     if (!viewer.pagesByVolume.has(volume.name)) expandVolume(viewer, volumeIndex);
     withLock(viewer.state, () => {
