@@ -1,4 +1,4 @@
-import { pagesByVolume, prefetchBack, prefetchForward, state, volumeByName, volumes } from "./globals.js";
+import { pagesByVolume, state, volumeByName, volumes } from "./globals.js";
 import { createObservers } from "./observers.js";
 import { handleKeydown } from "./navigation.js";
 import { initializeVolumeWindow, scheduleReconcile } from "./reconcile.js";
@@ -9,7 +9,7 @@ async function initializeViewer() {
 
     const initialProgress = await fetchProgress();
 
-    createObservers(prefetchBack, prefetchForward);
+    createObservers();
 
     initializeVolumeWindow(initialProgress);
 

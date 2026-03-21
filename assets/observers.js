@@ -1,8 +1,8 @@
-import { pagesByVolume, state } from "./globals.js";
+import { pagesByVolume, prefetchBack, prefetchForward, state } from "./globals.js";
 import { scheduleReconcile } from "./reconcile.js";
 import { updateProgress } from "./progress.js";
 
-export function createObservers(prefetchBack, prefetchForward) {
+export function createObservers() {
     state.observers.page = new IntersectionObserver(handleIntersections, {
         root: null,
         rootMargin: `${prefetchBack * 100}% 0px ${prefetchForward * 100}% 0px`,
