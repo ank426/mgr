@@ -16,6 +16,13 @@ export function scheduleReconcile() {
     });
 }
 
+export function initializeVolumeWindow(progress) {
+    const initialVolumeIndex = volumeByName.get(progress.file).index;
+    state.expandedStart = Math.max(0, initialVolumeIndex - 1);
+    state.expandedEnd = Math.min(volumes.length - 1, initialVolumeIndex + 1);
+    for (let idx = state.expandedStart; idx <= state.expandedEnd; idx++) expandVolume(idx);
+}
+
 function reconcileVolumes() {
     if (state.expandedEnd < state.expandedStart) return;
 

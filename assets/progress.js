@@ -24,6 +24,12 @@ export function updateProgress(activePage = state.progress.page) {
     };
 }
 
+export async function fetchProgress() {
+    const response = await fetch("/api/progress");
+    if (!response.ok) throw new Error(`Failed to fetch initial progress: ${response.status}`);
+    return response.json();
+}
+
 export function restoreProgress(progress) {
     window.scrollTo({
         top: progress.page.slot.offsetTop + progress.scroll * progress.page.slot.offsetHeight,
