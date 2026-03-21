@@ -1,7 +1,40 @@
+import { scheduleReconcile } from "./reconcile.js";
+import { expandVolume } from "./volume.js";
+
 export async function fetchProgress() {
     const response = await fetch("/api/progress");
     if (!response.ok) throw new Error(`Failed to fetch initial progress: ${response.status}`);
     return response.json();
+}
+
+export function withScrollRestore(viewer, action) {
+    viewer.state.lockDepth++;
+    try {
+        action();
+    } finally {
+        if (--viewer.state.lockDepth === 0) {
+            window.scrollTo({
+                top:
+                    viewer.state.progress.page.slot.offsetTop +
+                    viewer.state.progress.scroll * viewer.state.progress.page.slot.offsetHeight,
+            });
+        }
+    }
+}
+
+export function jumpToProgress(viewer, progress) {
+    const volumeIndex = viewer.volumeByName.get(progress.file).index;
+    const volume = viewer.config.volumes[volumeIndex];
+    expandVolume(viewer, volumeIndex);
+
+    withScrollRestore(viewer, () => {
+        viewer.state.progress = {
+            page: viewer.pagesByVolume.get(volume.name).get(progress.page),
+            scroll: progress.scroll,
+        };
+    });
+
+    scheduleReconcile(viewer);
 }
 
 export function updateProgress(viewer, activePage) {

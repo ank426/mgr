@@ -1,8 +1,7 @@
 import { initObservers } from "./observers.js";
 import { onKey } from "./navigation.js";
-import { jumpToProgress, scheduleReconcile } from "./reconcile.js";
-import { fetchProgress, updateProgress } from "./progress.js";
-import { withAnchor } from "./mutations.js";
+import { scheduleReconcile } from "./reconcile.js";
+import { fetchProgress, jumpToProgress, updateProgress, withScrollRestore } from "./progress.js";
 
 async function init() {
     const viewer = createViewer(window.CONFIG);
@@ -49,7 +48,7 @@ function initDom(viewer) {
 
 function addEventListeners(viewer) {
     window.addEventListener("scroll", () => updateProgress(viewer, viewer.state.progress.page), { passive: true });
-    window.addEventListener("resize", () => withAnchor(viewer, () => scheduleReconcile(viewer)));
+    window.addEventListener("resize", () => withScrollRestore(viewer, () => scheduleReconcile(viewer)));
     window.addEventListener("keydown", (event) => onKey(viewer, event));
 }
 

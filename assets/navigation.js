@@ -1,5 +1,5 @@
 import { jumpToProgress } from "./reconcile.js";
-import { withAnchor } from "./mutations.js";
+import { withScrollRestore } from "./progress.js";
 
 export function onKey(viewer, event) {
     switch (event.key) {
@@ -61,5 +61,7 @@ export function onKey(viewer, event) {
 
 function zoomBy(viewer, delta) {
     viewer.state.zoom = Math.min(500, Math.max(10, viewer.state.zoom + delta));
-    withAnchor(viewer, () => document.documentElement.style.setProperty("--viewer-zoom", `${viewer.state.zoom}%`));
+    withScrollRestore(viewer, () =>
+        document.documentElement.style.setProperty("--viewer-zoom", `${viewer.state.zoom}%`),
+    );
 }

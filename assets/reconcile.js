@@ -1,4 +1,3 @@
-import { withMutation } from "./mutations.js";
 import { collapseVolume, expandVolume } from "./volume.js";
 import { loadPage, unloadPage } from "./pages.js";
 
@@ -11,25 +10,6 @@ export function scheduleReconcile(viewer) {
         reconcileVolumes(viewer);
         reconcilePages(viewer);
     });
-}
-
-export function jumpToProgress(viewer, progress) {
-    const volumeIndex = viewer.volumeByName.get(progress.file).index;
-    const volume = viewer.config.volumes[volumeIndex];
-    expandVolume(viewer, volumeIndex);
-
-    withMutation(
-        viewer,
-        () => {
-            viewer.state.progress = {
-                page: viewer.pagesByVolume.get(volume.name).get(progress.page),
-                scroll: progress.scroll,
-            };
-            window.scrollTo({ top: progress.page.slot.offsetTop + progress.scroll * progress.page.slot.offsetHeight });
-            scheduleReconcile(viewer);
-        },
-        () => {},
-    );
 }
 
 function reconcileVolumes(viewer) {
