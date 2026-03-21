@@ -14,9 +14,10 @@ async function init() {
 function createViewer(config) {
     return {
         config,
-        elements: { pages: document.getElementById("pages") },
+        pagesRoot: document.getElementById("pages"),
         volumeByName: new Map(),
         pagesByVolume: new Map(),
+        saveTimer: null,
         state: {
             nearPages: new Set(),
             loadedPages: new Set(),
@@ -31,9 +32,6 @@ function createViewer(config) {
             page: null,
             activePage: null,
         },
-        timeouts: {
-            save: null,
-        },
     };
 }
 
@@ -45,7 +43,7 @@ function initDom(viewer) {
         viewer.volumeByName.set(volume.name, { index, section });
         fragment.appendChild(section);
     }
-    viewer.elements.pages.replaceChildren(fragment);
+    viewer.pagesRoot.replaceChildren(fragment);
 }
 
 function addEventListeners(viewer) {
@@ -56,9 +54,9 @@ function addEventListeners(viewer) {
         () => {
             if (viewer.state.locked) return;
             updateProgress(viewer.state, viewer.state.progress.page);
-            const timeout = viewer.timeouts.save;
+            const timeout = viewer.saveTimer;
             if (timeout) clearTimeout(timeout);
-            viewer.timeouts.save = setTimeout(() => saveProgress(viewer.state.progress), 200);
+            viewer.saveTimer = setTimeout(() => saveProgress(viewer.state.progress), 200);
         },
         { passive: true },
     );
