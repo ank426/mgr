@@ -1,5 +1,11 @@
+// @ts-check
+
 import { scheduleReconcile } from "./reconcile.js";
 
+/** @typedef {import("./viewer.js").Viewer} Viewer */
+/** @typedef {import("./page.js").Page} Page */
+
+/** @param {Viewer} viewer */
 export function initObservers(viewer) {
     viewer.observers.nearPage = new IntersectionObserver((entries) => onNearIntersect(viewer, entries), {
         root: null,
@@ -13,6 +19,7 @@ export function initObservers(viewer) {
     });
 }
 
+/** @param {Viewer} viewer @param {IntersectionObserverEntry[]} entries */
 function onNearIntersect(viewer, entries) {
     for (const entry of entries) {
         const page = getPageFromEntry(viewer, entry);
@@ -23,6 +30,7 @@ function onNearIntersect(viewer, entries) {
     scheduleReconcile(viewer);
 }
 
+/** @param {Viewer} viewer @param {IntersectionObserverEntry[]} entries */
 function onActiveIntersect(viewer, entries) {
     for (const entry of entries) {
         if (!entry.isIntersecting) continue;
@@ -35,8 +43,10 @@ function onActiveIntersect(viewer, entries) {
     }
 }
 
+/** @param {Viewer} viewer @param {IntersectionObserverEntry} entry @returns {Page | undefined} */
 function getPageFromEntry(viewer, entry) {
-    const section = entry.target.closest("section");
-    if (!section) return;
-    return viewer.volumeByName.get(section.dataset.volume)?.pages?.get(Number(entry.target.dataset.page));
+    const target = /** @type {HTMLElement} */ (entry.target);
+    const volumeName = target.closest("section")?.dataset.volume;
+    if (!volumeName) return;
+    return viewer.volumeByName.get(volumeName)?.pages?.get(Number(target.dataset.page));
 }

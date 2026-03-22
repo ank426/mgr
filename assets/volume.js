@@ -1,14 +1,30 @@
+// @ts-check
 import { Page } from "./page.js";
 
+/** @typedef {import("./viewer.js").Viewer} Viewer */
+/** @typedef {[number, number]} PageDimensions */
+/** @typedef {{ name: string, pageDims: PageDimensions[] }} VolumeData */
+
 export class Volume {
+    /** @param {number} index @param {VolumeData} data @param {HTMLElement} section */
     constructor(index, data, section) {
+        /** @type {number} */
         this.index = index;
+
+        /** @type {string} */
         this.name = data.name;
+
+        /** @type {PageDimensions[]} */
         this.pageDims = data.pageDims;
+
+        /** @type {HTMLElement} */
         this.section = section;
+
+        /** @type {Map<number, Page> | null} */
         this.pages = null;
     }
 
+    /** @param {Viewer} viewer */
     expand(viewer) {
         if (this.pages) return;
         this.pages = new Map();
@@ -31,6 +47,7 @@ export class Volume {
         this.section.replaceChildren(fragment);
     }
 
+    /** @param {Viewer} viewer */
     collapse(viewer) {
         if (!this.pages) return;
 

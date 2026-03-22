@@ -1,5 +1,10 @@
+// @ts-check
+
 import { withScrollRestore } from "./progress.js";
 
+/** @typedef {import("./viewer.js").Viewer} Viewer */
+
+/** @param {Viewer} viewer @param {KeyboardEvent} event */
 export function onKey(viewer, event) {
     switch (event.key) {
         case "=":
@@ -25,7 +30,8 @@ export function onKey(viewer, event) {
             break;
         case "h": {
             event.preventDefault();
-            const currentIndex = viewer.volumeByName.get(viewer.state.progress.page.volumeName).index;
+            const currentIndex = viewer.volumeByName.get(viewer.state.progress.page.volumeName)?.index;
+            if (!currentIndex) break;
             const atVolumeStart = viewer.state.progress.page.pageNumber === 1 && viewer.state.progress.scroll <= 0.001;
             const targetIndex = atVolumeStart ? Math.max(0, currentIndex - 1) : currentIndex;
             viewer.state.progress.jumpTo(viewer, viewer.config.volumes[targetIndex].name, 1, 0);
@@ -34,6 +40,7 @@ export function onKey(viewer, event) {
         case "l": {
             event.preventDefault();
             const currentVolume = viewer.volumeByName.get(viewer.state.progress.page.volumeName);
+            if (!currentVolume) break;
             const nextIndex = currentVolume.index + 1;
             if (nextIndex < viewer.config.volumes.length)
                 viewer.state.progress.jumpTo(viewer, viewer.config.volumes[nextIndex].name, 1, 0);

@@ -1,3 +1,9 @@
+// @ts-check
+
+/** @typedef {import("./viewer.js").Viewer} Viewer */
+/** @typedef {import("./volume.js").Volume} Volume */
+
+/** @param {Viewer} viewer */
 export function scheduleReconcile(viewer) {
     if (viewer.state.reconcilePending) return;
     viewer.state.reconcilePending = true;
@@ -8,8 +14,10 @@ export function scheduleReconcile(viewer) {
     });
 }
 
+/** @param {Viewer} viewer */
 function reconcileVolumes(viewer) {
-    const activeVolumeIndex = viewer.volumeByName.get(viewer.state.progress.page.volumeName).index;
+    const activeVolumeIndex = viewer.volumeByName.get(viewer.state.progress.page.volumeName)?.index;
+    if (!activeVolumeIndex) return;
     const start = Math.max(0, activeVolumeIndex - 1);
     const end = Math.min(viewer.config.volumes.length - 1, activeVolumeIndex + 1);
 
@@ -26,6 +34,7 @@ function reconcileVolumes(viewer) {
     viewer.state.expandedEnd = end;
 }
 
+/** @param {Viewer} viewer */
 function reconcilePages(viewer) {
     for (const page of viewer.state.nearPages)
         if (!viewer.state.loadedPages.has(page)) {
@@ -40,6 +49,7 @@ function reconcilePages(viewer) {
         }
 }
 
+/** @param {Viewer} viewer @param {number} index @returns {Volume | undefined} */
 function getVolumeByIndex(viewer, index) {
     const volumeInfo = viewer.config.volumes[index];
     if (!volumeInfo) return;
