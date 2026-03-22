@@ -39,5 +39,5 @@ function onActiveIntersect(viewer, entries) {
 function getPageFromEntry(viewer, entry) {
     const section = entry.target.closest("section");
     if (!section) return;
-    return viewer.pagesByVolume.get(section.dataset.volume)?.get(Number(entry.target.dataset.page));
+    return viewer.volumeByName.get(section.dataset.volume)?.pages?.get(Number(entry.target.dataset.page));
 }

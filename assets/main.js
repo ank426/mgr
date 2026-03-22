@@ -1,5 +1,6 @@
 import { initObservers } from "./observers.js";
 import { onKey } from "./navigation.js";
+import { Volume } from "./volume.js";
 import { scheduleReconcile } from "./reconcile.js";
 import { fetchProgress, jumpToProgress, updateProgress, withScrollRestore } from "./progress.js";
 
@@ -16,7 +17,6 @@ function createViewer(config) {
         config,
         pagesRoot: document.getElementById("pages"),
         volumeByName: new Map(),
-        pagesByVolume: new Map(),
         saveTimer: null,
         state: {
             nearPages: new Set(),
@@ -37,10 +37,10 @@ function createViewer(config) {
 
 function initDom(viewer) {
     const fragment = document.createDocumentFragment();
-    for (const [index, volume] of viewer.config.volumes.entries()) {
+    for (const [index, data] of viewer.config.volumes.entries()) {
         const section = document.createElement("section");
-        section.dataset.volume = volume.name;
-        viewer.volumeByName.set(volume.name, { index, section });
+        section.dataset.volume = data.name;
+        viewer.volumeByName.set(data.name, new Volume(index, data, section));
         fragment.appendChild(section);
     }
     viewer.pagesRoot.replaceChildren(fragment);

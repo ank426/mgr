@@ -1,5 +1,4 @@
-import { collapseVolume, expandVolume } from "./volume.js";
-import { loadPage, unloadPage } from "./pages.js";
+import { getVolumeByIndex } from "./volume.js";
 
 export function scheduleReconcile(viewer) {
     if (viewer.state.reconcilePending) return;
@@ -18,12 +17,14 @@ function reconcileVolumes(viewer) {
     const start = Math.max(0, activeVolumeIndex - 1);
     const end = Math.min(viewer.config.volumes.length - 1, activeVolumeIndex + 1);
 
-    for (let idx = start; idx <= end && idx < viewer.state.expandedStart; idx++) expandVolume(viewer, idx);
-    for (let idx = end; idx >= start && idx > viewer.state.expandedEnd; idx--) expandVolume(viewer, idx);
+    for (let idx = start; idx <= end && idx < viewer.state.expandedStart; idx++)
+        getVolumeByIndex(viewer, idx)?.expand(viewer);
+    for (let idx = end; idx >= start && idx > viewer.state.expandedEnd; idx--)
+        getVolumeByIndex(viewer, idx)?.expand(viewer);
     for (let idx = viewer.state.expandedStart; idx < start && idx <= viewer.state.expandedEnd; idx++)
-        collapseVolume(viewer, idx);
+        getVolumeByIndex(viewer, idx)?.collapse(viewer);
     for (let idx = viewer.state.expandedEnd; idx > end && idx >= viewer.state.expandedStart; idx--)
-        collapseVolume(viewer, idx);
+        getVolumeByIndex(viewer, idx)?.collapse(viewer);
 
     viewer.state.expandedStart = start;
     viewer.state.expandedEnd = end;
@@ -32,14 +33,14 @@ function reconcileVolumes(viewer) {
 function reconcilePages(viewer) {
     for (const page of viewer.state.nearPages) {
         if (!viewer.state.loadedPages.has(page)) {
-            loadPage(page);
+            page.load();
             viewer.state.loadedPages.add(page);
         }
     }
 
     for (const page of viewer.state.loadedPages) {
         if (!viewer.state.nearPages.has(page)) {
-            unloadPage(page);
+            page.unload();
             viewer.state.loadedPages.delete(page);
         }
     }

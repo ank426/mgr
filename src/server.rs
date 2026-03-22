@@ -199,7 +199,7 @@ async fn asset_response(asset_name: String) -> Result<Response<Vec<u8>>, warp::R
         "main.js" => Ok(ok_js_response(include_str!("../assets/main.js").as_bytes().to_vec())),
         "navigation.js" => Ok(ok_js_response(include_str!("../assets/navigation.js").as_bytes().to_vec())),
         "observers.js" => Ok(ok_js_response(include_str!("../assets/observers.js").as_bytes().to_vec())),
-        "pages.js" => Ok(ok_js_response(include_str!("../assets/pages.js").as_bytes().to_vec())),
+        "page.js" => Ok(ok_js_response(include_str!("../assets/page.js").as_bytes().to_vec())),
         "progress.js" => Ok(ok_js_response(include_str!("../assets/progress.js").as_bytes().to_vec())),
         "reconcile.js" => Ok(ok_js_response(include_str!("../assets/reconcile.js").as_bytes().to_vec())),
         "volume.js" => Ok(ok_js_response(include_str!("../assets/volume.js").as_bytes().to_vec())),

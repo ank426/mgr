@@ -1,48 +1,53 @@
-import { unloadPage } from "./pages.js";
+import { Page } from "./page.js";
 
-export function expandVolume(viewer, index) {
-    const volume = viewer.config.volumes[index];
-    if (viewer.pagesByVolume.has(volume.name)) return;
-    const section = viewer.volumeByName.get(volume.name).section;
-    const volumePages = new Map();
-    const fragment = document.createDocumentFragment();
-
-    for (let pageNumber = 1; pageNumber <= volume.pageDims.length; pageNumber++) {
-        const dimensions = volume.pageDims[pageNumber - 1];
-        const slot = document.createElement("div");
-
-        slot.className = "page-slot";
-        slot.dataset.page = String(pageNumber);
-        slot.style.aspectRatio = `${dimensions[0]} / ${dimensions[1]}`;
-
-        fragment.appendChild(slot);
-        const page = {
-            slot,
-            volumeName: volume.name,
-            pageNumber,
-            dimensions,
-            url: `/volume/${encodeURIComponent(volume.name)}/page/${pageNumber}`,
-            status: "unloaded",
-            image: null,
-        };
-        volumePages.set(pageNumber, page);
-        viewer.observers.nearPage.observe(slot);
-        viewer.observers.activePage.observe(slot);
+export class Volume {
+    constructor(index, data, section) {
+        this.index = index;
+        this.name = data.name;
+        this.pageDims = data.pageDims;
+        this.section = section;
+        this.pages = null;
     }
 
-    section.replaceChildren(fragment);
-    viewer.pagesByVolume.set(volume.name, volumePages);
+    expand(viewer) {
+        if (this.pages) return;
+        this.pages = new Map();
+        const fragment = document.createDocumentFragment();
+
+        for (let pageNumber = 1; pageNumber <= this.pageDims.length; pageNumber++) {
+            const dimensions = this.pageDims[pageNumber - 1];
+            const slot = document.createElement("div");
+
+            slot.className = "page-slot";
+            slot.dataset.page = String(pageNumber);
+            slot.style.aspectRatio = `${dimensions[0]} / ${dimensions[1]}`;
+
+            fragment.appendChild(slot);
+            const page = new Page(this.name, pageNumber, dimensions, slot);
+            this.pages.set(pageNumber, page);
+            viewer.observers.nearPage.observe(slot);
+            viewer.observers.activePage.observe(slot);
+        }
+
+        this.section.replaceChildren(fragment);
+    }
+
+    collapse(viewer) {
+        if (!this.pages) return;
+        for (const page of this.pages.values()) {
+            page.unload();
+            viewer.state.loadedPages.delete(page);
+            viewer.state.nearPages.delete(page);
+            viewer.observers.nearPage.unobserve(page.slot);
+            viewer.observers.activePage.unobserve(page.slot);
+        }
+        this.section.replaceChildren();
+        this.pages = null;
+    }
 }
 
-export function collapseVolume(viewer, index) {
-    const volumeName = viewer.config.volumes[index].name;
-    for (const page of viewer.pagesByVolume.get(volumeName).values()) {
-        unloadPage(page);
-        viewer.state.loadedPages.delete(page);
-        viewer.state.nearPages.delete(page);
-        viewer.observers.nearPage.unobserve(page.slot);
-        viewer.observers.activePage.unobserve(page.slot);
-    }
-    viewer.volumeByName.get(volumeName).section.replaceChildren();
-    viewer.pagesByVolume.delete(volumeName);
+export function getVolumeByIndex(viewer, index) {
+    const volumeInfo = viewer.config.volumes[index];
+    if (!volumeInfo) return;
+    return viewer.volumeByName.get(volumeInfo.name);
 }

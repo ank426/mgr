@@ -1,5 +1,4 @@
 import { scheduleReconcile } from "./reconcile.js";
-import { expandVolume } from "./volume.js";
 
 export async function fetchProgress() {
     const response = await fetch("/api/progress");
@@ -23,13 +22,12 @@ export function withScrollRestore(viewer, action) {
 }
 
 export function jumpToProgress(viewer, progress) {
-    const volumeIndex = viewer.volumeByName.get(progress.file).index;
-    const volume = viewer.config.volumes[volumeIndex];
-    expandVolume(viewer, volumeIndex);
+    const volume = viewer.volumeByName.get(progress.file);
+    volume.expand(viewer);
 
     withScrollRestore(viewer, () => {
         viewer.state.progress = {
-            page: viewer.pagesByVolume.get(volume.name).get(progress.page),
+            page: volume.pages.get(progress.page),
             scroll: progress.scroll,
         };
     });
