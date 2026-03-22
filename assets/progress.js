@@ -51,11 +51,11 @@ export class Progress {
         });
     }
 
-    /** @param {Viewer} viewer @param {Page} activePage */
+    /** @param {Viewer} viewer @param {Page} [activePage] */
     update(viewer, activePage) {
         if (viewer.state.lockDepth > 0) return;
-        const scroll = (window.scrollY - activePage.slot.offsetTop) / activePage.slot.offsetHeight;
-        this.page = activePage;
+        this.page = activePage ?? this.page;
+        const scroll = (window.scrollY - this.page.slot.offsetTop) / this.page.slot.offsetHeight;
         this.scroll = Math.min(1, Math.max(0, scroll));
         if (viewer.saveTimer) clearTimeout(viewer.saveTimer);
         viewer.saveTimer = setTimeout(() => this.save(), 200);
