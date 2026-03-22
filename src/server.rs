@@ -60,14 +60,24 @@ pub async fn serve(
             .map(move |progress: Progress| save_progress(progress, &readlist_path, &shared_readlist))
     };
 
-    let routes =
-        html_route.or(page_route).or(mokuro_route).or(assets_route).or(get_progress_route).or(save_progress_route);
-    let addr = ([127, 0, 0, 1], port);
     println!("Open http://127.0.0.1:{port}");
     if open {
         open_browser(port);
     }
-    warp::serve(routes).run(addr).await;
+
+    let routes =
+        html_route.or(page_route).or(mokuro_route).or(assets_route).or(get_progress_route).or(save_progress_route);
+    warp::serve(routes)
+        .bind(([127, 0, 0, 1], port))
+        .await
+        .graceful(async {
+            match tokio::signal::ctrl_c().await {
+                Ok(()) => println!("\nShutting down..."),
+                Err(err) => eprintln!("Failed to install CTRL+C handler: {err}"),
+            }
+        })
+        .run()
+        .await;
 }
 
 fn open_browser(port: u16) {
