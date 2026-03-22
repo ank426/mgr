@@ -9,8 +9,6 @@ export function scheduleReconcile(viewer) {
 }
 
 function reconcileVolumes(viewer) {
-    if (viewer.state.expandedEnd < viewer.state.expandedStart) return;
-
     const activeVolumeIndex = viewer.volumeByName.get(viewer.state.progress.page.volumeName).index;
     const start = Math.max(0, activeVolumeIndex - 1);
     const end = Math.min(viewer.config.volumes.length - 1, activeVolumeIndex + 1);
