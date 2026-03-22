@@ -12,7 +12,7 @@ use crate::routes;
 pub async fn serve(
     manga: Manga,
     port: u16,
-    prefetch: (u32, u32),
+    prefetch: (f32, f32),
     open: bool,
     readlist_path: Option<PathBuf>,
     readlist: Option<ReadList>,

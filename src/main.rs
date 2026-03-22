@@ -29,11 +29,11 @@ struct Args {
     #[arg(short = 'o', long = "open")]
     open: bool,
 
-    #[arg(long, default_value_t = 6)]
-    prefetch_back: u32,
+    #[arg(long, default_value_t = 6.0)]
+    prefetch_back: f32,
 
-    #[arg(long, default_value_t = 8)]
-    prefetch_forward: u32,
+    #[arg(long, default_value_t = 8.0)]
+    prefetch_forward: f32,
 
     #[arg(default_value = ".")]
     paths: Vec<PathBuf>,

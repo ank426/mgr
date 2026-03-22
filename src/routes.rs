@@ -14,7 +14,7 @@ use crate::readlist::{Progress, ReadList};
 #[folder = "assets/"]
 struct Assets;
 
-pub fn build_html(manga: &Manga, prefetch: (u32, u32)) -> String {
+pub fn build_html(manga: &Manga, prefetch: (f32, f32)) -> String {
     let volumes_json = serde_json::to_string(
         &manga
             .volumes

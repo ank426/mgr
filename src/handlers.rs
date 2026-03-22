@@ -18,7 +18,7 @@ pub async fn handle_generate(path: &Path, readlist_file_name: &str) -> AppResult
     Ok(())
 }
 
-pub async fn handle_serve_files(paths: &[PathBuf], port: u16, prefetch: (u32, u32), open: bool) -> AppResult<()> {
+pub async fn handle_serve_files(paths: &[PathBuf], port: u16, prefetch: (f32, f32), open: bool) -> AppResult<()> {
     let manga = Manga::new(paths)?;
     server::serve(manga, port, prefetch, open, None, None).await;
     Ok(())
@@ -28,7 +28,7 @@ pub async fn handle_serve_readlist_directory(
     path: &Path,
     readlist_file_name: &str,
     port: u16,
-    prefetch: (u32, u32),
+    prefetch: (f32, f32),
     open: bool,
 ) -> AppResult<()> {
     let readlist_path = path.join(readlist_file_name);
