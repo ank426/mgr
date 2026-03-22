@@ -29,7 +29,7 @@ export class Progress {
         volume.expand(viewer);
         const page = volume.pages?.get(pageNumber);
         if (!page) throw new Error(`Unknown page: ${volumeName}#${pageNumber}`);
-        withScrollRestore(viewer, () => {
+        viewer.withScrollRestore(() => {
             this.page = page;
             this.scroll = scroll;
         });
@@ -59,21 +59,5 @@ export class Progress {
         this.scroll = Math.min(1, Math.max(0, scroll));
         if (viewer.saveTimer) clearTimeout(viewer.saveTimer);
         viewer.saveTimer = setTimeout(() => this.save(), 200);
-    }
-}
-
-/** @param {Viewer} viewer @param {() => void} action */
-export function withScrollRestore(viewer, action) {
-    viewer.state.lockDepth++;
-    try {
-        action();
-    } finally {
-        if (--viewer.state.lockDepth === 0) {
-            window.scrollTo({
-                top:
-                    viewer.state.progress.page.slot.offsetTop +
-                    viewer.state.progress.scroll * viewer.state.progress.page.slot.offsetHeight,
-            });
-        }
     }
 }

@@ -1,7 +1,5 @@
 // @ts-check
 
-import { withScrollRestore } from "./progress.js";
-
 /** @typedef {import("./viewer.js").Viewer} Viewer */
 
 /** @param {Viewer} viewer @param {KeyboardEvent} event */
@@ -10,13 +8,13 @@ export function onKey(viewer, event) {
         case "=":
         case "+":
             viewer.state.zoom = Math.min(500, viewer.state.zoom + 5);
-            withScrollRestore(viewer, () =>
+            viewer.withScrollRestore(() =>
                 document.documentElement.style.setProperty("--viewer-zoom", `${viewer.state.zoom}%`),
             );
             break;
         case "-":
             viewer.state.zoom = Math.max(10, viewer.state.zoom - 5);
-            withScrollRestore(viewer, () =>
+            viewer.withScrollRestore(() =>
                 document.documentElement.style.setProperty("--viewer-zoom", `${viewer.state.zoom}%`),
             );
             break;
