@@ -1,10 +1,10 @@
 // @ts-check
 
-/** @typedef {[number, number]} PageDimensions */
-/** @typedef {"unloaded" | "loading" | "loaded" | "failed"} PageStatus */
-
 export class Page {
-    /** @param {string} volumeName @param {number} pageNumber @param {PageDimensions} dimensions @param {HTMLDivElement} slot */
+    /** @param {string} volumeName
+     ** @param {number} pageNumber
+     ** @param {[number, number]} dimensions
+     ** @param {HTMLDivElement} slot */
     constructor(volumeName, pageNumber, dimensions, slot) {
         /** @type {string} */
         this.volumeName = volumeName;
@@ -12,13 +12,13 @@ export class Page {
         /** @type {number} */
         this.pageNumber = pageNumber;
 
-        /** @type {PageDimensions} */
+        /** @type {[number, number]} */
         this.dimensions = dimensions;
 
         /** @type {HTMLDivElement} */
         this.slot = slot;
 
-        /** @type {PageStatus} */
+        /** @type {"unloaded" | "loading" | "loaded" | "failed"} */
         this.status = "unloaded";
 
         /** @type {HTMLImageElement | null} */
