@@ -2,7 +2,7 @@
 import { Page } from "./page.js";
 
 /** @typedef {import("./viewer.js").Viewer} Viewer */
-/** @typedef {[number, number]} PageDimensions */
+/** @typedef {import("./page.js").PageDimensions} PageDimensions */
 /** @typedef {{ name: string, pageDims: PageDimensions[] }} VolumeData */
 
 export class Volume {
