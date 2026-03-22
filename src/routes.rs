@@ -30,7 +30,9 @@ pub fn build_html(manga: &Manga, prefetch: (f32, f32)) -> String {
     )
     .expect("valid viewer volumes json");
 
-    include_str!("../assets/index.html")
+    Assets::get("index.html")
+        .and_then(|file| String::from_utf8(file.data.into_owned()).ok())
+        .expect("index.html is valid utf-8")
         .replace("{title}", &manga.title)
         .replace("{volumes}", &volumes_json)
         .replace("{prefetch}", &format!("[{}, {}]", prefetch.0, prefetch.1))
@@ -93,7 +95,7 @@ pub async fn page_response(
         }
     };
     match page.load_bytes(state.path.join(&volume.name)).await {
-        Ok(data) => Ok(ok_image_response(mime, data)),
+        Ok(data) => Ok(ok_response(mime, data)),
         Err(err) => {
             Ok(internal_server_error_response(format!("Failed to load volume {volume_name} page {page_number}: {err}")))
         }
@@ -106,12 +108,12 @@ pub async fn mokuro_response(volume_name: String, state: Arc<Manga>) -> Result<R
         return Ok(not_found_response());
     };
     let Some(mokuro_name) = volume.mokuro.as_ref() else {
-        return Ok(ok_json_response(b"{}".to_vec()));
+        return Ok(ok_response("application/json; charset=utf-8", b"{}".to_vec()));
     };
     let mokuro_path = PathBuf::from(mokuro_name);
     let mokuro_path = if mokuro_path.is_absolute() { mokuro_path } else { state.path.join(mokuro_name) };
     match fs::read(&mokuro_path).await {
-        Ok(data) => Ok(ok_json_response(data)),
+        Ok(data) => Ok(ok_response("application/json; charset=utf-8", data)),
         Err(err) if err.kind() == std::io::ErrorKind::NotFound => Ok(not_found_response()),
         Err(err) => {
             Ok(internal_server_error_response(format!("Failed to load mokuro file {}: {err}", mokuro_path.display())))
@@ -121,7 +123,7 @@ pub async fn mokuro_response(volume_name: String, state: Arc<Manga>) -> Result<R
 
 pub async fn asset_response(asset_name: String) -> Result<Response<Vec<u8>>, warp::Rejection> {
     match Assets::get(&asset_name) {
-        Some(file) => Ok(ok_asset_response(asset_mime(&asset_name), file.data.into_owned())),
+        Some(file) => Ok(ok_response(asset_mime(&asset_name), file.data.into_owned())),
         None => Ok(not_found_response()),
     }
 }
@@ -131,13 +133,6 @@ fn asset_mime(asset_name: &str) -> &'static str {
         Some("js") => "application/javascript; charset=utf-8",
         Some("css") => "text/css; charset=utf-8",
         Some("html") => "text/html; charset=utf-8",
-        Some("json") => "application/json; charset=utf-8",
-        Some("svg") => "image/svg+xml; charset=utf-8",
-        Some("png") => "image/png",
-        Some("jpg") | Some("jpeg") => "image/jpeg",
-        Some("webp") => "image/webp",
-        Some("gif") => "image/gif",
-        Some("wasm") => "application/wasm",
         _ => "application/octet-stream",
     }
 }
@@ -158,29 +153,7 @@ fn internal_server_error_response(message: String) -> Response<Vec<u8>> {
         .expect("valid response")
 }
 
-fn ok_image_response(mime: &str, data: Vec<u8>) -> Response<Vec<u8>> {
-    Response::builder()
-        .status(StatusCode::OK)
-        .header("content-type", mime)
-        .header("cache-control", "no-store, no-cache, must-revalidate, max-age=0")
-        .header("pragma", "no-cache")
-        .header("expires", "0")
-        .body(data)
-        .expect("valid response")
-}
-
-fn ok_json_response(data: Vec<u8>) -> Response<Vec<u8>> {
-    Response::builder()
-        .status(StatusCode::OK)
-        .header("content-type", "application/json; charset=utf-8")
-        .header("cache-control", "no-store, no-cache, must-revalidate, max-age=0")
-        .header("pragma", "no-cache")
-        .header("expires", "0")
-        .body(data)
-        .expect("valid response")
-}
-
-fn ok_asset_response(mime: &str, data: Vec<u8>) -> Response<Vec<u8>> {
+fn ok_response(mime: &str, data: Vec<u8>) -> Response<Vec<u8>> {
     Response::builder()
         .status(StatusCode::OK)
         .header("content-type", mime)
