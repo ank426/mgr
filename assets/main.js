@@ -47,11 +47,9 @@ function initDom(viewer) {
 }
 
 function addEventListeners(viewer) {
-    window.addEventListener(
-        "scroll",
-        () => viewer.state.progress.update(viewer, viewer.state.progress.page),
-        { passive: true },
-    );
+    window.addEventListener("scroll", () => viewer.state.progress.update(viewer, viewer.state.progress.page), {
+        passive: true,
+    });
     window.addEventListener("resize", () => withScrollRestore(viewer, () => scheduleReconcile(viewer)));
     window.addEventListener("keydown", (event) => onKey(viewer, event));
 }
