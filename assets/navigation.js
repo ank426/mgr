@@ -29,7 +29,7 @@ export function onKey(viewer, event) {
         case "h": {
             event.preventDefault();
             const currentIndex = viewer.volumeByName.get(viewer.state.progress.page.volumeName)?.index;
-            if (!currentIndex) break;
+            if (currentIndex === undefined) break;
             const atVolumeStart = viewer.state.progress.page.pageNumber === 1 && viewer.state.progress.scroll <= 0.001;
             const targetIndex = atVolumeStart ? Math.max(0, currentIndex - 1) : currentIndex;
             viewer.state.progress.jumpTo(viewer, viewer.config.volumes[targetIndex].name, 1, 0);
