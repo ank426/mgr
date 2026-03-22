@@ -11,6 +11,9 @@ use std::path::PathBuf;
 
 use crate::error::AppResult;
 
+#[global_allocator]
+static ALLOC: tikv_jemallocator::Jemalloc = tikv_jemallocator::Jemalloc;
+
 #[derive(Parser, Debug)]
 struct Args {
     #[arg(short, long)]
