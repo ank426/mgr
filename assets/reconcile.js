@@ -29,19 +29,17 @@ function reconcileVolumes(viewer) {
 }
 
 function reconcilePages(viewer) {
-    for (const page of viewer.state.nearPages) {
+    for (const page of viewer.state.nearPages)
         if (!viewer.state.loadedPages.has(page)) {
             page.load();
             viewer.state.loadedPages.add(page);
         }
-    }
 
-    for (const page of viewer.state.loadedPages) {
+    for (const page of viewer.state.loadedPages)
         if (!viewer.state.nearPages.has(page)) {
             page.unload();
             viewer.state.loadedPages.delete(page);
         }
-    }
 }
 
 function getVolumeByIndex(viewer, index) {

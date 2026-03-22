@@ -13,22 +13,27 @@ export class Volume {
         if (this.pages) return;
         this.pages = new Map();
         const fragment = document.createDocumentFragment();
+
         for (let pageNumber = 1; pageNumber <= this.pageDims.length; pageNumber++) {
             const dimensions = this.pageDims[pageNumber - 1];
             const slot = document.createElement("div");
+
             slot.className = "page-slot";
             slot.dataset.page = String(pageNumber);
             slot.style.aspectRatio = `${dimensions[0]} / ${dimensions[1]}`;
+
             fragment.appendChild(slot);
             this.pages.set(pageNumber, new Page(this.name, pageNumber, dimensions, slot));
             viewer.observers.nearPage.observe(slot);
             viewer.observers.activePage.observe(slot);
         }
+
         this.section.replaceChildren(fragment);
     }
 
     collapse(viewer) {
         if (!this.pages) return;
+
         for (const page of this.pages.values()) {
             page.unload();
             viewer.state.loadedPages.delete(page);
@@ -36,6 +41,7 @@ export class Volume {
             viewer.observers.nearPage.unobserve(page.slot);
             viewer.observers.activePage.unobserve(page.slot);
         }
+
         this.section.replaceChildren();
         this.pages = null;
     }
