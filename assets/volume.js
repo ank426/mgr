@@ -1,11 +1,12 @@
 // @ts-check
+
 import { Page } from "./page.js";
 
 /** @typedef {import("./viewer.js").Viewer} Viewer */
-/** @typedef {{ name: string, pageDims: [number, number][] }} VolumeData */
+/** @typedef {import("./viewer.js").VolumeInfo} VolumeInfo */
 
 export class Volume {
-    /** @param {number} index @param {VolumeData} data @param {HTMLElement} section */
+    /** @param {number} index @param {VolumeInfo} data @param {HTMLElement} section */
     constructor(index, data, section) {
         /** @type {number} */
         this.index = index;

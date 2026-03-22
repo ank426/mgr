@@ -4,6 +4,7 @@ import { Progress } from "./progress.js";
 
 /** @typedef {import("./page.js").Page} Page */
 /** @typedef {import("./volume.js").Volume} Volume */
+
 /** @typedef {{ name: string, pageDims: [number, number][] }} VolumeInfo */
 /** @typedef {{ volumes: VolumeInfo[], prefetch: [number, number] }} ViewerConfig */
 

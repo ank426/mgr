@@ -1,11 +1,11 @@
 // @ts-check
 
-import { initObservers } from "./observers.js";
 import { onKey } from "./navigation.js";
-import { Volume } from "./volume.js";
-import { scheduleReconcile } from "./reconcile.js";
+import { initObservers } from "./observers.js";
 import { Progress } from "./progress.js";
+import { scheduleReconcile } from "./reconcile.js";
 import { Viewer } from "./viewer.js";
+import { Volume } from "./volume.js";
 
 /** @returns {Promise<void>} */
 async function init() {

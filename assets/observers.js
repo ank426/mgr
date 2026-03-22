@@ -2,8 +2,8 @@
 
 import { scheduleReconcile } from "./reconcile.js";
 
-/** @typedef {import("./viewer.js").Viewer} Viewer */
 /** @typedef {import("./page.js").Page} Page */
+/** @typedef {import("./viewer.js").Viewer} Viewer */
 
 /** @param {Viewer} viewer */
 export function initObservers(viewer) {
