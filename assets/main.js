@@ -8,7 +8,7 @@ import { Viewer } from "./viewer.js";
 import { Volume } from "./volume.js";
 
 /** @typedef {{ name: string, pageDims: [number, number][] }} VolumeInfo */
-/** @typedef {{ volumes: VolumeInfo[], prefetch: [number, number] }} ViewerConfig */
+/** @typedef {{ volumes: VolumeInfo[], prefetch: [number, number] }} Config */
 
 /** @returns {Promise<void>} */
 async function init() {
@@ -19,7 +19,7 @@ async function init() {
     addEventListeners(viewer);
 }
 
-/** @returns {ViewerConfig} */
+/** @returns {Config} */
 function getConfig() {
     const configText = document.getElementById("config")?.textContent;
     if (!configText) throw new Error();

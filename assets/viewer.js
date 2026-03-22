@@ -2,17 +2,17 @@
 
 import { Progress } from "./progress.js";
 
+/** @typedef {import("./main.js").Config} Config */
 /** @typedef {import("./page.js").Page} Page */
-/** @typedef {import("./main.js").ViewerConfig} ViewerConfig */
 /** @typedef {import("./volume.js").Volume} Volume */
 
 export class Viewer {
-    /** @param {ViewerConfig} config */
+    /** @param {Config} config */
     constructor(config) {
         const pagesRoot = document.getElementById("pages");
         if (!pagesRoot) throw new Error();
 
-        /** @type {ViewerConfig} */
+        /** @type {Config} */
         this.config = config;
 
         /** @type {HTMLElement} */

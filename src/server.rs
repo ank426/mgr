@@ -212,6 +212,7 @@ async fn asset_response(asset_name: String) -> Result<Response<Vec<u8>>, warp::R
         "page.js" => Ok(ok_js_response(include_str!("../assets/page.js").as_bytes().to_vec())),
         "progress.js" => Ok(ok_js_response(include_str!("../assets/progress.js").as_bytes().to_vec())),
         "reconcile.js" => Ok(ok_js_response(include_str!("../assets/reconcile.js").as_bytes().to_vec())),
+        "viewer.js" => Ok(ok_js_response(include_str!("../assets/viewer.js").as_bytes().to_vec())),
         "volume.js" => Ok(ok_js_response(include_str!("../assets/volume.js").as_bytes().to_vec())),
         _ => Ok(not_found_response()),
     }
