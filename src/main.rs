@@ -4,6 +4,7 @@ mod handlers;
 mod image;
 mod manga;
 mod readlist;
+mod routes;
 mod server;
 
 use clap::Parser;
