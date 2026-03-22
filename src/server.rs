@@ -6,7 +6,7 @@ use warp::Filter;
 use warp::Reply;
 
 use crate::manga::Manga;
-use crate::readlist::{Progress, ReadList};
+use crate::readlist::ReadList;
 use crate::routes;
 
 pub async fn serve(
@@ -54,7 +54,9 @@ pub async fn serve(
         warp::path!("api" / "progress")
             .and(warp::put())
             .and(warp::body::json())
-            .map(move |progress: Progress| routes::save_progress(progress, &readlist_path, &shared_readlist))
+            .and(warp::any().map(move || Arc::clone(&readlist_path)))
+            .and(warp::any().map(move || Arc::clone(&shared_readlist)))
+            .and_then(routes::save_progress)
     };
 
     println!("Open http://127.0.0.1:{port}");

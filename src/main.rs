@@ -52,7 +52,7 @@ async fn run(args: Args) -> AppResult<()> {
         if args.paths.len() != 1 {
             return Err("--generate expects a single directory path".into());
         }
-        return handlers::handle_generate(&args.paths[0], &args.readlist_file);
+        return handlers::handle_generate(&args.paths[0], &args.readlist_file).await;
     }
 
     let prefetch = (args.prefetch_back, args.prefetch_forward);

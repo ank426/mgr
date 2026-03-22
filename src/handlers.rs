@@ -5,7 +5,7 @@ use crate::manga::Manga;
 use crate::readlist::ReadList;
 use crate::{readlist, server};
 
-pub fn handle_generate(path: &Path, readlist_file_name: &str) -> AppResult<()> {
+pub async fn handle_generate(path: &Path, readlist_file_name: &str) -> AppResult<()> {
     if !path.exists() {
         return Err(format!("Path does not exist: {}", path.display()).into());
     }
@@ -13,7 +13,7 @@ pub fn handle_generate(path: &Path, readlist_file_name: &str) -> AppResult<()> {
         return Err(format!("Path is not a directory: {}", path.display()).into());
     }
 
-    let output_path = readlist::generate(path, readlist_file_name)?;
+    let output_path = readlist::generate(path, readlist_file_name).await?;
     println!("Generated {}", output_path.display());
     Ok(())
 }

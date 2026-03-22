@@ -32,14 +32,14 @@ impl ReadList {
         toml::from_str::<ReadList>(&content).map_err(|err| format!("Failed to parse {}: {err}", path.display()).into())
     }
 
-    pub fn save(&self, path: &Path) -> AppResult<()> {
+    pub async fn save(&self, path: &Path) -> AppResult<()> {
         let output = toml::to_string(self).map_err(|err| format!("Failed to serialize readlist: {err}"))?;
-        fs::write(path, output)?;
+        tokio::fs::write(path, output).await?;
         Ok(())
     }
 }
 
-pub fn generate(dir: &Path, readlist_file_name: &str) -> AppResult<PathBuf> {
+pub async fn generate(dir: &Path, readlist_file_name: &str) -> AppResult<PathBuf> {
     let output_path = dir.join(readlist_file_name);
 
     let mut cbz_files: Vec<String> = fs::read_dir(dir)?
@@ -77,6 +77,6 @@ pub fn generate(dir: &Path, readlist_file_name: &str) -> AppResult<PathBuf> {
         })
         .collect();
 
-    readlist.save(&output_path)?;
+    readlist.save(&output_path).await?;
     Ok(output_path)
 }

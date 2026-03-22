@@ -46,33 +46,29 @@ pub fn get_progress(manga: &Manga, shared_readlist: &RwLock<Option<ReadList>>) -
     Progress { file: manga.volumes.first().map(|volume| volume.name.clone()).unwrap_or_default(), page: 1, scroll: 0.0 }
 }
 
-pub fn save_progress(
+pub async fn save_progress(
     progress: Progress,
-    readlist_path: &Option<PathBuf>,
-    shared_readlist: &RwLock<Option<ReadList>>,
-) -> StatusCode {
-    let mut readlist_to_save = None;
-    let mut path_to_save = None;
-
-    if let Ok(mut readlist) = shared_readlist.write()
-        && let Some(readlist) = readlist.as_mut()
+    readlist_path: Arc<Option<PathBuf>>,
+    shared_readlist: Arc<RwLock<Option<ReadList>>>,
+) -> Result<StatusCode, warp::Rejection> {
+    let save_data = if let Ok(mut guard) = shared_readlist.write()
+        && let Some(readlist) = guard.as_mut()
+        && let Some(path) = readlist_path.as_ref()
     {
         readlist.progress = progress;
-        if let Some(path) = readlist_path.as_ref() {
-            readlist_to_save = Some(readlist.clone());
-            path_to_save = Some(path.clone());
-        }
+        Some((readlist.clone(), path.clone()))
+    } else {
+        None
+    };
+
+    if let Some((readlist, path)) = save_data
+        && let Err(err) = readlist.save(&path).await
+    {
+        eprintln!("Failed to save progress: {err}");
+        return Ok(StatusCode::INTERNAL_SERVER_ERROR);
     }
 
-    if let (Some(readlist), Some(path)) = (readlist_to_save, path_to_save) {
-        tokio::task::spawn_blocking(move || {
-            if let Err(err) = readlist.save(&path) {
-                eprintln!("Failed to save progress: {err}");
-            }
-        });
-    }
-
-    StatusCode::NO_CONTENT
+    Ok(StatusCode::NO_CONTENT)
 }
 
 pub async fn page_response(
