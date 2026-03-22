@@ -37,11 +37,11 @@
   </head>
   <body>
     <main id="pages"></main>
-    <script>
-      window.CONFIG = {
-        volumes: {volumes},
-        prefetch: {prefetch},
-      };
+    <script id="config" type="application/json">
+      {
+        "volumes": {volumes},
+        "prefetch": {prefetch}
+      }
     </script>
     <script type="module" src="/assets/main.js"></script>
   </body>

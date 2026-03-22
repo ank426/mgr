@@ -3,7 +3,7 @@
 import { Page } from "./page.js";
 
 /** @typedef {import("./viewer.js").Viewer} Viewer */
-/** @typedef {import("./viewer.js").VolumeInfo} VolumeInfo */
+/** @typedef {import("./main.js").VolumeInfo} VolumeInfo */
 
 export class Volume {
     /** @param {number} index @param {VolumeInfo} data @param {HTMLElement} section */

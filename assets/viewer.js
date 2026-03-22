@@ -3,16 +3,14 @@
 import { Progress } from "./progress.js";
 
 /** @typedef {import("./page.js").Page} Page */
+/** @typedef {import("./main.js").ViewerConfig} ViewerConfig */
 /** @typedef {import("./volume.js").Volume} Volume */
-
-/** @typedef {{ name: string, pageDims: [number, number][] }} VolumeInfo */
-/** @typedef {{ volumes: VolumeInfo[], prefetch: [number, number] }} ViewerConfig */
 
 export class Viewer {
     /** @param {ViewerConfig} config */
     constructor(config) {
         const pagesRoot = document.getElementById("pages");
-        if (!pagesRoot) throw new Error("Element #pages not found");
+        if (!pagesRoot) throw new Error();
 
         /** @type {ViewerConfig} */
         this.config = config;

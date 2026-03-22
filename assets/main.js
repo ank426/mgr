@@ -7,14 +7,23 @@ import { scheduleReconcile } from "./reconcile.js";
 import { Viewer } from "./viewer.js";
 import { Volume } from "./volume.js";
 
+/** @typedef {{ name: string, pageDims: [number, number][] }} VolumeInfo */
+/** @typedef {{ volumes: VolumeInfo[], prefetch: [number, number] }} ViewerConfig */
+
 /** @returns {Promise<void>} */
 async function init() {
-    // @ts-ignore
-    const viewer = new Viewer(window.CONFIG);
+    const viewer = new Viewer(getConfig());
     initDom(viewer);
     initObservers(viewer);
     await Progress.fetchAndJump(viewer);
     addEventListeners(viewer);
+}
+
+/** @returns {ViewerConfig} */
+function getConfig() {
+    const configText = document.getElementById("config")?.textContent;
+    if (!configText) throw new Error();
+    return JSON.parse(configText);
 }
 
 /** @param {Viewer} viewer */
