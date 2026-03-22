@@ -45,9 +45,3 @@ export class Volume {
         this.pages = null;
     }
 }
-
-export function getVolumeByIndex(viewer, index) {
-    const volumeInfo = viewer.config.volumes[index];
-    if (!volumeInfo) return;
-    return viewer.volumeByName.get(volumeInfo.name);
-}

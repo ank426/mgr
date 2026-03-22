@@ -2,13 +2,13 @@ import { initObservers } from "./observers.js";
 import { onKey } from "./navigation.js";
 import { Volume } from "./volume.js";
 import { scheduleReconcile } from "./reconcile.js";
-import { Progress, updateProgress, withScrollRestore } from "./progress.js";
+import { Progress, withScrollRestore } from "./progress.js";
 
 async function init() {
     const viewer = createViewer(window.CONFIG);
     initDom(viewer);
     initObservers(viewer);
-    (await Progress.fetch(viewer)).jumpTo(viewer);
+    await Progress.fetchAndJump(viewer);
     addEventListeners(viewer);
 }
 
@@ -21,7 +21,7 @@ function createViewer(config) {
         state: {
             nearPages: new Set(),
             loadedPages: new Set(),
-            progress: null,
+            progress: new Progress(),
             expandedStart: 0,
             expandedEnd: -1,
             reconcilePending: false,
@@ -47,7 +47,11 @@ function initDom(viewer) {
 }
 
 function addEventListeners(viewer) {
-    window.addEventListener("scroll", () => updateProgress(viewer, viewer.state.progress.page), { passive: true });
+    window.addEventListener(
+        "scroll",
+        () => viewer.state.progress.update(viewer, viewer.state.progress.page),
+        { passive: true },
+    );
     window.addEventListener("resize", () => withScrollRestore(viewer, () => scheduleReconcile(viewer)));
     window.addEventListener("keydown", (event) => onKey(viewer, event));
 }

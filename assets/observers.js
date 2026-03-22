@@ -1,5 +1,4 @@
 import { scheduleReconcile } from "./reconcile.js";
-import { updateProgress } from "./progress.js";
 
 export function initObservers(viewer) {
     viewer.observers.nearPage = new IntersectionObserver((entries) => onNearIntersect(viewer, entries), {
@@ -30,7 +29,7 @@ function onActiveIntersect(viewer, entries) {
         const page = getPageFromEntry(viewer, entry);
         if (!page) continue;
         if (page !== viewer.state.progress.page) {
-            updateProgress(viewer, page);
+            viewer.state.progress.update(viewer, page);
             scheduleReconcile(viewer);
         }
     }

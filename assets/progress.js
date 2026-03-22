@@ -1,26 +1,27 @@
 import { scheduleReconcile } from "./reconcile.js";
 
 export class Progress {
-    constructor(viewer, volumeName, pageNumber, scroll) {
+    constructor() {
+        this.page = null;
+        this.scroll = 0;
+    }
+
+    static async fetchAndJump(viewer) {
+        const response = await fetch("/api/progress");
+        if (!response.ok) throw new Error(`Failed to fetch initial progress: ${response.status}`);
+        const target = await response.json();
+        viewer.state.progress.jumpTo(viewer, target.file, target.page, target.scroll);
+    }
+
+    jumpTo(viewer, volumeName, pageNumber, scroll) {
         const volume = viewer.volumeByName.get(volumeName);
         if (!volume) throw new Error(`Unknown volume: ${volumeName}`);
         volume.expand(viewer);
         const page = volume.pages?.get(pageNumber);
         if (!page) throw new Error(`Unknown page: ${volumeName}#${pageNumber}`);
-        this.page = page;
-        this.scroll = scroll;
-    }
-
-    static async fetch(viewer) {
-        const response = await fetch("/api/progress");
-        if (!response.ok) throw new Error(`Failed to fetch initial progress: ${response.status}`);
-        const target = await response.json();
-        return new Progress(viewer, target.file, target.page, target.scroll);
-    }
-
-    jumpTo(viewer) {
         withScrollRestore(viewer, () => {
-            viewer.state.progress = this;
+            this.page = page;
+            this.scroll = scroll;
         });
         scheduleReconcile(viewer);
     }
@@ -38,6 +39,15 @@ export class Progress {
             console.error("Failed to save progress:", error);
         });
     }
+
+    update(viewer, activePage) {
+        if (viewer.state.lockDepth > 0) return;
+        const scroll = (window.scrollY - activePage.slot.offsetTop) / activePage.slot.offsetHeight;
+        this.page = activePage;
+        this.scroll = Math.min(1, Math.max(0, scroll));
+        if (viewer.saveTimer) clearTimeout(viewer.saveTimer);
+        viewer.saveTimer = setTimeout(() => this.save(), 200);
+    }
 }
 
 export function withScrollRestore(viewer, action) {
@@ -53,13 +63,4 @@ export function withScrollRestore(viewer, action) {
             });
         }
     }
-}
-
-export function updateProgress(viewer, activePage) {
-    if (viewer.state.lockDepth > 0) return;
-    viewer.state.progress.page = activePage;
-    const scroll = (window.scrollY - activePage.slot.offsetTop) / activePage.slot.offsetHeight;
-    viewer.state.progress.scroll = Math.min(1, Math.max(0, scroll));
-    if (viewer.saveTimer) clearTimeout(viewer.saveTimer);
-    viewer.saveTimer = setTimeout(() => viewer.state.progress?.save(), 200);
 }

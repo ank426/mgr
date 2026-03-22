@@ -1,5 +1,3 @@
-import { getVolumeByIndex } from "./volume.js";
-
 export function scheduleReconcile(viewer) {
     if (viewer.state.reconcilePending) return;
     viewer.state.reconcilePending = true;
@@ -44,4 +42,10 @@ function reconcilePages(viewer) {
             viewer.state.loadedPages.delete(page);
         }
     }
+}
+
+function getVolumeByIndex(viewer, index) {
+    const volumeInfo = viewer.config.volumes[index];
+    if (!volumeInfo) return;
+    return viewer.volumeByName.get(volumeInfo.name);
 }
