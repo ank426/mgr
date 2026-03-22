@@ -2,13 +2,13 @@ import { initObservers } from "./observers.js";
 import { onKey } from "./navigation.js";
 import { Volume } from "./volume.js";
 import { scheduleReconcile } from "./reconcile.js";
-import { fetchProgress, jumpToProgress, updateProgress, withScrollRestore } from "./progress.js";
+import { Progress, updateProgress, withScrollRestore } from "./progress.js";
 
 async function init() {
     const viewer = createViewer(window.CONFIG);
     initDom(viewer);
     initObservers(viewer);
-    jumpToProgress(viewer, await fetchProgress());
+    (await Progress.fetch(viewer)).jumpTo(viewer);
     addEventListeners(viewer);
 }
 
