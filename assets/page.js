@@ -9,50 +9,32 @@ export class Page {
     }
 
     load() {
-        if (this.status === "loading" || this.status === "loaded" || this.status === "failed") return;
-
-        const image = new Image();
-        image.decoding = "async";
-        image.alt = `volume ${this.volumeName} page ${this.pageNumber}`;
-
+        if (this.status !== "unloaded") return;
         this.status = "loading";
-        this.image = image;
-
-        image.addEventListener(
-            "load",
-            () => {
-                if (this.image !== image) return;
-
-                this.status = "loaded";
-                this.slot.replaceChildren(image);
-            },
-            { once: true },
-        );
-
-        image.addEventListener(
-            "error",
-            () => {
-                if (this.image !== image) return;
-
-                this.status = "failed";
-                this.image = null;
-                this.slot.replaceChildren();
-                console.error(`Failed to load volume ${this.volumeName} page ${this.pageNumber}`);
-            },
-            { once: true },
-        );
-
-        image.src = `/volume/${encodeURIComponent(this.volumeName)}/page/${this.pageNumber}`;
+        this.image = new Image();
+        this.image.decoding = "async";
+        this.image.onload = () => {
+            this.status = "loaded";
+            this.slot.replaceChildren(this.image);
+        };
+        this.image.onerror = () => {
+            this.status = "failed";
+            this.image = null;
+            this.slot.replaceChildren();
+            console.error(`Failed to load volume ${this.volumeName} page ${this.pageNumber}`);
+        };
+        this.image.src = `/volume/${encodeURIComponent(this.volumeName)}/page/${this.pageNumber}`;
     }
 
     unload() {
         if (this.image) {
+            this.image.onload = null;
+            this.image.onerror = null;
             this.image.removeAttribute("srcset");
             this.image.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==";
             this.image.removeAttribute("src");
             this.image.remove();
         }
-
         this.image = null;
         this.slot.replaceChildren();
         this.status = "unloaded";
