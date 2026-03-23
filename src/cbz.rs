@@ -21,16 +21,7 @@ impl Page {
     }
 
     pub fn mime(&self) -> Option<&'static str> {
-        let ext = Path::new(&self.name).extension()?.to_str()?.to_ascii_lowercase();
-        match ext.as_str() {
-            "jpg" | "jpeg" => Some("image/jpeg"),
-            "png" => Some("image/png"),
-            "webp" => Some("image/webp"),
-            "gif" => Some("image/gif"),
-            "bmp" => Some("image/bmp"),
-            "avif" => Some("image/avif"),
-            _ => None,
-        }
+        image_mime(&self.name)
     }
 
     pub async fn load_bytes(&self, archive_path: PathBuf) -> io::Result<Vec<u8>> {
@@ -66,7 +57,7 @@ impl Volume {
         let mut pages = Vec::with_capacity(archive.len());
         for idx in 0..archive.len() {
             let entry = archive.by_index(idx).map_err(zip_invalid_data)?;
-            if entry.is_dir() {
+            if entry.is_dir() || image_mime(entry.name()).is_none() {
                 continue;
             }
             pages.push(Page::new(entry)?);
@@ -88,6 +79,18 @@ pub fn is_cbz(path: &Path) -> bool {
     path.extension().and_then(|ext| ext.to_str()).is_some_and(|ext| ext.eq_ignore_ascii_case("cbz"))
 }
 
+fn image_mime(name: &str) -> Option<&'static str> {
+    let ext = Path::new(name).extension()?.to_str()?.to_ascii_lowercase();
+    match ext.as_str() {
+        "jpg" | "jpeg" => Some("image/jpeg"),
+        "png" => Some("image/png"),
+        "webp" => Some("image/webp"),
+        "gif" => Some("image/gif"),
+        "bmp" => Some("image/bmp"),
+        "avif" => Some("image/avif"),
+        _ => None,
+    }
+}
 fn zip_invalid_data(err: zip::result::ZipError) -> io::Error {
     io::Error::new(io::ErrorKind::InvalidData, err)
 }
