@@ -3,6 +3,7 @@
 import { Page } from "./page.js";
 
 /** @typedef {import("./viewer.js").Viewer} Viewer */
+/** @typedef {import("./main.js").PageInfo} PageInfo */
 /** @typedef {import("./main.js").VolumeInfo} VolumeInfo */
 
 export class Volume {
@@ -14,8 +15,8 @@ export class Volume {
         /** @type {string} */
         this.name = data.name;
 
-        /** @type {[number, number][]} */
-        this.pageDims = data.pageDims;
+        /** @type {PageInfo[]} */
+        this.pageInfos = data.pageInfos;
 
         /** @type {HTMLElement} */
         this.section = section;
@@ -30,16 +31,16 @@ export class Volume {
         this.pages = new Map();
         const fragment = document.createDocumentFragment();
 
-        for (let pageNumber = 1; pageNumber <= this.pageDims.length; pageNumber++) {
-            const dimensions = this.pageDims[pageNumber - 1];
+        for (let pageNumber = 1; pageNumber <= this.pageInfos.length; pageNumber++) {
+            const pageInfo = this.pageInfos[pageNumber - 1];
             const slot = document.createElement("div");
 
             slot.className = "page-slot";
             slot.dataset.page = String(pageNumber);
-            slot.style.aspectRatio = `${dimensions[0]} / ${dimensions[1]}`;
+            slot.style.aspectRatio = `${pageInfo.dims[0]} / ${pageInfo.dims[1]}`;
 
             fragment.appendChild(slot);
-            this.pages.set(pageNumber, new Page(this.name, pageNumber, dimensions, slot));
+            this.pages.set(pageNumber, new Page(this.name, pageNumber, pageInfo.dims, slot));
             viewer.observers.nearPage.observe(slot);
             viewer.observers.activePage.observe(slot);
         }

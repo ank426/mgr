@@ -42,7 +42,7 @@ export function onKey(viewer, event) {
             const nextIndex = currentVolume.index + 1;
             if (nextIndex < viewer.config.volumes.length)
                 viewer.state.progress.jumpTo(viewer, viewer.config.volumes[nextIndex].name, 1, 0);
-            else viewer.state.progress.jumpTo(viewer, currentVolume.name, currentVolume.pageDims.length, 1);
+            else viewer.state.progress.jumpTo(viewer, currentVolume.name, currentVolume.pageInfos.length, 1);
             break;
         }
         case "g":
@@ -52,7 +52,7 @@ export function onKey(viewer, event) {
         case "G": {
             event.preventDefault();
             const lastInfo = viewer.config.volumes[viewer.config.volumes.length - 1];
-            viewer.state.progress.jumpTo(viewer, lastInfo.name, lastInfo.pageDims.length, 1);
+            viewer.state.progress.jumpTo(viewer, lastInfo.name, lastInfo.pageInfos.length, 1);
             break;
         }
         default:

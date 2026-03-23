@@ -23,7 +23,16 @@ pub fn build_html(manga: &Manga, prefetch: (f32, f32)) -> String {
                 json!({
                     "name": &volume.name,
                     "mokuro": &volume.mokuro,
-                    "pageDims": volume.pages.iter().map(|page| page.dimensions).collect::<Vec<_>>()
+                    "pageInfos": volume
+                        .pages
+                        .iter()
+                        .map(|page| {
+                            json!({
+                                "name": &page.name,
+                                "dims": page.dimensions,
+                            })
+                        })
+                        .collect::<Vec<_>>()
                 })
             })
             .collect::<Vec<_>>(),
