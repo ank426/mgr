@@ -1,5 +1,6 @@
 // @ts-check
 
+import { fetchMokuroPages } from "./mokuro.js";
 import { Page } from "./page.js";
 
 /** @typedef {import("./viewer.js").Viewer} Viewer */
@@ -15,6 +16,9 @@ export class Volume {
         /** @type {string} */
         this.name = data.name;
 
+        /** @type {string | null} */
+        this.mokuro = data.mokuro ?? null;
+
         /** @type {PageInfo[]} */
         this.pageInfos = data.pageInfos;
 
@@ -26,9 +30,10 @@ export class Volume {
     }
 
     /** @param {Viewer} viewer */
-    expand(viewer) {
+    async expand(viewer) {
         if (this.pages) return;
         this.pages = new Map();
+        const mokuroPagesByName = this.mokuro ? await fetchMokuroPages(this.name) : null;
         const fragment = document.createDocumentFragment();
 
         for (let pageNumber = 1; pageNumber <= this.pageInfos.length; pageNumber++) {
@@ -40,7 +45,8 @@ export class Volume {
             slot.style.aspectRatio = `${pageInfo.dims[0]} / ${pageInfo.dims[1]}`;
 
             fragment.appendChild(slot);
-            this.pages.set(pageNumber, new Page(this.name, pageNumber, pageInfo.dims, slot));
+            const mokuroPage = mokuroPagesByName?.get(pageInfo.name) ?? null;
+            this.pages.set(pageNumber, new Page(this.name, pageNumber, pageInfo.dims, slot, mokuroPage));
             viewer.observers.nearPage.observe(slot);
             viewer.observers.activePage.observe(slot);
         }

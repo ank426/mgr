@@ -21,8 +21,15 @@ body {
 }
 
 .page-slot {
+  position: relative;
   width: 100%;
   background: black;
+}
+
+.page-frame {
+  position: relative;
+  width: 100%;
+  height: 100%;
 }
 
 .page-slot img {
@@ -30,4 +37,33 @@ body {
   width: 100%;
   height: 100%;
   object-fit: contain;
+}
+
+.page-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  container-type: size;
+}
+
+.text-block {
+  position: absolute;
+  pointer-events: auto;
+  color: transparent;
+  background: transparent;
+  margin: 0;
+  padding: 0;
+  white-space: pre;
+  font-weight: bold;
+  overflow: hidden;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.text-block:hover {
+  background: white;
+  color: black;
+  cursor: text;
+  -webkit-user-select: text;
+  user-select: text;
 }

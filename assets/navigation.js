@@ -3,7 +3,7 @@
 /** @typedef {import("./viewer.js").Viewer} Viewer */
 
 /** @param {Viewer} viewer @param {KeyboardEvent} event */
-export function onKey(viewer, event) {
+export async function onKey(viewer, event) {
     switch (event.key) {
         case "=":
         case "+":
@@ -32,7 +32,7 @@ export function onKey(viewer, event) {
             if (currentIndex === undefined) break;
             const atVolumeStart = viewer.state.progress.page.pageNumber === 1 && viewer.state.progress.scroll <= 0.001;
             const targetIndex = atVolumeStart ? Math.max(0, currentIndex - 1) : currentIndex;
-            viewer.state.progress.jumpTo(viewer, viewer.config.volumes[targetIndex].name, 1, 0);
+            await viewer.state.progress.jumpTo(viewer, viewer.config.volumes[targetIndex].name, 1, 0);
             break;
         }
         case "l": {
@@ -41,18 +41,18 @@ export function onKey(viewer, event) {
             if (!currentVolume) break;
             const nextIndex = currentVolume.index + 1;
             if (nextIndex < viewer.config.volumes.length)
-                viewer.state.progress.jumpTo(viewer, viewer.config.volumes[nextIndex].name, 1, 0);
-            else viewer.state.progress.jumpTo(viewer, currentVolume.name, currentVolume.pageInfos.length, 1);
+                await viewer.state.progress.jumpTo(viewer, viewer.config.volumes[nextIndex].name, 1, 0);
+            else await viewer.state.progress.jumpTo(viewer, currentVolume.name, currentVolume.pageInfos.length, 1);
             break;
         }
         case "g":
             event.preventDefault();
-            viewer.state.progress.jumpTo(viewer, viewer.config.volumes[0].name, 1, 0);
+            await viewer.state.progress.jumpTo(viewer, viewer.config.volumes[0].name, 1, 0);
             break;
         case "G": {
             event.preventDefault();
             const lastInfo = viewer.config.volumes[viewer.config.volumes.length - 1];
-            viewer.state.progress.jumpTo(viewer, lastInfo.name, lastInfo.pageInfos.length, 1);
+            await viewer.state.progress.jumpTo(viewer, lastInfo.name, lastInfo.pageInfos.length, 1);
             break;
         }
         default:

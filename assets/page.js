@@ -1,11 +1,14 @@
 // @ts-check
 
+/** @typedef {import("./mokuro.js").MokuroPage} MokuroPage */
+
 export class Page {
     /** @param {string} volumeName
      ** @param {number} pageNumber
      ** @param {[number, number]} dimensions
-     ** @param {HTMLDivElement} slot */
-    constructor(volumeName, pageNumber, dimensions, slot) {
+     ** @param {HTMLDivElement} slot
+     ** @param {MokuroPage | null} mokuroPage */
+    constructor(volumeName, pageNumber, dimensions, slot, mokuroPage) {
         /** @type {string} */
         this.volumeName = volumeName;
 
@@ -23,17 +26,26 @@ export class Page {
 
         /** @type {HTMLImageElement | null} */
         this.image = null;
+
+        /** @type {MokuroPage | null} */
+        this.mokuroPage = mokuroPage;
     }
 
     /** @returns {void} */
     load() {
         if (this.status !== "unloaded") return;
         this.status = "loading";
+
+        const frame = document.createElement("div");
         const img = (this.image = new Image());
+        frame.className = "page-frame";
         img.decoding = "async";
+        frame.append(img);
+
         img.onload = () => {
             this.status = "loaded";
-            this.slot.replaceChildren(img);
+            if (this.mokuroPage) frame.append(this.mokuroPage.createOverlay());
+            this.slot.replaceChildren(frame);
         };
         img.onerror = () => {
             this.status = "failed";

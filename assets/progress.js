@@ -19,14 +19,14 @@ export class Progress {
         const response = await fetch("/api/progress");
         if (!response.ok) throw new Error(`Failed to fetch initial progress: ${response.status}`);
         const target = await response.json();
-        viewer.state.progress.jumpTo(viewer, target.file, target.page, target.scroll);
+        await viewer.state.progress.jumpTo(viewer, target.file, target.page, target.scroll);
     }
 
     /** @param {Viewer} viewer @param {string} volumeName @param {number} pageNumber @param {number} scroll */
-    jumpTo(viewer, volumeName, pageNumber, scroll) {
+    async jumpTo(viewer, volumeName, pageNumber, scroll) {
         const volume = viewer.volumeByName.get(volumeName);
         if (!volume) throw new Error(`Unknown volume: ${volumeName}`);
-        volume.expand(viewer);
+        await volume.expand(viewer);
         const page = volume.pages?.get(pageNumber);
         if (!page) throw new Error(`Unknown page: ${volumeName}#${pageNumber}`);
         viewer.withScrollRestore(() => {
