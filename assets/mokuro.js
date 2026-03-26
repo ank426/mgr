@@ -1,26 +1,29 @@
 // @ts-check
 
-/** @typedef {{ box: [number, number, number, number], vertical: boolean, lines: string[] }} MokuroBlock */
+/** @typedef {{ box: [number, number, number, number], vertical: boolean, lines: string[] }} MokuroBlockData */
+/** @typedef {{ img_path: string, img_width: number, img_height: number, blocks: MokuroBlockData[] }[]} MokuroPageData */
+/** @typedef {MokuroBlockData & { darkTheme: boolean }} MokuroBlock */
 
 export class MokuroPage {
-    /** @param {string} img_path @param {number} img_width @param {number} img_height @param {MokuroBlock[]} blocks */
-    constructor(img_path, img_width, img_height, blocks) {
+    /** @param {string} imgPath @param {number} imgWidth @param {number} imgHeight @param {MokuroBlockData[]} blocks */
+    constructor(imgPath, imgWidth, imgHeight, blocks) {
         /** @type {string} */
-        this.img_path = img_path;
+        this.imgPath = imgPath;
 
         /** @type {number} */
-        this.img_width = img_width;
+        this.imgW = imgWidth;
 
         /** @type {number} */
-        this.img_height = img_height;
+        this.imgH = imgHeight;
 
         /** @type {MokuroBlock[]} */
-        this.blocks = blocks;
+        this.blocks = blocks.map((block) => ({ ...block, darkTheme: false }));
     }
 
-    /** @returns {HTMLDivElement} */
-    createOverlay() {
+    /** @param {HTMLImageElement} img @returns {HTMLDivElement} */
+    createOverlay(img) {
         const overlay = document.createElement("div");
+        this.computeThemes(img);
 
         for (const block of this.blocks) {
             const [x1, y1, x2, y2] = block.box;
@@ -34,11 +37,12 @@ export class MokuroPage {
             const div = document.createElement("pre");
             div.textContent = text;
             div.addEventListener("mouseleave", () => window.getSelection()?.removeAllRanges());
+            if (block.darkTheme) div.classList.add("theme-dark");
 
-            div.style.left = `${(x1 / this.img_width) * 100}%`;
-            div.style.top = `${(y1 / this.img_height) * 100}%`;
-            div.style.width = `${(boxW / this.img_width) * 100}%`;
-            div.style.height = `${(boxH / this.img_height) * 100}%`;
+            div.style.left = `${(x1 / this.imgW) * 100}%`;
+            div.style.top = `${(y1 / this.imgH) * 100}%`;
+            div.style.width = `${(boxW / this.imgW) * 100}%`;
+            div.style.height = `${(boxH / this.imgH) * 100}%`;
 
             const nLines = block.lines.length;
             const maxChars = Math.max(1, ...block.lines.map((l) => l.length));
@@ -46,11 +50,11 @@ export class MokuroPage {
             if (block.vertical) {
                 div.style.writingMode = "vertical-rl";
                 const fontSize = Math.min(boxW / nLines, boxH / maxChars);
-                div.style.fontSize = `${(fontSize / this.img_width) * 100}cqw`;
+                div.style.fontSize = `${(fontSize / this.imgW) * 100}cqw`;
                 div.style.lineHeight = `${boxW / nLines / fontSize}em`;
             } else {
                 const fontSize = Math.min(boxH / nLines, boxW / maxChars);
-                div.style.fontSize = `${(fontSize / this.img_width) * 100}cqw`;
+                div.style.fontSize = `${(fontSize / this.imgW) * 100}cqw`;
                 div.style.lineHeight = `${boxH / nLines / fontSize}em`;
             }
 
@@ -58,6 +62,47 @@ export class MokuroPage {
         }
 
         return overlay;
+    }
+
+    /** @param {HTMLImageElement} img @returns {void} */
+    computeThemes(img) {
+        const canvas = document.createElement("canvas");
+        const context = canvas.getContext("2d", { willReadFrequently: true });
+        if (!context) return;
+
+        const maxSize = 256;
+        const scale = Math.min(1, maxSize / Math.max(img.naturalWidth, img.naturalHeight));
+        canvas.width = Math.max(1, Math.round(img.naturalWidth * scale));
+        canvas.height = Math.max(1, Math.round(img.naturalHeight * scale));
+        context.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        let pixels;
+        try {
+            pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+        } catch (err) {
+            console.error(`Failed to analyze mokuro image region for ${this.imgPath}:`, err);
+            return;
+        }
+
+        for (const block of this.blocks) {
+            const [x1, y1, x2, y2] = block.box;
+            const startX = Math.max(0, Math.min(canvas.width - 1, Math.floor((x1 / this.imgW) * canvas.width)));
+            const startY = Math.max(0, Math.min(canvas.height - 1, Math.floor((y1 / this.imgH) * canvas.height)));
+            const endX = Math.max(startX + 1, Math.min(canvas.width, Math.ceil((x2 / this.imgW) * canvas.width)));
+            const endY = Math.max(startY + 1, Math.min(canvas.height, Math.ceil((y2 / this.imgH) * canvas.height)));
+
+            let darkPixels = 0;
+            let brightPixels = 0;
+
+            for (let y = startY; y < endY; y++)
+                for (let x = startX; x < endX; x++) {
+                    const offset = (y * canvas.width + x) * 4;
+                    if (pixels[offset] + pixels[offset + 1] + pixels[offset + 2] < 384) darkPixels++;
+                    else brightPixels++;
+                }
+
+            block.darkTheme = darkPixels > brightPixels;
+        }
     }
 }
 
@@ -69,7 +114,7 @@ export async function fetchMokuroPages(volumeName) {
     try {
         const resp = await fetch(`/volume/${encodeURIComponent(volumeName)}/mokuro`);
         if (!resp.ok) return null;
-        /** @type {{ img_path: string, img_width: number, img_height: number, blocks: MokuroBlock[] }[]} */
+        /** @type {MokuroPageData} */
         const pages = (await resp.json()).pages;
         return new Map(
             pages

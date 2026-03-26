@@ -66,3 +66,13 @@ article > section > div > pre::selection {
   color: black;
   background: #d0d0d0;
 }
+
+article > section > div > pre.theme-dark:hover {
+  background: black;
+  color: white;
+}
+
+article > section > div > pre.theme-dark::selection {
+  color: white;
+  background: #505050;
+}
