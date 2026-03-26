@@ -35,22 +35,16 @@ export class Page {
     load() {
         if (this.status !== "unloaded") return;
         this.status = "loading";
-
-        const frame = document.createElement("div");
         const img = (this.image = new Image());
-        frame.className = "page-frame";
         img.decoding = "async";
-        frame.append(img);
-
         img.onload = () => {
             this.status = "loaded";
-            if (this.mokuroPage) frame.append(this.mokuroPage.createOverlay());
-            this.slot.replaceChildren(frame);
+            this.slot.append(img);
+            if (this.mokuroPage) this.slot.append(this.mokuroPage.createOverlay());
         };
         img.onerror = () => {
             this.status = "failed";
             this.image = null;
-            this.slot.replaceChildren();
             console.error(`Failed to load volume ${this.volumeName} page ${this.pageNumber}`);
         };
         img.src = `/volume/${encodeURIComponent(this.volumeName)}/page/${this.pageNumber}`;
