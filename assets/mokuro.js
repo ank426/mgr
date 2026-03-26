@@ -31,11 +31,8 @@ export class MokuroPage {
             const boxH = y2 - y1;
             if (boxW <= 0 || boxH <= 0) continue;
 
-            const text = block.lines.join("\n");
-            if (!text) continue;
-
             const div = document.createElement("pre");
-            div.textContent = text;
+            this.setBlockText(div, block);
             div.addEventListener("mouseleave", () => window.getSelection()?.removeAllRanges());
             if (block.darkTheme) div.classList.add("theme-dark");
 
@@ -62,6 +59,26 @@ export class MokuroPage {
         }
 
         return overlay;
+    }
+
+    /** @param {HTMLPreElement} div @param {MokuroBlock} block @returns {void} */
+    setBlockText(div, block) {
+        if (!block.vertical) {
+            div.textContent = block.lines.join("\n");
+            return;
+        }
+
+        for (const [lineIndex, line] of block.lines.entries()) {
+            for (const [partIndex, part] of line.split(/([０-９]+)/u).entries()) {
+                if (!part) continue;
+                if (partIndex % 2 === 1 && (part.length === 2 || part.length === 3)) {
+                    const span = document.createElement("span");
+                    span.textContent = part;
+                    div.append(span);
+                } else div.append(part);
+            }
+            if (lineIndex < block.lines.length - 1) div.append("\n");
+        }
     }
 
     /** @param {HTMLImageElement} img @returns {void} */
