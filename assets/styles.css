@@ -42,28 +42,27 @@ section > div > div {
   container-type: size;
 }
 
-section > div > div > div {
+section > div > div > pre {
   position: absolute;
   pointer-events: auto;
   color: transparent;
   background: transparent;
   margin: 0;
   padding: 0;
-  white-space: pre;
   font-weight: bold;
   overflow: hidden;
   -webkit-user-select: none;
   user-select: none;
 }
 
-section > div > div > div:hover {
+section > div > div > pre:hover {
   background: white;
   color: black;
   -webkit-user-select: text;
   user-select: text;
 }
 
-section > div > div > div::selection {
+section > div > div > pre::selection {
   color: black;
   background: rgba(0, 0, 0, 0.25);
 }

@@ -31,7 +31,7 @@ export class MokuroPage {
             const text = block.lines.join("\n");
             if (!text) continue;
 
-            const div = document.createElement("div");
+            const div = document.createElement("pre");
             div.textContent = text;
             div.addEventListener("mouseleave", () => window.getSelection()?.removeAllRanges());
 
