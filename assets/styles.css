@@ -13,6 +13,8 @@ body {
   display: flex;
   justify-content: center;
   align-items: flex-start;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 #pages {
@@ -63,7 +65,11 @@ body {
 .text-block:hover {
   background: white;
   color: black;
-  cursor: text;
   -webkit-user-select: text;
   user-select: text;
+}
+
+.text-block::selection {
+  color: black;
+  background: rgba(0, 0, 0, 0.25);
 }
