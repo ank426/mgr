@@ -64,5 +64,5 @@ section > div > div > pre:hover {
 
 section > div > div > pre::selection {
   color: black;
-  background: rgba(0, 0, 0, 0.25);
+  background: #d0d0d0;
 }
