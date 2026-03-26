@@ -21,7 +21,6 @@ export class MokuroPage {
     /** @returns {HTMLDivElement} */
     createOverlay() {
         const overlay = document.createElement("div");
-        overlay.className = "page-overlay";
 
         for (const block of this.blocks) {
             const [x1, y1, x2, y2] = block.box;
@@ -33,7 +32,6 @@ export class MokuroPage {
             if (!text) continue;
 
             const div = document.createElement("div");
-            div.className = "text-block";
             div.textContent = text;
             div.addEventListener("mouseleave", () => window.getSelection()?.removeAllRanges());
 

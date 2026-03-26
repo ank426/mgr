@@ -17,32 +17,32 @@ body {
   user-select: none;
 }
 
-#pages {
+main {
   width: var(--viewer-zoom, 100%);
   flex: 0 0 auto;
 }
 
-.page-slot {
+section > div {
   position: relative;
   width: 100%;
   background: black;
 }
 
-.page-slot img {
+section > div > img {
   display: block;
   width: 100%;
   height: 100%;
   object-fit: contain;
 }
 
-.page-overlay {
+section > div > div {
   position: absolute;
   inset: 0;
   pointer-events: none;
   container-type: size;
 }
 
-.text-block {
+section > div > div > div {
   position: absolute;
   pointer-events: auto;
   color: transparent;
@@ -56,14 +56,14 @@ body {
   user-select: none;
 }
 
-.text-block:hover {
+section > div > div > div:hover {
   background: white;
   color: black;
   -webkit-user-select: text;
   user-select: text;
 }
 
-.text-block::selection {
+section > div > div > div::selection {
   color: black;
   background: rgba(0, 0, 0, 0.25);
 }

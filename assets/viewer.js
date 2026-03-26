@@ -9,7 +9,7 @@ import { Progress } from "./progress.js";
 export class Viewer {
     /** @param {Config} config */
     constructor(config) {
-        const pagesRoot = document.getElementById("pages");
+        const pagesRoot = document.querySelector("main");
         if (!pagesRoot) throw new Error();
 
         /** @type {Config} */

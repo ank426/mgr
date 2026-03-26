@@ -40,7 +40,6 @@ export class Volume {
             const pageInfo = this.pageInfos[pageNumber - 1];
             const slot = document.createElement("div");
 
-            slot.className = "page-slot";
             slot.dataset.page = String(pageNumber);
             slot.style.aspectRatio = `${pageInfo.dims[0]} / ${pageInfo.dims[1]}`;
 
