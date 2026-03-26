@@ -38,7 +38,7 @@ export class Volume {
 
         for (let pageNumber = 1; pageNumber <= this.pageInfos.length; pageNumber++) {
             const pageInfo = this.pageInfos[pageNumber - 1];
-            const slot = document.createElement("div");
+            const slot = document.createElement("section");
 
             slot.dataset.page = String(pageNumber);
             slot.style.aspectRatio = `${pageInfo.dims[0]} / ${pageInfo.dims[1]}`;

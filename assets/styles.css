@@ -22,27 +22,27 @@ main {
   flex: 0 0 auto;
 }
 
-section > div {
+article > section {
   position: relative;
   width: 100%;
   background: black;
 }
 
-section > div > img {
+article > section > img {
   display: block;
   width: 100%;
   height: 100%;
   object-fit: contain;
 }
 
-section > div > div {
+article > section > div {
   position: absolute;
   inset: 0;
   pointer-events: none;
   container-type: size;
 }
 
-section > div > div > pre {
+article > section > div > pre {
   position: absolute;
   pointer-events: auto;
   color: transparent;
@@ -55,14 +55,14 @@ section > div > div > pre {
   user-select: none;
 }
 
-section > div > div > pre:hover {
+article > section > div > pre:hover {
   background: white;
   color: black;
   -webkit-user-select: text;
   user-select: text;
 }
 
-section > div > div > pre::selection {
+article > section > div > pre::selection {
   color: black;
   background: #d0d0d0;
 }

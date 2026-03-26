@@ -6,7 +6,7 @@ export class Page {
     /** @param {string} volumeName
      ** @param {number} pageNumber
      ** @param {[number, number]} dimensions
-     ** @param {HTMLDivElement} slot
+     ** @param {HTMLElement} slot
      ** @param {MokuroPage | null} mokuroPage */
     constructor(volumeName, pageNumber, dimensions, slot, mokuroPage) {
         /** @type {string} */
@@ -18,7 +18,7 @@ export class Page {
         /** @type {[number, number]} */
         this.dimensions = dimensions;
 
-        /** @type {HTMLDivElement} */
+        /** @type {HTMLElement} */
         this.slot = slot;
 
         /** @type {"unloaded" | "loading" | "loaded" | "failed"} */

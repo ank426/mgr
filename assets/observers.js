@@ -46,7 +46,7 @@ function onActiveIntersect(viewer, entries) {
 /** @param {Viewer} viewer @param {IntersectionObserverEntry} entry @returns {Page | undefined} */
 function getPageFromEntry(viewer, entry) {
     const target = /** @type {HTMLElement} */ (entry.target);
-    const volumeName = target.closest("section")?.dataset.volume;
+    const volumeName = target.closest("article")?.dataset.volume;
     if (!volumeName) return;
     return viewer.volumeByName.get(volumeName)?.pages?.get(Number(target.dataset.page));
 }

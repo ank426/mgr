@@ -31,10 +31,10 @@ function getConfig() {
 function initDom(viewer) {
     const fragment = document.createDocumentFragment();
     for (const [index, data] of viewer.config.volumes.entries()) {
-        const section = document.createElement("section");
-        section.dataset.volume = data.name;
-        viewer.volumeByName.set(data.name, new Volume(index, data, section));
-        fragment.appendChild(section);
+        const article = document.createElement("article");
+        article.dataset.volume = data.name;
+        viewer.volumeByName.set(data.name, new Volume(index, data, article));
+        fragment.appendChild(article);
     }
     viewer.pagesRoot.replaceChildren(fragment);
 }
