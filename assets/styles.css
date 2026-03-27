@@ -42,7 +42,7 @@ article > section > div {
   container-type: size;
 }
 
-article > section > div > pre {
+article > section > div > div {
   position: absolute;
   pointer-events: auto;
   color: transparent;
@@ -55,30 +55,36 @@ article > section > div > pre {
   user-select: none;
 }
 
-article > section > div > pre:hover {
+article > section > div > div:hover {
   background: white;
   color: black;
   -webkit-user-select: text;
   user-select: text;
 }
 
-article > section > div > pre.theme-dark:hover {
+article > section > div > div.theme-dark:hover {
   background: black;
   color: white;
 }
 
-article > section > div > pre > span {
+article > section > div > div > span {
+  display: inline-block;
+  inline-size: 100%;
+  white-space: nowrap;
+}
+
+article > section > div > div > span > span {
   text-combine-upright: all;
 }
 
-article > section > div > pre::selection,
-article > section > div > pre > span::selection {
+article > section > div > div > span::selection,
+article > section > div > div > span > span::selection {
   color: black;
   background: #d0d0d0;
 }
 
-article > section > div > pre.theme-dark::selection,
-article > section > div > pre.theme-dark > span::selection {
+article > section > div > div.theme-dark > span::selection,
+article > section > div > div.theme-dark > span > span::selection {
   color: white;
   background: #505050;
 }

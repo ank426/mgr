@@ -31,7 +31,7 @@ export class MokuroPage {
             const boxH = y2 - y1;
             if (boxW <= 0 || boxH <= 0) continue;
 
-            const div = document.createElement("pre");
+            const div = document.createElement("div");
             this.setBlockText(div, block);
             div.addEventListener("mouseleave", () => window.getSelection()?.removeAllRanges());
             if (block.darkTheme) div.classList.add("theme-dark");
@@ -61,23 +61,27 @@ export class MokuroPage {
         return overlay;
     }
 
-    /** @param {HTMLPreElement} div @param {MokuroBlock} block @returns {void} */
+    /** @param {HTMLDivElement} div @param {MokuroBlock} block @returns {void} */
     setBlockText(div, block) {
-        if (!block.vertical) {
-            div.textContent = block.lines.join("\n");
-            return;
-        }
+        for (const line of block.lines) {
+            const lineElement = document.createElement("span");
 
-        for (const [lineIndex, line] of block.lines.entries()) {
+            if (!block.vertical) {
+                lineElement.textContent = line;
+                div.append(lineElement);
+                continue;
+            }
+
             for (const [partIndex, part] of line.split(/([０-９]+)/u).entries()) {
                 if (!part) continue;
                 if (partIndex % 2 === 1 && (part.length === 2 || part.length === 3)) {
                     const span = document.createElement("span");
                     span.textContent = part;
-                    div.append(span);
-                } else div.append(part);
+                    lineElement.append(span);
+                } else lineElement.append(part);
             }
-            if (lineIndex < block.lines.length - 1) div.append("\n");
+
+            div.append(lineElement);
         }
     }
 
