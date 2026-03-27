@@ -19,7 +19,11 @@ export class MokuroPage {
         /** @type {MokuroBlock[]} */
         this.blocks = blocks
             .filter((block) => /[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}]/u.test(block.lines.join("")))
-            .map((block) => ({ ...block, darkTheme: false }));
+            .map((block) => ({
+                ...block,
+                lines: block.lines.map((line) => formatMokuroLine(line, block.vertical)),
+                darkTheme: false,
+            }));
     }
 
     /** @param {HTMLImageElement} img @returns {HTMLDivElement} */
@@ -148,4 +152,18 @@ export async function fetchMokuroPages(volumeName) {
         console.error(`Failed to fetch mokuro for ${volumeName}:`, err);
         return null;
     }
+}
+
+/** @param {string} line @param {boolean} isVertical @returns {string} */
+function formatMokuroLine(line, isVertical) {
+    return line
+        .replace(/．{2,}/gu, (match) => {
+            const count3 = Math.floor(match.length / 3) - Number(match.length % 3 === 1);
+            const count2 = (match.length - count3 * 3) / 2;
+            return (isVertical ? "︙" : "…").repeat(count3) + (isVertical ? "︰" : "‥").repeat(count2);
+        })
+        .replace(/！！/gu, "‼")
+        .replace(/！？/gu, "⁉")
+        .replace(/？！/gu, "⁈")
+        .replace(/？？/gu, "⁇");
 }
