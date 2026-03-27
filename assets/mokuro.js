@@ -17,7 +17,9 @@ export class MokuroPage {
         this.imgH = imgHeight;
 
         /** @type {MokuroBlock[]} */
-        this.blocks = blocks.map((block) => ({ ...block, darkTheme: false }));
+        this.blocks = blocks
+            .filter((block) => /[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}]/u.test(block.lines.join("")))
+            .map((block) => ({ ...block, darkTheme: false }));
     }
 
     /** @param {HTMLImageElement} img @returns {HTMLDivElement} */
