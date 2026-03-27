@@ -1,90 +1,90 @@
 html {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
 }
 
 html::-webkit-scrollbar {
-  display: none;
+    display: none;
 }
 
 body {
-  margin: 0;
-  background: black;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  -webkit-user-select: none;
-  user-select: none;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    margin: 0;
+    background: black;
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 main {
-  width: var(--viewer-zoom, 100%);
-  flex: 0 0 auto;
+    flex: 0 0 auto;
+    width: var(--viewer-zoom, 100%);
 }
 
 article > section {
-  position: relative;
-  width: 100%;
-  background: black;
+    position: relative;
+    width: 100%;
+    background: black;
 }
 
 article > section > img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
 }
 
 article > section > div {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  container-type: size;
+    position: absolute;
+    inset: 0;
+    container-type: size;
+    pointer-events: none;
 }
 
 article > section > div > div {
-  position: absolute;
-  pointer-events: auto;
-  color: transparent;
-  background: transparent;
-  margin: 0;
-  padding: 0;
-  font-weight: bold;
-  overflow: hidden;
-  -webkit-user-select: none;
-  user-select: none;
+    position: absolute;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    font-weight: bold;
+    color: transparent;
+    background: transparent;
+    pointer-events: auto;
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 article > section > div > div:hover {
-  background: white;
-  color: black;
-  -webkit-user-select: text;
-  user-select: text;
+    color: black;
+    background: white;
+    user-select: text;
+    -webkit-user-select: text;
 }
 
 article > section > div > div.theme-dark:hover {
-  background: black;
-  color: white;
+    color: white;
+    background: black;
 }
 
 article > section > div > div > span {
-  display: inline-block;
-  inline-size: 100%;
-  white-space: nowrap;
+    display: inline-block;
+    inline-size: 100%;
+    white-space: nowrap;
 }
 
 article > section > div > div > span > span {
-  text-combine-upright: all;
+    text-combine-upright: all;
 }
 
 article > section > div > div > span::selection,
 article > section > div > div > span > span::selection {
-  color: black;
-  background: #d0d0d0;
+    color: black;
+    background: #d0d0d0;
 }
 
 article > section > div > div.theme-dark > span::selection,
 article > section > div > div.theme-dark > span > span::selection {
-  color: white;
-  background: #505050;
+    color: white;
+    background: #505050;
 }
