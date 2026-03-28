@@ -26,8 +26,7 @@ impl Page {
         let file = File::open(archive_path)?;
         let mut archive = ZipArchive::new(file).map_err(zip_invalid_data)?;
         let mut entry = archive.by_name(page_name).map_err(zip_invalid_data)?;
-
-        let mut data = Vec::new();
+        let mut data = Vec::with_capacity(entry.size() as usize);
         entry.read_to_end(&mut data)?;
         Ok(data)
     }
