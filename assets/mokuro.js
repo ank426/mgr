@@ -26,9 +26,8 @@ export class MokuroPage {
             }));
     }
 
-    /** @param {HTMLImageElement} img @returns {HTMLDivElement} */
-    createOverlay(img) {
-        const overlay = document.createElement("div");
+    /** @param {HTMLDivElement} overlay @param {HTMLImageElement} img @returns {void} */
+    createOverlay(overlay, img) {
         this.computeThemes(img);
 
         for (const block of this.blocks) {
@@ -40,31 +39,31 @@ export class MokuroPage {
             const div = document.createElement("div");
             this.setBlockText(div, block);
             div.addEventListener("mouseleave", () => window.getSelection()?.removeAllRanges());
+
             if (block.darkTheme) div.classList.add("theme-dark");
+            if (block.vertical) div.classList.add("vertical");
 
             div.style.left = `${(x1 / this.imgW) * 100}%`;
             div.style.top = `${(y1 / this.imgH) * 100}%`;
             div.style.width = `${(boxW / this.imgW) * 100}%`;
             div.style.height = `${(boxH / this.imgH) * 100}%`;
 
-            const nLines = block.lines.length;
-            const maxChars = Math.max(1, ...block.lines.map((l) => l.length));
+            const fontSize = ((block.vertical ? boxW : boxH) / block.lines.length / this.imgW) * 100;
 
-            if (block.vertical) {
-                div.style.writingMode = "vertical-rl";
-                const fontSize = Math.min(boxW / nLines, boxH / maxChars);
-                div.style.fontSize = `${(fontSize / this.imgW) * 100}cqw`;
-                div.style.lineHeight = `${boxW / nLines / fontSize}em`;
-            } else {
-                const fontSize = Math.min(boxH / nLines, boxW / maxChars);
-                div.style.fontSize = `${(fontSize / this.imgW) * 100}cqw`;
-                div.style.lineHeight = `${boxH / nLines / fontSize}em`;
-            }
+            div.style.fontSize = `${fontSize}cqw`;
+            div.style.lineHeight = "1em";
 
             overlay.appendChild(div);
-        }
 
-        return overlay;
+            const overflowRatio = block.vertical
+                ? div.scrollHeight / div.clientHeight
+                : div.scrollWidth / div.clientWidth;
+
+            if (overflowRatio > 1) {
+                div.style.fontSize = `${fontSize / overflowRatio}cqw`;
+                div.style.lineHeight = `${overflowRatio}em`;
+            }
+        }
     }
 
     /** @param {HTMLDivElement} div @param {MokuroBlock} block @returns {void} */

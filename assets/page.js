@@ -40,7 +40,11 @@ export class Page {
         img.onload = () => {
             this.status = "loaded";
             this.slot.append(img);
-            if (this.mokuroPage) this.slot.append(this.mokuroPage.createOverlay(img));
+            if (this.mokuroPage) {
+                const overlay = document.createElement("div");
+                this.slot.append(overlay);
+                this.mokuroPage.createOverlay(overlay, img);
+            }
         };
         img.onerror = () => {
             this.status = "failed";

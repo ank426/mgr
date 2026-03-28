@@ -56,6 +56,11 @@ article > section > div > div {
     -webkit-user-select: none;
 }
 
+article > section > div > div.vertical {
+    writing-mode: vertical-rl;
+    font-feature-settings: "vhal" 1;
+}
+
 article > section > div > div:hover {
     color: black;
     background: white;
