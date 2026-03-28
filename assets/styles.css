@@ -8,9 +8,6 @@ html::-webkit-scrollbar {
 }
 
 body {
-    display: flex;
-    align-items: flex-start;
-    justify-content: center;
     margin: 0;
     background: black;
     user-select: none;
@@ -18,8 +15,8 @@ body {
 }
 
 main {
-    flex: 0 0 auto;
     width: 100%;
+    margin-inline: auto;
 }
 
 article > section {
