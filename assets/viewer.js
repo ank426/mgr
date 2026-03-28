@@ -25,9 +25,6 @@ export class Viewer {
         /** @type {HTMLElement} */
         this.progressOverlay = progressOverlay;
 
-        /** @type {ReturnType<typeof setTimeout> | null} */
-        this.saveTimer = null;
-
         this.state = {
             /** @type {Set<Page>} */
             nearPages: new Set(),
@@ -55,6 +52,14 @@ export class Viewer {
 
             /** @type {"page" | "scroll" | "volume" | null} */
             overlayMode: null,
+        };
+
+        this.timeouts = {
+            /** @type {number} */
+            save: 0,
+
+            /** @type {number} */
+            cursor: 0,
         };
 
         this.observers = {

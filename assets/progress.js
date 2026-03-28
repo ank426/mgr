@@ -57,8 +57,8 @@ export class Progress {
         this.page = activePage ?? this.page;
         const scroll = (scrollY - this.page.slot.offsetTop) / this.page.slot.offsetHeight;
         this.scroll = Math.min(1, Math.max(0, scroll));
-        if (viewer.saveTimer) clearTimeout(viewer.saveTimer);
-        viewer.saveTimer = setTimeout(() => this.save(), 200);
+        clearTimeout(viewer.timeouts.save);
+        viewer.timeouts.save = window.setTimeout(() => this.save(), 200);
         this.updateOverlay(viewer);
     }
 
