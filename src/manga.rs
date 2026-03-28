@@ -1,5 +1,7 @@
 use std::path::{Path, PathBuf};
 
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
+
 use crate::cbz::{Volume, is_cbz};
 use crate::error::AppResult;
 use crate::readlist::ReadList;
@@ -58,8 +60,7 @@ impl Manga {
             return Err("progress.page must be >= 1".into());
         }
 
-        let mut volumes = Vec::with_capacity(readlist.files.len());
-
+        let mut resolved = Vec::with_capacity(readlist.files.len());
         for entry in &readlist.files {
             let file_path = dir_path.join(&entry.name);
             if !file_path.exists() {
@@ -71,8 +72,17 @@ impl Manga {
             if !is_cbz(&file_path) {
                 return Err(format!("Readlist file '{}' is not a supported archive (.cbz)", file_path.display()).into());
             }
+            resolved.push((entry, file_path));
+        }
 
-            let volume = Volume::new(&file_path, entry.name.clone(), entry.mokuro.clone())?;
+        let results: Vec<_> = resolved
+            .into_par_iter()
+            .map(|(entry, file_path)| (entry, Volume::new(&file_path, entry.name.clone(), entry.mokuro.clone())))
+            .collect();
+
+        let mut volumes = Vec::with_capacity(results.len());
+        for (entry, result) in results {
+            let volume = result?;
 
             if entry.name == readlist.progress.file && readlist.progress.page > volume.pages.len() as u32 {
                 return Err(format!(
