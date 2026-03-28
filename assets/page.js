@@ -63,7 +63,6 @@ export class Page {
             this.image.removeAttribute("srcset");
             this.image.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==";
             this.image.removeAttribute("src");
-            this.image.remove();
         }
         this.image = null;
         this.slot.replaceChildren();
