@@ -55,6 +55,9 @@ async fn run(args: Args) -> AppResult<()> {
         return handlers::handle_generate(&args.paths[0], &args.readlist_file).await;
     }
 
+    if !args.prefetch_back.is_finite() || !args.prefetch_forward.is_finite() {
+        return Err("prefetch values must be finite".into());
+    }
     let prefetch = (args.prefetch_back, args.prefetch_forward);
 
     if args.paths[0].is_dir() {
@@ -69,15 +72,6 @@ async fn run(args: Args) -> AppResult<()> {
             args.open,
         )
         .await;
-    }
-
-    for path in &args.paths {
-        if !path.exists() {
-            return Err(format!("Path does not exist: {}", path.display()).into());
-        }
-        if !path.is_file() {
-            return Err(format!("Multiple paths only supports files, found: {}", path.display()).into());
-        }
     }
 
     handlers::handle_serve_files(args.paths.as_slice(), args.port, prefetch, args.open).await

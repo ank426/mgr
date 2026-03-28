@@ -17,7 +17,7 @@ pub async fn serve(
     readlist_path: Option<PathBuf>,
     readlist: Option<ReadList>,
 ) {
-    let html = routes::build_html(&manga, prefetch);
+    let html = warp::hyper::body::Bytes::from(routes::build_html(&manga, prefetch));
     let manga = Arc::new(manga);
     let readlist_path = Arc::new(readlist_path);
     let shared_readlist = Arc::new(RwLock::new(readlist));

@@ -57,6 +57,10 @@ pub async fn generate(dir: &Path, readlist_file_name: &str) -> AppResult<PathBuf
 
     cbz_files.sort_by(|a, b| compare_str(a, b));
 
+    if cbz_files.is_empty() {
+        return Err(format!("No .cbz files found in {}", dir.display()).into());
+    }
+
     let mut readlist = if output_path.is_file() {
         ReadList::new(&output_path)?
     } else {
