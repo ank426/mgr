@@ -42,7 +42,7 @@ article > section > div {
     pointer-events: none;
 }
 
-article > section > div > div {
+article > section > div > p {
     position: absolute;
     margin: 0;
     padding: 0;
@@ -56,41 +56,41 @@ article > section > div > div {
     -webkit-user-select: none;
 }
 
-article > section > div > div.vertical {
+article > section > div > p.vertical {
     writing-mode: vertical-rl;
     font-feature-settings: "vhal" 1;
 }
 
-article > section > div > div:hover {
+article > section > div > p:hover {
     color: black;
     background: white;
     user-select: text;
     -webkit-user-select: text;
 }
 
-article > section > div > div.theme-dark:hover {
+article > section > div > p.theme-dark:hover {
     color: white;
     background: black;
 }
 
-article > section > div > div > span {
+article > section > div > p > span {
     display: inline-block;
     inline-size: 100%;
     white-space: nowrap;
 }
 
-article > section > div > div > span > span {
+article > section > div > p > span > span {
     text-combine-upright: all;
 }
 
-article > section > div > div > span::selection,
-article > section > div > div > span > span::selection {
+article > section > div > p > span::selection,
+article > section > div > p > span > span::selection {
     color: black;
     background: #d0d0d0;
 }
 
-article > section > div > div.theme-dark > span::selection,
-article > section > div > div.theme-dark > span > span::selection {
+article > section > div > p.theme-dark > span::selection,
+article > section > div > p.theme-dark > span > span::selection {
     color: white;
     background: #505050;
 }

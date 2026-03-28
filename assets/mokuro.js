@@ -36,7 +36,7 @@ export class MokuroPage {
             const boxH = y2 - y1;
             if (boxW <= 0 || boxH <= 0) continue;
 
-            const div = document.createElement("div");
+            const div = document.createElement("p");
             this.setBlockText(div, block);
             div.addEventListener("mouseleave", () => window.getSelection()?.removeAllRanges());
 
@@ -66,7 +66,7 @@ export class MokuroPage {
         }
     }
 
-    /** @param {HTMLDivElement} div @param {MokuroBlock} block @returns {void} */
+    /** @param {HTMLParagraphElement} div @param {MokuroBlock} block @returns {void} */
     setBlockText(div, block) {
         for (const line of block.lines) {
             const lineElement = document.createElement("span");
