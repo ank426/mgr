@@ -1,6 +1,6 @@
 // @ts-check
 
-import { onKey } from "./navigation.js";
+import { onKey } from "./binds.js";
 import { initObservers } from "./observers.js";
 import { Progress } from "./progress.js";
 import { scheduleReconcile } from "./reconcile.js";
