@@ -101,17 +101,8 @@ pub async fn page_response(
     let Some(page) = volume.pages.get((page_number - 1) as usize) else {
         return Ok(not_found_response());
     };
-    let mime = match page.mime() {
-        Some(mime) => mime,
-        None => {
-            return Ok(internal_server_error_response(format!(
-                "Unsupported image type for volume {volume_name} page {page_number}: {}",
-                page.name
-            )));
-        }
-    };
     match page.load_bytes(state.path.join(&volume.name)).await {
-        Ok(data) => Ok(ok_response(mime, data)),
+        Ok(data) => Ok(ok_response(page.mime, data)),
         Err(err) => {
             Ok(internal_server_error_response(format!("Failed to load volume {volume_name} page {page_number}: {err}")))
         }

@@ -1,17 +1,18 @@
 use std::io::{self, Read};
 
-// Reads image dimensions (width, height) by parsing format headers.
-pub fn read_dimensions(mut reader: impl Read) -> io::Result<(u32, u32)> {
+// Reads image MIME type and dimensions from format headers.
+// Returns None for unsupported formats, Err for corrupt images.
+pub fn read_image_info(mut reader: impl Read) -> io::Result<Option<(&'static str, (u32, u32))>> {
     let h = read_arr::<12>(&mut reader)?;
 
     if h[..3] == [0xFF, 0xD8, 0xFF] {
-        jpeg_dimensions(&h[2..], &mut reader)
+        Ok(Some(("image/jpeg", jpeg_dimensions(&h[2..], &mut reader)?)))
     } else if h[..4] == [0x89, 0x50, 0x4E, 0x47] {
-        png_dimensions(&mut reader)
+        Ok(Some(("image/png", png_dimensions(&mut reader)?)))
     } else if h[..4] == *b"RIFF" && h[8..12] == *b"WEBP" {
-        webp_dimensions(&mut reader)
+        Ok(Some(("image/webp", webp_dimensions(&mut reader)?)))
     } else {
-        Err(invalid("unsupported image format"))
+        Ok(None)
     }
 }
 
