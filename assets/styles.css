@@ -107,5 +107,5 @@ article > section > div > p.theme-dark > span > span::selection {
     border-radius: 0.8em;
     padding: 1em 2em;
     color: white;
-    font: bold 3vw sans-serif;
+    font: bold 2.5vw sans-serif;
 }
