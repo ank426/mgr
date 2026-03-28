@@ -6,17 +6,12 @@
 export async function onKey(viewer, event) {
     switch (event.key) {
         case "=":
-        case "+":
             viewer.state.zoom = Math.min(500, viewer.state.zoom + 5);
-            viewer.withScrollRestore(() =>
-                document.documentElement.style.setProperty("--viewer-zoom", `${viewer.state.zoom}%`),
-            );
+            viewer.withScrollRestore(() => (viewer.pagesRoot.style.width = `${viewer.state.zoom}%`));
             break;
         case "-":
             viewer.state.zoom = Math.max(10, viewer.state.zoom - 5);
-            viewer.withScrollRestore(() =>
-                document.documentElement.style.setProperty("--viewer-zoom", `${viewer.state.zoom}%`),
-            );
+            viewer.withScrollRestore(() => (viewer.pagesRoot.style.width = `${viewer.state.zoom}%`));
             break;
         case "j":
             event.preventDefault();

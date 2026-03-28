@@ -19,7 +19,7 @@ body {
 
 main {
     flex: 0 0 auto;
-    width: var(--viewer-zoom, 100%);
+    width: 100%;
 }
 
 article > section {
