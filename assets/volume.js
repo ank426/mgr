@@ -51,7 +51,7 @@ export class Volume {
             viewer.observers.activePage.observe(slot);
         }
 
-        this.section.replaceChildren(fragment);
+        viewer.withScrollRestore(() => this.section.replaceChildren(fragment));
     }
 
     /** @param {Viewer} viewer */
@@ -66,7 +66,7 @@ export class Volume {
             viewer.observers.activePage.unobserve(page.slot);
         }
 
-        this.section.replaceChildren();
+        viewer.withScrollRestore(() => this.section.replaceChildren());
         this.pages = null;
     }
 }

@@ -1,6 +1,7 @@
 html {
     -ms-overflow-style: none;
     scrollbar-width: none;
+    overflow-anchor: none;
 }
 
 html::-webkit-scrollbar {
