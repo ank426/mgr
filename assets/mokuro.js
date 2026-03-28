@@ -5,11 +5,8 @@
 /** @typedef {MokuroBlockData & { darkTheme: boolean }} MokuroBlock */
 
 export class MokuroPage {
-    /** @param {string} imgPath @param {number} imgWidth @param {number} imgHeight @param {MokuroBlockData[]} blocks */
-    constructor(imgPath, imgWidth, imgHeight, blocks) {
-        /** @type {string} */
-        this.imgPath = imgPath;
-
+    /** @param {number} imgWidth @param {number} imgHeight @param {MokuroBlockData[]} blocks */
+    constructor(imgWidth, imgHeight, blocks) {
         /** @type {number} */
         this.imgW = imgWidth;
 
@@ -106,7 +103,7 @@ export class MokuroPage {
         try {
             pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
         } catch (err) {
-            console.error(`Failed to analyze mokuro image region for ${this.imgPath}:`, err);
+            console.error("Failed to analyze mokuro image region:", err);
             return;
         }
 
@@ -145,7 +142,7 @@ export async function fetchMokuroPages(volumeName) {
         return new Map(
             pages
                 .filter((p) => p.img_path)
-                .map((p) => [p.img_path, new MokuroPage(p.img_path, p.img_width, p.img_height, p.blocks)]),
+                .map((p) => [p.img_path, new MokuroPage(p.img_width, p.img_height, p.blocks)]),
         );
     } catch (err) {
         console.error(`Failed to fetch mokuro for ${volumeName}:`, err);

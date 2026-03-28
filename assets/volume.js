@@ -41,6 +41,7 @@ export class Volume {
             const slot = document.createElement("section");
 
             slot.dataset.page = String(pageNumber);
+            slot.dataset.path = pageInfo.name;
             slot.style.aspectRatio = `${pageInfo.dims[0]} / ${pageInfo.dims[1]}`;
 
             fragment.appendChild(slot);
