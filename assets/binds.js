@@ -52,6 +52,11 @@ export async function onKey(viewer, event) {
             await viewer.state.progress.jumpTo(viewer, lastInfo.name, lastInfo.pageInfos.length, 1);
             break;
         }
+        case "i":
+            event.preventDefault();
+            viewer.state.inverted = !viewer.state.inverted;
+            document.body.style.filter = viewer.state.inverted ? "invert(1)" : "";
+            break;
         case "s":
         case "d":
         case "S": {

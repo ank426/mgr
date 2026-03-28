@@ -52,6 +52,9 @@ export class Viewer {
 
             /** @type {"page" | "scroll" | "volume" | null} */
             overlayMode: null,
+
+            /** @type {boolean} */
+            inverted: false,
         };
 
         this.timeouts = {
