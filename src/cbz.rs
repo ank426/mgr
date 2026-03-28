@@ -64,6 +64,7 @@ impl Volume {
         }
 
         pages.sort_by(|a, b| compare_str(&a.name, &b.name));
+
         if pages.is_empty() {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidData,
@@ -85,9 +86,6 @@ fn image_mime(name: &str) -> Option<&'static str> {
         "jpg" | "jpeg" => Some("image/jpeg"),
         "png" => Some("image/png"),
         "webp" => Some("image/webp"),
-        "gif" => Some("image/gif"),
-        "bmp" => Some("image/bmp"),
-        "avif" => Some("image/avif"),
         _ => None,
     }
 }
