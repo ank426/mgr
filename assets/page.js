@@ -43,7 +43,8 @@ export class Page {
             if (this.mokuroPage) {
                 const overlay = document.createElement("div");
                 this.slot.append(overlay);
-                this.mokuroPage.createOverlay(overlay, img);
+                const mokuroPage = this.mokuroPage;
+                img.decode().then(() => mokuroPage.createOverlay(overlay, img)).catch(() => {});
             }
         };
         img.onerror = () => {
