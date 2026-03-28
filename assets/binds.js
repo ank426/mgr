@@ -52,6 +52,21 @@ export async function onKey(viewer, event) {
             await viewer.state.progress.jumpTo(viewer, lastInfo.name, lastInfo.pageInfos.length, 1);
             break;
         }
+        case "s":
+        case "d":
+        case "S": {
+            event.preventDefault();
+            const mode = event.key === "s" ? "page" : event.key === "d" ? "scroll" : "volume";
+            if (viewer.state.overlayMode === mode) {
+                viewer.state.overlayMode = null;
+                viewer.progressOverlay.style.display = "";
+            } else {
+                viewer.state.overlayMode = mode;
+                viewer.state.progress.updateOverlay(viewer);
+                viewer.progressOverlay.style.display = "grid";
+            }
+            break;
+        }
         default:
             break;
     }

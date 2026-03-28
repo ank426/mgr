@@ -10,16 +10,20 @@ export class Viewer {
     /** @param {Config} config */
     constructor(config) {
         const pagesRoot = document.querySelector("main");
-        if (!pagesRoot) throw new Error();
+        const progressOverlay = document.getElementById("progress-overlay");
+        if (!pagesRoot || !progressOverlay) throw new Error();
 
         /** @type {Config} */
         this.config = config;
 
+        /** @type {Map<string, Volume>} */
+        this.volumeByName = new Map();
+
         /** @type {HTMLElement} */
         this.pagesRoot = pagesRoot;
 
-        /** @type {Map<string, Volume>} */
-        this.volumeByName = new Map();
+        /** @type {HTMLElement} */
+        this.progressOverlay = progressOverlay;
 
         /** @type {ReturnType<typeof setTimeout> | null} */
         this.saveTimer = null;
@@ -48,6 +52,9 @@ export class Viewer {
 
             /** @type {number} */
             zoom: 100,
+
+            /** @type {"page" | "scroll" | "volume" | null} */
+            overlayMode: null,
         };
 
         this.observers = {

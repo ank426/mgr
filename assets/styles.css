@@ -92,3 +92,20 @@ article > section > div > p.theme-dark > span > span::selection {
     color: white;
     background: #505050;
 }
+
+#progress-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: rgba(0, 0, 0, 0.7);
+    place-items: center;
+}
+
+#progress-overlay > div {
+    border: solid white;
+    border-radius: 0.8em;
+    padding: 1em 2em;
+    color: white;
+    font: bold 3vw sans-serif;
+}

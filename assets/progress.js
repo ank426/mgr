@@ -59,5 +59,34 @@ export class Progress {
         this.scroll = Math.min(1, Math.max(0, scroll));
         if (viewer.saveTimer) clearTimeout(viewer.saveTimer);
         viewer.saveTimer = setTimeout(() => this.save(), 200);
+        this.updateOverlay(viewer);
+    }
+
+    /** @param {Viewer} viewer */
+    updateOverlay(viewer) {
+        if (!viewer.state.overlayMode) return;
+        const vol = viewer.volumeByName.get(this.page.volumeName);
+        if (!vol) return;
+        let text = "";
+        switch (viewer.state.overlayMode) {
+            case "page":
+                text = `${this.page.pageNumber} / ${vol.pageInfos.length}`;
+                break;
+            case "scroll": {
+                let scrolled = 0;
+                for (let i = 0; i < this.page.pageNumber - 1; i++)
+                    scrolled += vol.pageInfos[i].dims[1] / vol.pageInfos[i].dims[0];
+                let total = scrolled;
+                scrolled += this.scroll * (this.page.dimensions[1] / this.page.dimensions[0]);
+                for (let i = this.page.pageNumber - 1; i < vol.pageInfos.length; i++)
+                    total += vol.pageInfos[i].dims[1] / vol.pageInfos[i].dims[0];
+                text = `${Math.round((scrolled / total) * 100)}%`;
+                break;
+            }
+            case "volume":
+                text = this.page.volumeName;
+                break;
+        }
+        viewer.progressOverlay.children[0].textContent = text;
     }
 }
