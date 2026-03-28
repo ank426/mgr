@@ -17,11 +17,11 @@ export async function onKey(viewer, event) {
         }
         case "j":
             event.preventDefault();
-            window.scrollTo({ top: window.scrollY + window.innerHeight / 2 });
+            scrollTo({ top: scrollY + innerHeight / 2 });
             break;
         case "k":
             event.preventDefault();
-            window.scrollTo({ top: window.scrollY - window.innerHeight / 2 });
+            scrollTo({ top: scrollY - innerHeight / 2 });
             break;
         case "h": {
             event.preventDefault();

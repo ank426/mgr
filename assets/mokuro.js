@@ -38,7 +38,7 @@ export class MokuroPage {
 
             const div = document.createElement("p");
             this.setBlockText(div, block);
-            div.addEventListener("mouseleave", () => window.getSelection()?.removeAllRanges());
+            div.addEventListener("mouseleave", () => getSelection()?.removeAllRanges());
 
             if (block.darkTheme) div.classList.add("theme-dark");
             if (block.vertical) div.classList.add("vertical");

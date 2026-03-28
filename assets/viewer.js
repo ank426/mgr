@@ -66,7 +66,7 @@ export class Viewer {
             action();
         } finally {
             if (--this.state.lockDepth === 0) {
-                window.scrollTo({
+                scrollTo({
                     top:
                         this.state.progress.page.slot.offsetTop +
                         this.state.progress.scroll * this.state.progress.page.slot.offsetHeight,
