@@ -27,13 +27,29 @@ export class Volume {
 
         /** @type {Map<number, Page> | null} */
         this.pages = null;
+
+        /** @type {Promise<void> | null} */
+        this._expandPromise = null;
+
+        /** @type {boolean} */
+        this._expanded = false;
+    }
+
+    /** @param {Viewer} viewer @returns {Promise<void>} */
+    expand(viewer) {
+        this._expanded = true;
+        this._expandPromise ??= this._doExpand(viewer);
+        return this._expandPromise;
     }
 
     /** @param {Viewer} viewer */
-    async expand(viewer) {
-        if (this.pages) return;
-        this.pages = new Map();
+    async _doExpand(viewer) {
         const mokuroPagesByName = this.mokuro ? await fetchMokuroPages(this.name) : null;
+        if (!this._expanded) {
+            this._expandPromise = null;
+            return;
+        }
+        this.pages = new Map();
         const fragment = document.createDocumentFragment();
 
         for (let pageNumber = 1; pageNumber <= this.pageInfos.length; pageNumber++) {
@@ -56,6 +72,7 @@ export class Volume {
 
     /** @param {Viewer} viewer */
     collapse(viewer) {
+        this._expanded = false;
         if (!this.pages) return;
 
         for (const page of this.pages.values()) {
@@ -68,5 +85,6 @@ export class Volume {
 
         viewer.withScrollRestore(() => this.section.replaceChildren());
         this.pages = null;
+        this._expandPromise = null;
     }
 }
