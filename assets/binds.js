@@ -54,8 +54,7 @@ export async function onKey(viewer, event) {
         }
         case "i":
             event.preventDefault();
-            viewer.state.inverted = !viewer.state.inverted;
-            document.body.style.filter = viewer.state.inverted ? "invert(1)" : "";
+            document.body.style.filter = document.body.style.filter ? "" : "invert(1)";
             break;
         case "s":
         case "d":
