@@ -23,7 +23,7 @@ struct Args {
     #[arg(long, default_value = ".mgr.toml")]
     readlist_file: String,
 
-    #[arg(short, long, default_value_t = 8080)]
+    #[arg(short, long, default_value_t = 7169)]
     port: u16,
 
     #[arg(short = 'o', long = "open")]
