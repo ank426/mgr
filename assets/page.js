@@ -44,7 +44,9 @@ export class Page {
                 const overlay = document.createElement("div");
                 this.slot.append(overlay);
                 const mokuroPage = this.mokuroPage;
-                img.decode().then(() => mokuroPage.createOverlay(overlay, img)).catch(() => {});
+                img.decode()
+                    .then(() => mokuroPage.createOverlay(overlay, img))
+                    .catch(() => {});
             }
         };
         img.onerror = () => {
