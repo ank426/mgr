@@ -19,8 +19,7 @@ pub async fn generate(path: &Path, readlist_file_name: &str) -> AppResult<()> {
 }
 
 pub async fn serve_files(paths: &[PathBuf], port: u16, prefetch: (f32, f32), open: bool) -> AppResult<()> {
-    let manga = Manga::new(paths)?;
-    server::serve(manga, port, prefetch, open, None, None).await;
+    server::serve(Manga::new(paths)?, port, prefetch, open, None, None).await;
     Ok(())
 }
 
