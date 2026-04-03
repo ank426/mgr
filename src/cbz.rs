@@ -15,17 +15,14 @@ pub struct Page {
 }
 
 impl Page {
-    pub async fn load_bytes(&self, archive_path: PathBuf) -> io::Result<Vec<u8>> {
+    pub async fn load_bytes(&self, archive_path: PathBuf) -> anyhow::Result<Vec<u8>> {
         let page_name = self.name.clone();
-        tokio::task::spawn_blocking(move || Self::load_bytes_sync(&archive_path, &page_name))
-            .await
-            .map_err(|err| io::Error::other(format!("Page load task failed: {err}")))?
+        Ok(tokio::task::spawn_blocking(move || Self::load_bytes_sync(&archive_path, &page_name)).await??)
     }
 
-    fn load_bytes_sync(archive_path: &Path, page_name: &str) -> io::Result<Vec<u8>> {
-        let file = File::open(archive_path)?;
-        let mut archive = ZipArchive::new(file).map_err(zip_invalid_data)?;
-        let mut entry = archive.by_name(page_name).map_err(zip_invalid_data)?;
+    fn load_bytes_sync(archive_path: &Path, page_name: &str) -> anyhow::Result<Vec<u8>> {
+        let mut archive = ZipArchive::new(File::open(archive_path)?)?;
+        let mut entry = archive.by_name(page_name)?;
         let mut data = Vec::with_capacity(entry.size() as usize);
         entry.read_to_end(&mut data)?;
         Ok(data)
