@@ -40,7 +40,6 @@ pub struct Volume {
 impl Volume {
     pub fn new(path: &Path, name: String, mokuro: Option<String>) -> anyhow::Result<Self> {
         let mut archive = ZipArchive::new(File::open(path)?)?;
-
         let mut pages = Vec::with_capacity(archive.len());
         for idx in 0..archive.len() {
             let mut entry = archive.by_index(idx)?;
@@ -48,13 +47,11 @@ impl Volume {
                 continue;
             }
             if let Some((mime, dimensions)) = image::read_image_info(&mut entry)? {
-                pages.push(Page { name: entry.name().to_string(), mime, dimensions });
+                pages.push(Page { name: entry.name().to_string(), mime, dimensions }); // unsanitized name
             }
         }
-
-        pages.sort_by(|a, b| compare_str(&a.name, &b.name));
         ensure!(!pages.is_empty(), "No supported image pages found in {}", path.display());
-
+        pages.sort_by(|a, b| compare_str(&a.name, &b.name));
         Ok(Self { name, pages, mokuro })
     }
 }
