@@ -1,5 +1,4 @@
 mod cbz;
-mod error;
 mod handlers;
 mod image;
 mod manga;
@@ -7,10 +6,9 @@ mod readlist;
 mod routes;
 mod server;
 
+use anyhow::{bail, ensure};
 use clap::Parser;
 use std::path::PathBuf;
-
-use crate::error::AppResult;
 
 #[global_allocator]
 static ALLOC: tikv_jemallocator::Jemalloc = tikv_jemallocator::Jemalloc;
@@ -47,24 +45,22 @@ async fn main() {
     }
 }
 
-async fn run(args: Args) -> AppResult<()> {
+async fn run(args: Args) -> anyhow::Result<()> {
     if args.generate {
         let [path] = args.paths.as_slice() else {
-            return Err("--generate expects a single directory path".into());
+            bail!("--generate expects a single directory path");
         };
         return handlers::generate(path, &args.readlist_file).await;
     }
 
-    if !args.prefetch_back.is_finite() || !args.prefetch_forward.is_finite() {
-        return Err("prefetch values must be finite".into());
-    }
+    ensure!(args.prefetch_back.is_finite() && args.prefetch_forward.is_finite(), "prefetch values must be finite");
     let prefetch = (args.prefetch_back, args.prefetch_forward);
 
     if let Some(path) = args.paths.first()
         && path.is_dir()
     {
         let [path] = args.paths.as_slice() else {
-            return Err("Directory path must be provided alone".into());
+            bail!("Directory path must be provided alone");
         };
         return handlers::serve_readlist(path, &args.readlist_file, args.port, prefetch, args.open).await;
     }

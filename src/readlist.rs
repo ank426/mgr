@@ -2,9 +2,8 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use alphanumeric_sort::compare_str;
+use anyhow::{Context, bail};
 use serde::{Deserialize, Serialize};
-
-use crate::error::AppResult;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Progress {
@@ -27,19 +26,19 @@ pub struct ReadList {
 }
 
 impl ReadList {
-    pub fn new(path: &Path) -> AppResult<Self> {
+    pub fn new(path: &Path) -> anyhow::Result<Self> {
         let content = fs::read_to_string(path)?;
-        toml::from_str::<ReadList>(&content).map_err(|err| format!("Failed to parse {}: {err}", path.display()).into())
+        toml::from_str::<ReadList>(&content).context(format!("Failed to parse {}", path.display()))
     }
 
-    pub async fn save(&self, path: &Path) -> AppResult<()> {
-        let output = toml::to_string(self).map_err(|err| format!("Failed to serialize readlist: {err}"))?;
+    pub async fn save(&self, path: &Path) -> anyhow::Result<()> {
+        let output = toml::to_string(self).context("Failed to serialize readlist")?;
         tokio::fs::write(path, output).await?;
         Ok(())
     }
 }
 
-pub async fn generate(dir: &Path, readlist_file_name: &str) -> AppResult<PathBuf> {
+pub async fn generate(dir: &Path, readlist_file_name: &str) -> anyhow::Result<PathBuf> {
     let output_path = dir.join(readlist_file_name);
 
     let mut cbz_files: Vec<String> = fs::read_dir(dir)?
@@ -55,7 +54,7 @@ pub async fn generate(dir: &Path, readlist_file_name: &str) -> AppResult<PathBuf
     cbz_files.sort_by(|a, b| compare_str(a, b));
 
     if cbz_files.is_empty() {
-        return Err(format!("No .cbz files found in {}", dir.display()).into());
+        bail!("No .cbz files found in {}", dir.display());
     }
 
     let mut readlist = if output_path.is_file() {

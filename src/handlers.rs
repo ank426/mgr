@@ -1,24 +1,19 @@
 use std::path::{Path, PathBuf};
 
-use crate::error::AppResult;
+use anyhow::ensure;
+
 use crate::manga::Manga;
 use crate::readlist::ReadList;
 use crate::{readlist, server};
 
-pub async fn generate(path: &Path, readlist_file_name: &str) -> AppResult<()> {
-    if !path.exists() {
-        return Err(format!("Path does not exist: {}", path.display()).into());
-    }
-    if !path.is_dir() {
-        return Err(format!("Path is not a directory: {}", path.display()).into());
-    }
-
-    let output_path = readlist::generate(path, readlist_file_name).await?;
-    println!("Generated {}", output_path.display());
+pub async fn generate(path: &Path, readlist_file_name: &str) -> anyhow::Result<()> {
+    ensure!(path.exists(), "Path does not exist: {}", path.display());
+    ensure!(path.is_dir(), "Path is not a directory: {}", path.display());
+    println!("Generated {}", readlist::generate(path, readlist_file_name).await?.display());
     Ok(())
 }
 
-pub async fn serve_files(paths: &[PathBuf], port: u16, prefetch: (f32, f32), open: bool) -> AppResult<()> {
+pub async fn serve_files(paths: &[PathBuf], port: u16, prefetch: (f32, f32), open: bool) -> anyhow::Result<()> {
     server::serve(Manga::new(paths)?, port, prefetch, open, None, None).await;
     Ok(())
 }
@@ -29,15 +24,13 @@ pub async fn serve_readlist(
     port: u16,
     prefetch: (f32, f32),
     open: bool,
-) -> AppResult<()> {
+) -> anyhow::Result<()> {
     let readlist_path = path.join(readlist_file_name);
-    if !readlist_path.is_file() {
-        return Err(format!(
-            "No {readlist_file_name} found in {path}. Run: mgr --readlist-file {readlist_file_name} --generate {path}",
-            path = path.display(),
-        )
-        .into());
-    }
+    ensure!(
+        readlist_path.is_file(),
+        "No {readlist_file_name} found in {path}. Run: mgr --readlist-file {readlist_file_name} --generate {path}",
+        path = path.display(),
+    );
     let readlist = ReadList::new(&readlist_path)?;
     let manga = Manga::from_readlist(path, &readlist)?;
     server::serve(manga, port, prefetch, open, Some(readlist_path), Some(readlist)).await;
