@@ -49,10 +49,10 @@ async fn main() {
 
 async fn run(args: Args) -> AppResult<()> {
     if args.generate {
-        if args.paths.len() != 1 {
+        let [path] = args.paths.as_slice() else {
             return Err("--generate expects a single directory path".into());
-        }
-        return handlers::handle_generate(&args.paths[0], &args.readlist_file).await;
+        };
+        return handlers::handle_generate(path, &args.readlist_file).await;
     }
 
     if !args.prefetch_back.is_finite() || !args.prefetch_forward.is_finite() {
