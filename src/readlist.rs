@@ -27,14 +27,11 @@ pub struct ReadList {
 
 impl ReadList {
     pub fn new(path: &Path) -> anyhow::Result<Self> {
-        let content = fs::read_to_string(path)?;
-        toml::from_str::<ReadList>(&content).context(format!("Failed to parse {}", path.display()))
+        toml::from_str::<ReadList>(&fs::read_to_string(path)?).context(format!("Failed to parse {}", path.display()))
     }
 
     pub async fn save(&self, path: &Path) -> anyhow::Result<()> {
-        let output = toml::to_string(self).context("Failed to serialize readlist")?;
-        tokio::fs::write(path, output).await?;
-        Ok(())
+        Ok(tokio::fs::write(path, toml::to_string(self).context("Failed to serialize readlist")?).await?)
     }
 }
 
