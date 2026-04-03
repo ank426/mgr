@@ -1,5 +1,4 @@
 mod cbz;
-mod handlers;
 mod image;
 mod manga;
 mod readlist;
@@ -9,6 +8,9 @@ mod server;
 use anyhow::{bail, ensure};
 use clap::Parser;
 use std::path::PathBuf;
+
+use manga::Manga;
+use readlist::ReadList;
 
 #[global_allocator]
 static ALLOC: tikv_jemallocator::Jemalloc = tikv_jemallocator::Jemalloc;
@@ -50,7 +52,10 @@ async fn run(args: Args) -> anyhow::Result<()> {
         let [path] = args.paths.as_slice() else {
             bail!("--generate expects a single directory path");
         };
-        return handlers::generate(path, &args.readlist_file).await;
+        ensure!(path.exists(), "Path does not exist: {}", path.display());
+        ensure!(path.is_dir(), "Path is not a directory: {}", path.display());
+        println!("Generated {}", readlist::generate(path, &args.readlist_file).await?.display());
+        return Ok(());
     }
 
     ensure!(args.prefetch_back.is_finite() && args.prefetch_forward.is_finite(), "prefetch values must be finite");
@@ -62,8 +67,14 @@ async fn run(args: Args) -> anyhow::Result<()> {
         let [path] = args.paths.as_slice() else {
             bail!("Directory path must be provided alone");
         };
-        return handlers::serve_readlist(path, &args.readlist_file, args.port, prefetch, args.open).await;
+        let readlist_path = path.join(&args.readlist_file);
+        ensure!(readlist_path.is_file(), "No {} found in {}. Run: mgr -g", args.readlist_file, path.display());
+        let readlist = ReadList::new(&readlist_path)?;
+        let manga = Manga::from_readlist(path, &readlist)?;
+        server::serve(manga, args.port, prefetch, args.open, Some(readlist_path), Some(readlist)).await;
+        return Ok(());
     }
 
-    handlers::serve_files(args.paths.as_slice(), args.port, prefetch, args.open).await
+    server::serve(Manga::new(args.paths.as_slice())?, args.port, prefetch, args.open, None, None).await;
+    Ok(())
 }
