@@ -43,15 +43,12 @@ pub async fn generate(dir: &Path, readlist_file_name: &str) -> AppResult<PathBuf
     let output_path = dir.join(readlist_file_name);
 
     let mut cbz_files: Vec<String> = fs::read_dir(dir)?
-        .filter_map(Result::ok)
-        .filter(|entry| entry.file_type().map(|t| t.is_file()).unwrap_or(false))
         .filter_map(|entry| {
+            let entry = entry.ok()?;
             let path = entry.path();
-            let ext = path.extension()?.to_str()?;
-            if !ext.eq_ignore_ascii_case("cbz") {
-                return None;
-            }
-            path.file_name()?.to_str().map(ToOwned::to_owned)
+            entry.file_type().ok()?.is_file().then_some(())?;
+            path.extension()?.to_str()?.eq_ignore_ascii_case("cbz").then_some(())?;
+            Some(path.file_name()?.to_str()?.to_owned())
         })
         .collect();
 
@@ -64,19 +61,14 @@ pub async fn generate(dir: &Path, readlist_file_name: &str) -> AppResult<PathBuf
     let mut readlist = if output_path.is_file() {
         ReadList::new(&output_path)?
     } else {
-        ReadList {
-            progress: Progress { file: cbz_files.first().cloned().unwrap_or_default(), page: 1, scroll: 0.0 },
-            files: Vec::new(),
-        }
+        ReadList { progress: Progress { file: cbz_files[0].clone(), page: 1, scroll: 0.0 }, files: Vec::new() }
     };
 
     readlist.files = cbz_files
-        .iter()
+        .into_iter()
         .map(|file_name| {
-            let mokuro_name = Path::new(file_name).with_extension("mokuro");
-            let mokuro_path = dir.join(&mokuro_name);
-            let mokuro = if mokuro_path.is_file() { Some(mokuro_name.to_string_lossy().to_string()) } else { None };
-
+            let mokuro_name = Path::new(&file_name).with_extension("mokuro");
+            let mokuro = dir.join(&mokuro_name).is_file().then(|| mokuro_name.to_string_lossy().into_owned());
             FileEntry { name: file_name.clone(), mokuro }
         })
         .collect();

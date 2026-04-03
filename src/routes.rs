@@ -98,7 +98,7 @@ pub async fn page_response(
     let Some(volume) = state.volumes.iter().find(|volume| volume.name == decoded_volume_name) else {
         return Ok(not_found_response());
     };
-    let Some(page) = volume.pages.get((page_number - 1) as usize) else {
+    let Some(page) = page_number.checked_sub(1).and_then(|i| volume.pages.get(i as usize)) else {
         return Ok(not_found_response());
     };
     match page.load_bytes(state.path.join(&volume.name)).await {
@@ -117,8 +117,8 @@ pub async fn mokuro_response(volume_name: String, state: Arc<Manga>) -> Result<R
     let Some(mokuro_name) = volume.mokuro.as_ref() else {
         return Ok(ok_response("application/json; charset=utf-8", b"{}".to_vec()));
     };
-    let mokuro_path = PathBuf::from(mokuro_name);
-    let mokuro_path = if mokuro_path.is_absolute() { mokuro_path } else { state.path.join(mokuro_name) };
+    let mokuro_path = Path::new(mokuro_name);
+    let mokuro_path = if mokuro_path.is_absolute() { mokuro_path.to_path_buf() } else { state.path.join(mokuro_name) };
     match fs::read(&mokuro_path).await {
         Ok(data) => Ok(ok_response("application/json; charset=utf-8", data)),
         Err(err) if err.kind() == std::io::ErrorKind::NotFound => Ok(not_found_response()),
