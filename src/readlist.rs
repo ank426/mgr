@@ -2,7 +2,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use alphanumeric_sort::compare_str;
-use anyhow::{Context, bail};
+use anyhow::{Context, ensure};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -48,11 +48,8 @@ pub async fn generate(dir: &Path, readlist_file_name: &str) -> anyhow::Result<Pa
         })
         .collect();
 
+    ensure!(!cbz_files.is_empty(), "No .cbz files found in {}", dir.display());
     cbz_files.sort_by(|a, b| compare_str(a, b));
-
-    if cbz_files.is_empty() {
-        bail!("No .cbz files found in {}", dir.display());
-    }
 
     let mut readlist = if output_path.is_file() {
         ReadList::new(&output_path)?
