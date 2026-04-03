@@ -10,11 +10,6 @@ mod server;
 use clap::Parser;
 use std::path::PathBuf;
 
-fn parse_finite_f32(s: &str) -> Result<f32, String> {
-    let v: f32 = s.parse().map_err(|e| format!("{e}"))?;
-    if v.is_finite() { Ok(v) } else { Err("value must be finite".into()) }
-}
-
 use crate::error::AppResult;
 
 #[global_allocator]
@@ -34,10 +29,10 @@ struct Args {
     #[arg(short = 'o', long = "open")]
     open: bool,
 
-    #[arg(long, default_value_t = 6.0, value_parser = parse_finite_f32)]
+    #[arg(long, default_value_t = 6.0)]
     prefetch_back: f32,
 
-    #[arg(long, default_value_t = 8.0, value_parser = parse_finite_f32)]
+    #[arg(long, default_value_t = 8.0)]
     prefetch_forward: f32,
 
     #[arg(default_value = ".")]
@@ -60,6 +55,9 @@ async fn run(args: Args) -> AppResult<()> {
         return handlers::generate(path, &args.readlist_file).await;
     }
 
+    if !args.prefetch_back.is_finite() || !args.prefetch_forward.is_finite() {
+        return Err("prefetch values must be finite".into());
+    }
     let prefetch = (args.prefetch_back, args.prefetch_forward);
 
     if let Some(path) = args.paths.first()
