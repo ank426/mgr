@@ -3,6 +3,8 @@ use std::path::{Path, PathBuf};
 
 use alphanumeric_sort::compare_str;
 use anyhow::{Context, ensure};
+
+use crate::cbz::is_cbz;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -43,7 +45,7 @@ pub async fn generate(dir: &Path, readlist_file_name: &str) -> anyhow::Result<Pa
             let entry = entry.ok()?;
             let path = entry.path();
             entry.file_type().ok()?.is_file().then_some(())?;
-            path.extension()?.to_str()?.eq_ignore_ascii_case("cbz").then_some(())?;
+            is_cbz(&path).then_some(())?;
             Some(path.file_name()?.to_str()?.to_owned())
         })
         .collect();
