@@ -12,11 +12,7 @@ use std::path::PathBuf;
 
 fn parse_finite_f32(s: &str) -> Result<f32, String> {
     let v: f32 = s.parse().map_err(|e| format!("{e}"))?;
-    if v.is_finite() {
-        Ok(v)
-    } else {
-        Err("value must be finite".into())
-    }
+    if v.is_finite() { Ok(v) } else { Err("value must be finite".into()) }
 }
 
 use crate::error::AppResult;
@@ -61,24 +57,19 @@ async fn run(args: Args) -> AppResult<()> {
         let [path] = args.paths.as_slice() else {
             return Err("--generate expects a single directory path".into());
         };
-        return handlers::handle_generate(path, &args.readlist_file).await;
+        return handlers::generate(path, &args.readlist_file).await;
     }
 
     let prefetch = (args.prefetch_back, args.prefetch_forward);
 
-    if args.paths[0].is_dir() {
-        if args.paths.len() != 1 {
+    if let Some(path) = args.paths.first()
+        && path.is_dir()
+    {
+        let [path] = args.paths.as_slice() else {
             return Err("Directory path must be provided alone".into());
-        }
-        return handlers::handle_serve_readlist_directory(
-            &args.paths[0],
-            &args.readlist_file,
-            args.port,
-            prefetch,
-            args.open,
-        )
-        .await;
+        };
+        return handlers::serve_readlist(path, &args.readlist_file, args.port, prefetch, args.open).await;
     }
 
-    handlers::handle_serve_files(args.paths.as_slice(), args.port, prefetch, args.open).await
+    handlers::serve_files(args.paths.as_slice(), args.port, prefetch, args.open).await
 }
