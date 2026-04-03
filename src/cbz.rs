@@ -1,8 +1,9 @@
 use std::fs::File;
-use std::io::{self, Read};
+use std::io::Read;
 use std::path::{Path, PathBuf};
 
 use alphanumeric_sort::compare_str;
+use anyhow::ensure;
 use zip::ZipArchive;
 
 use crate::image;
@@ -37,13 +38,12 @@ pub struct Volume {
 }
 
 impl Volume {
-    pub fn new(path: &Path, name: String, mokuro: Option<String>) -> io::Result<Self> {
-        let file = File::open(path)?;
-        let mut archive = ZipArchive::new(file).map_err(zip_invalid_data)?;
+    pub fn new(path: &Path, name: String, mokuro: Option<String>) -> anyhow::Result<Self> {
+        let mut archive = ZipArchive::new(File::open(path)?)?;
 
         let mut pages = Vec::with_capacity(archive.len());
         for idx in 0..archive.len() {
-            let mut entry = archive.by_index(idx).map_err(zip_invalid_data)?;
+            let mut entry = archive.by_index(idx)?;
             if entry.is_dir() {
                 continue;
             }
@@ -53,13 +53,7 @@ impl Volume {
         }
 
         pages.sort_by(|a, b| compare_str(&a.name, &b.name));
-
-        if pages.is_empty() {
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidData,
-                format!("No supported image pages found in {}", path.display()),
-            ));
-        }
+        ensure!(!pages.is_empty(), "No supported image pages found in {}", path.display());
 
         Ok(Self { name, pages, mokuro })
     }
@@ -69,6 +63,3 @@ pub fn is_cbz(path: &Path) -> bool {
     path.extension().and_then(|ext| ext.to_str()).is_some_and(|ext| ext.eq_ignore_ascii_case("cbz"))
 }
 
-fn zip_invalid_data(err: zip::result::ZipError) -> io::Error {
-    io::Error::new(io::ErrorKind::InvalidData, err)
-}
