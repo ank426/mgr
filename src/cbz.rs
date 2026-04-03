@@ -18,7 +18,7 @@ pub struct Page {
 impl Page {
     pub async fn load_bytes(&self, archive_path: PathBuf) -> anyhow::Result<Vec<u8>> {
         let page_name = self.name.clone();
-        Ok(tokio::task::spawn_blocking(move || Self::load_bytes_sync(&archive_path, &page_name)).await??)
+        tokio::task::spawn_blocking(move || Self::load_bytes_sync(&archive_path, &page_name)).await?
     }
 
     fn load_bytes_sync(archive_path: &Path, page_name: &str) -> anyhow::Result<Vec<u8>> {
@@ -62,4 +62,3 @@ impl Volume {
 pub fn is_cbz(path: &Path) -> bool {
     path.extension().and_then(|ext| ext.to_str()).is_some_and(|ext| ext.eq_ignore_ascii_case("cbz"))
 }
-
