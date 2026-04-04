@@ -23,41 +23,24 @@ pub async fn serve(
     let shared_readlist = Arc::new(RwLock::new(readlist));
 
     let html_route = warp::path::end().map(move || warp::reply::html(html.clone()).into_response());
-
-    let page_route = {
-        let manga = Arc::clone(&manga);
-        warp::path!("volume" / String / "page" / u32)
-            .and(warp::any().map(move || Arc::clone(&manga)))
-            .and_then(routes::page_response)
-    };
-
-    let mokuro_route = {
-        let manga = Arc::clone(&manga);
-        warp::path!("volume" / String / "mokuro")
-            .and(warp::any().map(move || Arc::clone(&manga)))
-            .and_then(routes::mokuro_response)
-    };
-
     let assets_route = warp::path!("assets" / String).and_then(routes::asset_response);
-
-    let get_progress_route = {
-        let manga = Arc::clone(&manga);
-        let shared_readlist = Arc::clone(&shared_readlist);
-        warp::path!("api" / "progress")
-            .and(warp::get())
-            .map(move || warp::reply::json(&routes::get_progress(&manga, &shared_readlist)))
-    };
-
-    let save_progress_route = {
-        let readlist_path = Arc::clone(&readlist_path);
-        let shared_readlist = Arc::clone(&shared_readlist);
-        warp::path!("api" / "progress")
-            .and(warp::put())
-            .and(warp::body::json())
-            .and(warp::any().map(move || Arc::clone(&readlist_path)))
-            .and(warp::any().map(move || Arc::clone(&shared_readlist)))
-            .and_then(routes::save_progress)
-    };
+    let page_route =
+        warp::path!("volume" / String / "page" / u32).and(with(manga.clone())).and_then(routes::page_response);
+    let mokuro_route =
+        warp::path!("volume" / String / "mokuro").and(with(manga.clone())).and_then(routes::mokuro_response);
+    let get_progress_route = warp::path!("api" / "progress")
+        .and(warp::get())
+        .and(with(manga.clone()))
+        .and(with(shared_readlist.clone()))
+        .map(|manga: Arc<Manga>, rl: Arc<RwLock<Option<ReadList>>>| {
+            warp::reply::json(&routes::get_progress(&manga, &rl))
+        });
+    let save_progress_route = warp::path!("api" / "progress")
+        .and(warp::put())
+        .and(warp::body::json())
+        .and(with(readlist_path.clone()))
+        .and(with(shared_readlist.clone()))
+        .and_then(routes::save_progress);
 
     println!("Open http://127.0.0.1:{port}");
     if open {
@@ -77,6 +60,10 @@ pub async fn serve(
         })
         .run()
         .await;
+}
+
+fn with<T: Clone + Send>(value: T) -> impl warp::Filter<Extract = (T,), Error = std::convert::Infallible> + Clone {
+    warp::any().map(move || value.clone())
 }
 
 fn open_browser(port: u16) {
