@@ -11,11 +11,12 @@ use crate::routes;
 pub async fn serve(
     manga: Manga,
     config: Config,
-    port: u16,
-    open: bool,
     readlist_path: Option<PathBuf>,
     readlist: Option<ReadList>,
 ) -> anyhow::Result<()> {
+    let port = config.port;
+    let open = config.open;
+
     let path = with(manga.path);
     let vols = with(manga.volumes);
     let readlist_lock = with(RwLock::new(readlist));

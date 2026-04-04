@@ -22,15 +22,6 @@ struct Args {
     #[arg(short, long)]
     generate: bool,
 
-    #[arg(long, default_value = ".mgr.toml")]
-    readlist_file: String,
-
-    #[arg(short, long, default_value_t = 7169)]
-    port: u16,
-
-    #[arg(short, long)]
-    open: bool,
-
     #[command(flatten)]
     config: Config,
 
@@ -50,7 +41,7 @@ async fn run(args: Args) -> anyhow::Result<()> {
     if args.generate {
         let [path] = args.paths.as_slice() else { bail!("--generate expects a single directory path") };
         ensure!(path.is_dir(), "No directory exists at: {}", path.display());
-        println!("Generated {}", readlist::generate(path, &args.readlist_file).await?.display());
+        println!("Generated {}", readlist::generate(path, &args.config.readlist_file).await?.display());
         return Ok(());
     }
 
@@ -60,12 +51,12 @@ async fn run(args: Args) -> anyhow::Result<()> {
         && path.is_dir()
     {
         let [path] = args.paths.as_slice() else { bail!("Directory path must be provided alone") };
-        let readlist_path = path.join(&args.readlist_file);
-        ensure!(readlist_path.is_file(), "No {} found in {}. Run: mgr -g", args.readlist_file, path.display());
+        let readlist_path = path.join(&args.config.readlist_file);
+        ensure!(readlist_path.is_file(), "No {} found in {}. Run: mgr -g", args.config.readlist_file, path.display());
         let readlist = ReadList::new(&readlist_path)?;
         let manga = Manga::from_readlist(path, &readlist)?;
-        return server::serve(manga, args.config, args.port, args.open, Some(readlist_path), Some(readlist)).await;
+        return server::serve(manga, args.config, Some(readlist_path), Some(readlist)).await;
     }
 
-    server::serve(Manga::new(args.paths.as_slice())?, args.config, args.port, args.open, None, None).await
+    server::serve(Manga::new(args.paths.as_slice())?, args.config, None, None).await
 }

@@ -5,6 +5,18 @@ use serde::Serialize;
 #[derive(Args, Serialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Config {
+    #[serde(skip)]
+    #[arg(short, long, default_value_t = 7169)]
+    pub port: u16,
+
+    #[serde(skip)]
+    #[arg(short, long)]
+    pub open: bool,
+
+    #[serde(skip)]
+    #[arg(long, default_value = ".mgr.toml")]
+    pub readlist_file: String,
+
     #[arg(long, default_value_t = 100.0)]
     pub zoom: f32,
 
