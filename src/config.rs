@@ -15,4 +15,7 @@ pub struct Config {
 
     #[arg(long, default_value_t = 200)]
     pub save_debounce: u32,
+
+    #[arg(long, default_value_t = 100)]
+    pub zoom: u32,
 }

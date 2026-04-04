@@ -9,7 +9,7 @@ import { Volume } from "./volume.js";
 
 /** @typedef {{ name: string, dims: [number, number] }} PageInfo */
 /** @typedef {{ name: string, hasMokuro: boolean, pageInfos: PageInfo[] }} VolumeInfo */
-/** @typedef {{ prefetchBack: number, prefetchForward: number, cursorTimeout: number, saveDebounce: number }} Config */
+/** @typedef {{ prefetchBack: number, prefetchForward: number, cursorTimeout: number, saveDebounce: number, zoom: number }} Config */
 
 /** @returns {Promise<void>} */
 async function init() {

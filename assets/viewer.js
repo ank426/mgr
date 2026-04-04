@@ -52,7 +52,7 @@ export class Viewer {
             lockDepth: 0,
 
             /** @type {number} */
-            zoom: 100,
+            zoom: config.zoom,
 
             /** @type {"page" | "scroll" | "volume" | null} */
             overlayMode: null,
