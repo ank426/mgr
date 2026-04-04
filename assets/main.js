@@ -8,7 +8,7 @@ import { Viewer } from "./viewer.js";
 import { Volume } from "./volume.js";
 
 /** @typedef {{ name: string, dims: [number, number] }} PageInfo */
-/** @typedef {{ name: string, mokuro?: string | null, pageInfos: PageInfo[] }} VolumeInfo */
+/** @typedef {{ name: string, hasMokuro: boolean, pageInfos: PageInfo[] }} VolumeInfo */
 /** @typedef {{ volumes: VolumeInfo[], prefetch: [number, number] }} Config */
 
 /** @returns {Promise<void>} */

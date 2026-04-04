@@ -29,7 +29,7 @@ pub fn build_html(manga: &Manga, prefetch: (f32, f32)) -> anyhow::Result<String>
                 let strip = if volume.pages.iter().all(|p| p.name.starts_with(&prefix)) { prefix.len() } else { 0 };
                 json!({
                     "name": &volume.name,
-                    "mokuro": &volume.mokuro,
+                    "hasMokuro": volume.mokuro.is_some(),
                     "pageInfos": volume.pages.iter().map(|page| json!({
                         "name": &page.name[strip..],
                         "dims": page.dimensions,
@@ -92,18 +92,21 @@ pub async fn page_response(
 
 pub async fn mokuro_response(volume_name: String, state: Arc<Manga>) -> Result<Response<Vec<u8>>, warp::Rejection> {
     let decoded_volume_name = percent_decode_str(&volume_name).decode_utf8_lossy();
-    let Some(volume) = state.volumes.iter().find(|volume| volume.name == decoded_volume_name) else {
+    let Some(mokuro_path) = state
+        .volumes
+        .iter()
+        .find(|v| v.name == decoded_volume_name)
+        .and_then(|v| v.mokuro.as_ref())
+        .map(|m| state.path.join(m))
+    else {
         return Ok(not_found_response());
     };
-    let Some(mokuro_name) = volume.mokuro.as_ref() else {
-        return Ok(ok_response("application/json; charset=utf-8", b"{}".to_vec()));
-    };
-    let mokuro_path = Path::new(mokuro_name);
-    let mokuro_path = if mokuro_path.is_absolute() { mokuro_path.to_path_buf() } else { state.path.join(mokuro_name) };
     match fs::read(&mokuro_path).await {
         Ok(data) => Ok(ok_response("application/json; charset=utf-8", data)),
-        Err(err) if err.kind() == std::io::ErrorKind::NotFound => Ok(not_found_response()),
-        Err(err) => Ok(server_error_response(format!("Failed to load mokuro file {}: {err}", mokuro_path.display()))),
+        Err(err) => Ok(server_error_response(format!(
+            "Failed to load volume {volume_name} mokuro {}: {err}",
+            mokuro_path.display()
+        ))),
     }
 }
 

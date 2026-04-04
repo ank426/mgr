@@ -16,8 +16,8 @@ export class Volume {
         /** @type {string} */
         this.name = data.name;
 
-        /** @type {string | null} */
-        this.mokuro = data.mokuro ?? null;
+        /** @type {boolean} */
+        this.hasMokuro = data.hasMokuro;
 
         /** @type {PageInfo[]} */
         this.pageInfos = data.pageInfos;
@@ -44,7 +44,7 @@ export class Volume {
 
     /** @param {Viewer} viewer */
     async _doExpand(viewer) {
-        const mokuroPagesByName = this.mokuro ? await fetchMokuroPages(this.name) : null;
+        const mokuroPagesByName = this.hasMokuro ? await fetchMokuroPages(this.name) : null;
         if (!this._expanded) {
             this._expandPromise = null;
             return;
