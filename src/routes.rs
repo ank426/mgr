@@ -57,25 +57,18 @@ pub async fn save_progress(
     progress: Progress,
     readlist_path: Arc<Option<PathBuf>>,
     readlist_lock: Arc<RwLock<Option<ReadList>>>,
-) -> Result<StatusCode, warp::Rejection> {
-    let save_data = if let Ok(mut guard) = readlist_lock.write()
-        && let Some(readlist) = guard.as_mut()
-        && let Some(path) = readlist_path.as_ref()
-    {
+) -> Result<Response<Vec<u8>>, warp::Rejection> {
+    let Some(path) = readlist_path.as_ref() else { return Ok(no_content_response()) };
+    let snapshot = {
+        let mut guard = readlist_lock.write().unwrap();
+        let Some(readlist) = guard.as_mut() else { return Ok(no_content_response()) };
         readlist.progress = progress;
-        Some((readlist.clone(), path.clone()))
-    } else {
-        None
+        readlist.clone()
     };
-
-    if let Some((readlist, path)) = save_data
-        && let Err(err) = readlist.save(&path).await
-    {
-        eprintln!("Failed to save progress: {err}");
-        return Ok(StatusCode::INTERNAL_SERVER_ERROR);
+    match snapshot.save(path).await {
+        Ok(()) => Ok(no_content_response()),
+        Err(err) => Ok(internal_server_error_response(format!("Failed to save progress: {err}"))),
     }
-
-    Ok(StatusCode::NO_CONTENT)
 }
 
 pub async fn page_response(
@@ -139,6 +132,10 @@ fn not_found_response() -> Response<Vec<u8>> {
         .header("content-type", "text/plain; charset=utf-8")
         .body(b"Not Found".to_vec())
         .expect("valid response")
+}
+
+fn no_content_response() -> Response<Vec<u8>> {
+    Response::builder().status(StatusCode::NO_CONTENT).body(Vec::new()).expect("valid response")
 }
 
 fn internal_server_error_response(message: String) -> Response<Vec<u8>> {
