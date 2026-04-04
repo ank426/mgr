@@ -29,17 +29,14 @@ pub fn get_config(config: Arc<Config>) -> Response<Vec<u8>> {
 pub fn get_volumes(volumes: Arc<Vec<Volume>>) -> Response<Vec<u8>> {
     let volumes = volumes
         .iter()
-        .map(|volume| {
-            let prefix = Path::new(&volume.name)
-                .file_stem()
-                .and_then(|s| s.to_str())
-                .map(|s| format!("{s}/"))
-                .unwrap_or_default();
-            let strip = if volume.pages.iter().all(|p| p.name.starts_with(&prefix)) { prefix.len() } else { 0 };
+        .map(|vol| {
+            let prefix =
+                Path::new(&vol.name).file_stem().and_then(|s| s.to_str()).map(|s| format!("{s}/")).unwrap_or_default();
+            let strip = if vol.pages.iter().all(|p| p.name.starts_with(&prefix)) { prefix.len() } else { 0 };
             json!({
-                "name": &volume.name,
-                "hasMokuro": volume.mokuro.is_some(),
-                "pageInfos": volume.pages.iter().map(|page| json!({
+                "name": &vol.name,
+                "hasMokuro": vol.mokuro.is_some(),
+                "pageInfos": vol.pages.iter().map(|page| json!({
                     "name": &page.name[strip..],
                     "dims": page.dimensions,
                 })).collect::<Vec<_>>()
@@ -115,17 +112,16 @@ pub async fn mokuro(
     path: Arc<PathBuf>,
     volumes: Arc<Vec<Volume>>,
 ) -> Result<Response<Vec<u8>>, warp::Rejection> {
-    let decoded_volume_name = percent_decode_str(&volume_name).decode_utf8_lossy();
-    let Some(mokuro_path) =
-        volumes.iter().find(|v| v.name == decoded_volume_name).and_then(|v| v.mokuro.as_ref()).map(|m| path.join(m))
+    let decoded = percent_decode_str(&volume_name).decode_utf8_lossy();
+    let Some(path) = volumes.iter().find(|v| v.name == decoded).and_then(|v| v.mokuro.as_ref()).map(|m| path.join(m))
     else {
         return Ok(error_response(StatusCode::NOT_FOUND, format!("Mokuro not found: {volume_name}")));
     };
-    match fs::read(&mokuro_path).await {
+    match fs::read(&path).await {
         Ok(data) => Ok(ok_response("application/json", data)),
         Err(err) => Ok(error_response(
             StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Failed to load volume {volume_name} mokuro {}: {err}", mokuro_path.display()),
+            format!("Failed to load volume {volume_name} mokuro {}: {err}", path.display()),
         )),
     }
 }
