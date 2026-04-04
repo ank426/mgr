@@ -47,17 +47,16 @@ pub fn build_html(manga: &Manga, prefetch: (f32, f32)) -> anyhow::Result<String>
 
 pub async fn asset_response(asset_name: String) -> Result<Response<Vec<u8>>, warp::Rejection> {
     match Assets::get(&asset_name) {
-        Some(file) => Ok(ok_response(asset_mime(&asset_name), file.data.into_owned())),
+        Some(file) => {
+            let mime = match Path::new(&asset_name).extension().and_then(|ext| ext.to_str()) {
+                Some("js") => "application/javascript; charset=utf-8",
+                Some("css") => "text/css; charset=utf-8",
+                Some("html") => "text/html; charset=utf-8",
+                _ => "application/octet-stream",
+            };
+            Ok(ok_response(mime, file.data.into_owned()))
+        }
         None => Ok(not_found_response()),
-    }
-}
-
-fn asset_mime(asset_name: &str) -> &'static str {
-    match Path::new(asset_name).extension().and_then(|ext| ext.to_str()) {
-        Some("js") => "application/javascript; charset=utf-8",
-        Some("css") => "text/css; charset=utf-8",
-        Some("html") => "text/html; charset=utf-8",
-        _ => "application/octet-stream",
     }
 }
 
@@ -126,16 +125,16 @@ pub async fn mokuro_response(volume_name: String, state: Arc<Manga>) -> Result<R
     }
 }
 
+fn no_content_response() -> Response<Vec<u8>> {
+    Response::builder().status(StatusCode::NO_CONTENT).body(Vec::new()).unwrap()
+}
+
 fn not_found_response() -> Response<Vec<u8>> {
     Response::builder()
         .status(StatusCode::NOT_FOUND)
         .header("content-type", "text/plain; charset=utf-8")
         .body(b"Not Found".to_vec())
-        .expect("valid response")
-}
-
-fn no_content_response() -> Response<Vec<u8>> {
-    Response::builder().status(StatusCode::NO_CONTENT).body(Vec::new()).expect("valid response")
+        .unwrap()
 }
 
 fn server_error_response(message: String) -> Response<Vec<u8>> {
@@ -143,7 +142,7 @@ fn server_error_response(message: String) -> Response<Vec<u8>> {
         .status(StatusCode::INTERNAL_SERVER_ERROR)
         .header("content-type", "text/plain; charset=utf-8")
         .body(message.into_bytes())
-        .expect("valid response")
+        .unwrap()
 }
 
 fn ok_response(mime: &str, data: Vec<u8>) -> Response<Vec<u8>> {
@@ -154,5 +153,5 @@ fn ok_response(mime: &str, data: Vec<u8>) -> Response<Vec<u8>> {
         .header("pragma", "no-cache")
         .header("expires", "0")
         .body(data)
-        .expect("valid response")
+        .unwrap()
 }
