@@ -9,13 +9,13 @@ import { Progress } from "./progress.js";
 /** @typedef {{ name: string, hasMokuro: boolean, pageInfos: PageInfo[] }} VolumeInfo */
 /**
  * @typedef {{
- *     prefetchBack: number,
- *     prefetchForward: number,
- *     cursorTimeout: number,
- *     saveDebounce: number,
  *     zoom: number,
  *     zoomMin: number,
  *     zoomMax: number,
+ *     cursorTimeout: number,
+ *     saveDebounce: number,
+ *     prefetchBack: number,
+ *     prefetchForward: number,
  *     volumeExpandBack: number,
  *     volumeExpandForward: number,
  * }} Config
