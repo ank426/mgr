@@ -45,12 +45,13 @@ pub fn build_html(manga: &Manga, prefetch: (f32, f32)) -> anyhow::Result<String>
         .replace("{prefetch}", &format!("[{}, {}]", prefetch.0, prefetch.1)))
 }
 
-pub fn get_progress(manga: &Manga, readlist_lock: &RwLock<Option<ReadList>>) -> Progress {
-    readlist_lock
+pub fn get_progress(manga: Arc<Manga>, readlist_lock: Arc<RwLock<Option<ReadList>>>) -> warp::reply::Json {
+    let progress = readlist_lock
         .read()
         .unwrap()
         .as_ref()
-        .map_or_else(|| Progress::new(manga.volumes[0].name.clone()), |r| r.progress.clone())
+        .map_or_else(|| Progress::new(manga.volumes[0].name.clone()), |r| r.progress.clone());
+    warp::reply::json(&progress)
 }
 
 pub async fn save_progress(
