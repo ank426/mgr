@@ -53,7 +53,7 @@ impl Manga {
                 ensure!(is_cbz(&file_path), "Unsupported file type: {} (expected .cbz)", file_path.display());
                 let volume = Volume::new(&file_path, entry.name.clone(), entry.mokuro.clone())?;
                 ensure!(
-                    entry.name != readlist.progress.file || readlist.progress.page <= volume.pages.len() as u32,
+                    entry.name != readlist.progress.file || readlist.progress.page <= volume.pages.len(),
                     "progress.page {} is out of range for '{}' (has {} pages)",
                     readlist.progress.page,
                     entry.name,

@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Progress {
     pub file: String,
-    pub page: u32,
+    pub page: usize,
     pub scroll: f64,
 }
 

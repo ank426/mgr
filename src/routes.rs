@@ -74,14 +74,14 @@ pub async fn save_progress(
 
 pub async fn page_response(
     volume_name: String,
-    page_number: u32,
+    page_number: usize,
     state: Arc<Manga>,
 ) -> Result<Response<Vec<u8>>, warp::Rejection> {
     let decoded_volume_name = percent_decode_str(&volume_name).decode_utf8_lossy();
     let Some(volume) = state.volumes.iter().find(|v| v.name == decoded_volume_name) else {
         return Ok(not_found_response());
     };
-    let Some(page) = page_number.checked_sub(1).and_then(|i| volume.pages.get(i as usize)) else {
+    let Some(page) = page_number.checked_sub(1).and_then(|i| volume.pages.get(i)) else {
         return Ok(not_found_response());
     };
     match page.load_bytes(state.path.join(&volume.name)).await {

@@ -24,7 +24,7 @@ pub async fn serve(
     let routes = warp::path::end()
         .map(move || warp::reply::html(html.clone()).into_response())
         .or(warp::path!("assets" / String).and_then(routes::asset_response))
-        .or(warp::path!("volume" / String / "page" / u32).and(with(manga.clone())).and_then(routes::page_response))
+        .or(warp::path!("volume" / String / "page" / usize).and(with(manga.clone())).and_then(routes::page_response))
         .or(warp::path!("volume" / String / "mokuro").and(with(manga.clone())).and_then(routes::mokuro_response))
         .or(warp::path!("api" / "progress")
             .and(warp::get())
