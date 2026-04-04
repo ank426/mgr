@@ -17,8 +17,7 @@ impl Manga {
         let volumes: Vec<Volume> = paths
             .iter()
             .map(|path| {
-                ensure!(path.exists(), "Path does not exist: {}", path.display());
-                ensure!(path.is_file(), "Path is not a file: {}", path.display());
+                ensure!(path.is_file(), "No file exists at: {}", path.display());
                 ensure!(is_cbz(path), "Unsupported file type: {} (expected .cbz)", path.display());
                 let mokuro_path = path.with_extension("mokuro");
                 let mokuro = mokuro_path.is_file().then_some(mokuro_path.to_string_lossy().into_owned());
@@ -52,8 +51,7 @@ impl Manga {
         let mut resolved = Vec::with_capacity(readlist.files.len());
         for entry in &readlist.files {
             let file_path = dir_path.join(&entry.name);
-            ensure!(file_path.exists(), "Readlist file '{}' does not exist", file_path.display());
-            ensure!(file_path.is_file(), "Readlist entry '{}' is not a file", file_path.display());
+            ensure!(file_path.is_file(), "No file exists at: {}", file_path.display());
             ensure!(is_cbz(&file_path), "Readlist file '{}' is not a supported archive (.cbz)", file_path.display());
             resolved.push((entry, file_path));
         }

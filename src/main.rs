@@ -52,8 +52,7 @@ async fn run(args: Args) -> anyhow::Result<()> {
         let [path] = args.paths.as_slice() else {
             bail!("--generate expects a single directory path");
         };
-        ensure!(path.exists(), "Path does not exist: {}", path.display());
-        ensure!(path.is_dir(), "Path is not a directory: {}", path.display());
+        ensure!(path.is_dir(), "No directory exists at: {}", path.display());
         println!("Generated {}", readlist::generate(path, &args.readlist_file).await?.display());
         return Ok(());
     }
