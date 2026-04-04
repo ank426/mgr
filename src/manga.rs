@@ -15,7 +15,7 @@ pub struct Manga {
 impl Manga {
     pub fn new(paths: &[PathBuf]) -> anyhow::Result<Self> {
         let volumes: Vec<Volume> = paths
-            .iter()
+            .par_iter()
             .map(|path| {
                 ensure!(path.is_file(), "No file exists at: {}", path.display());
                 ensure!(is_cbz(path), "Unsupported file type: {} (expected .cbz)", path.display());
