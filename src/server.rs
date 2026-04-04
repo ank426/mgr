@@ -1,12 +1,25 @@
+use std::net::Ipv4Addr;
 use std::path::PathBuf;
 use std::sync::{Arc, RwLock};
 
-use warp::Filter;
+use hyper::body::Incoming;
+use hyper::server::conn::http1;
+use hyper::service::service_fn;
+use hyper::{Method, Request};
+use hyper_util::rt::TokioIo;
+use tokio::net::TcpListener;
 
 use crate::config::Config;
 use crate::manga::Manga;
 use crate::readlist::ReadList;
-use crate::routes;
+use crate::routes::{self, Resp};
+
+struct State {
+    manga: Manga,
+    config: Config,
+    readlist_path: Option<PathBuf>,
+    readlist: RwLock<Option<ReadList>>,
+}
 
 pub async fn serve(
     manga: Manga,
@@ -14,46 +27,56 @@ pub async fn serve(
     readlist_path: Option<PathBuf>,
     readlist: Option<ReadList>,
 ) -> anyhow::Result<()> {
-    let port = config.port;
-    let open = config.open;
-
-    let path = with(manga.path);
-    let vols = with(manga.volumes);
-    let readlist_lock = with(RwLock::new(readlist));
-
-    let routes = (warp::path::end().and(with(manga.title)).map(routes::index))
-        .or(warp::path!("assets" / String).and_then(routes::asset))
-        .or(warp::path!("volume" / String / "page" / usize).and(path.clone()).and(vols.clone()).and_then(routes::page))
-        .or(warp::path!("volume" / String / "mokuro").and(path).and(vols.clone()).and_then(routes::mokuro))
-        .or(warp::path!("api" / "config").and(warp::get()).and(with(config)).map(routes::get_config))
-        .or(warp::path!("api" / "volumes").and(warp::get()).and(vols.clone()).map(routes::get_volumes))
-        .or(warp::path!("api" / "progress")
-            .and(warp::get())
-            .and(vols)
-            .and(readlist_lock.clone())
-            .map(routes::get_progress))
-        .or(warp::path!("api" / "progress")
-            .and(warp::put())
-            .and(warp::body::json())
-            .and(with(readlist_path))
-            .and(readlist_lock)
-            .and_then(routes::save_progress));
-
-    opening_port(port, open);
-
-    let shutdown = async { tokio::signal::ctrl_c().await.unwrap() };
-    warp::serve(routes).bind(([127, 0, 0, 1], port)).await.graceful(shutdown).run().await;
+    let shutdown = tokio::signal::ctrl_c();
+    tokio::pin!(shutdown);
+    let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, config.port)).await?;
+    announce(config.port, config.open);
+    let state = Arc::new(State { manga, config, readlist_path, readlist: RwLock::new(readlist) });
+    loop {
+        tokio::select! {
+            result = listener.accept() => {
+                let (stream, _) = result?;
+                let state = state.clone();
+                tokio::spawn(async move {
+                    let _ = http1::Builder::new()
+                        .serve_connection(TokioIo::new(stream), service_fn(|req| route(req, state.clone())))
+                        .await;
+                });
+            }
+            _ = &mut shutdown => break,
+        }
+    }
     Ok(())
 }
 
-fn with<T: Send + Sync + 'static>(
-    value: T,
-) -> impl warp::Filter<Extract = (Arc<T>,), Error = std::convert::Infallible> + Clone {
-    let arc = Arc::new(value);
-    warp::any().map(move || arc.clone())
+async fn route(req: Request<Incoming>, state: Arc<State>) -> Result<Resp, std::convert::Infallible> {
+    let path = req.uri().path();
+    Ok(match (req.method(), path) {
+        (&Method::GET, "/") => routes::index(&state.manga.title),
+        (&Method::GET, "/api/config") => routes::get_config(&state.config),
+        (&Method::GET, "/api/volumes") => routes::get_volumes(&state.manga.volumes),
+        (&Method::GET, "/api/progress") => routes::get_progress(&state.manga.volumes, &state.readlist),
+        (&Method::PUT, "/api/progress") => routes::save_progress(req, &state.readlist_path, &state.readlist).await,
+        (&Method::GET, _) if path.starts_with("/assets/") => routes::asset(&path["/assets/".len()..]),
+        (&Method::GET, _) if path.starts_with("/volume/") => route_volume(&path["/volume/".len()..], &state).await,
+        _ => routes::not_found(path),
+    })
 }
 
-fn opening_port(port: u16, open: bool) {
+async fn route_volume(rest: &str, state: &State) -> Resp {
+    let Some((volume, suffix)) = rest.split_once('/') else { return routes::not_found(rest) };
+    let volume = percent_encoding::percent_decode_str(volume).decode_utf8_lossy();
+    match suffix.split_once('/') {
+        Some(("page", page_num)) => match page_num.parse() {
+            Ok(page_num) => routes::page(&volume, page_num, &state.manga.path, &state.manga.volumes).await,
+            Err(_) => routes::not_found(rest),
+        },
+        None if suffix == "mokuro" => routes::mokuro(&volume, &state.manga.path, &state.manga.volumes).await,
+        _ => routes::not_found(rest),
+    }
+}
+
+fn announce(port: u16, open: bool) {
     let url = format!("http://localhost:{port}");
     println!("Serving on {url}");
     if open {

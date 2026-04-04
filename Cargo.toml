@@ -5,16 +5,18 @@ edition = "2024"
 
 [dependencies]
 alphanumeric-sort = "1.5.5"
+anyhow = "1"
 clap = { version = "4.6.0", features = ["derive"] }
+http-body-util = "0.1"
+hyper = { version = "1", features = ["http1", "server"] }
+hyper-util = { version = "0.1", features = ["tokio", "http1"] }
+open = "5.3.3"
 percent-encoding = "2.3.2"
 rayon = "1.11"
 rust-embed = "8.11.0"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.149"
-anyhow = "1"
 tikv-jemallocator = "0.6.1"
-tokio = { version = "1.51.0", features = ["fs", "macros", "rt-multi-thread", "signal"] }
+tokio = { version = "1.51.0", features = ["fs", "macros", "net", "rt-multi-thread", "signal"] }
 toml = "1.1.2"
-warp = { version = "0.4.2", features = ["server"] }
 zip = "8.5.0"
-open = "5.3.3"

@@ -1,32 +1,33 @@
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
 use std::sync::RwLock;
 
-use percent_encoding::percent_decode_str;
+use http_body_util::{BodyExt, Full};
+use hyper::body::{Bytes, Incoming};
+use hyper::{Request, Response, StatusCode};
 use rust_embed::RustEmbed;
 use serde_json::json;
-use tokio::fs;
-use warp::http::{Response, StatusCode};
 
 use crate::cbz::Volume;
 use crate::config::Config;
 use crate::readlist::{Progress, ReadList};
 
+pub type Resp = Response<Full<Bytes>>;
+
 #[derive(RustEmbed)]
 #[folder = "assets/"]
 struct Assets;
 
-pub fn index(title: Arc<String>) -> Response<Vec<u8>> {
+pub fn index(title: &str) -> Resp {
     let html =
-        String::from_utf8(Assets::get("index.html").unwrap().data.into_owned()).unwrap().replace("{title}", &title);
+        String::from_utf8(Assets::get("index.html").unwrap().data.into_owned()).unwrap().replace("{title}", title);
     ok_response("text/html", html.into_bytes())
 }
 
-pub fn get_config(config: Arc<Config>) -> Response<Vec<u8>> {
-    ok_response("application/json", serde_json::to_vec(&*config).unwrap())
+pub fn get_config(config: &Config) -> Resp {
+    ok_response("application/json", serde_json::to_vec(config).unwrap())
 }
 
-pub fn get_volumes(volumes: Arc<Vec<Volume>>) -> Response<Vec<u8>> {
+pub fn get_volumes(volumes: &[Volume]) -> Resp {
     let volumes = volumes
         .iter()
         .map(|vol| {
@@ -46,33 +47,41 @@ pub fn get_volumes(volumes: Arc<Vec<Volume>>) -> Response<Vec<u8>> {
     ok_response("application/json", serde_json::to_vec(&volumes).unwrap())
 }
 
-pub async fn asset(asset_name: String) -> Result<Response<Vec<u8>>, warp::Rejection> {
-    match Assets::get(&asset_name) {
+pub fn asset(name: &str) -> Resp {
+    match Assets::get(name) {
         Some(file) => {
-            let mime = match Path::new(&asset_name).extension().and_then(|ext| ext.to_str()) {
+            let mime = match Path::new(name).extension().and_then(|ext| ext.to_str()) {
                 Some("js") => "application/javascript",
                 Some("css") => "text/css",
                 Some("html") => "text/html",
                 _ => "application/octet-stream",
             };
-            Ok(ok_response(mime, file.data.into_owned()))
+            ok_response(mime, file.data.into_owned())
         }
-        None => Ok(error_response(StatusCode::NOT_FOUND, format!("Asset not found: {asset_name}"))),
+        None => error_response(StatusCode::NOT_FOUND, format!("Asset not found: {name}")),
     }
 }
 
-pub fn get_progress(volumes: Arc<Vec<Volume>>, rl_lock: Arc<RwLock<Option<ReadList>>>) -> Response<Vec<u8>> {
+pub fn get_progress(vols: &[Volume], readlist: &RwLock<Option<ReadList>>) -> Resp {
     let progress =
-        rl_lock.read().unwrap().as_ref().map_or_else(|| Progress::new(volumes[0].name.clone()), |r| r.progress.clone());
+        readlist.read().unwrap().as_ref().map_or_else(|| Progress::new(vols[0].name.clone()), |r| r.progress.clone());
     ok_response("application/json", serde_json::to_vec(&progress).unwrap())
 }
 
 pub async fn save_progress(
-    progress: Progress,
-    readlist_path: Arc<Option<PathBuf>>,
-    readlist_lock: Arc<RwLock<Option<ReadList>>>,
-) -> Result<Response<Vec<u8>>, warp::Rejection> {
-    let Some(path) = readlist_path.as_ref() else { return Ok(no_content_response()) };
+    req: Request<Incoming>,
+    readlist_path: &Option<PathBuf>,
+    readlist_lock: &RwLock<Option<ReadList>>,
+) -> Resp {
+    let Some(path) = readlist_path.as_ref() else { return no_content_response() };
+    let body = match req.collect().await {
+        Ok(b) => b.to_bytes(),
+        Err(err) => return error_response(StatusCode::BAD_REQUEST, format!("Failed to read body: {err}")),
+    };
+    let progress: Progress = match serde_json::from_slice(&body) {
+        Ok(p) => p,
+        Err(err) => return error_response(StatusCode::BAD_REQUEST, format!("Invalid JSON: {err}")),
+    };
     let snapshot = {
         let mut guard = readlist_lock.write().unwrap();
         let readlist = guard.as_mut().unwrap();
@@ -80,66 +89,60 @@ pub async fn save_progress(
         readlist.clone()
     };
     match snapshot.save(path).await {
-        Ok(()) => Ok(no_content_response()),
-        Err(err) => Ok(error_response(StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to save progress: {err}"))),
+        Ok(()) => no_content_response(),
+        Err(err) => error_response(StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to save progress: {err}")),
     }
 }
 
-pub async fn page(
-    volume_name: String,
-    page_number: usize,
-    path: Arc<PathBuf>,
-    volumes: Arc<Vec<Volume>>,
-) -> Result<Response<Vec<u8>>, warp::Rejection> {
-    let decoded_volume_name = percent_decode_str(&volume_name).decode_utf8_lossy();
-    let Some(volume) = volumes.iter().find(|v| v.name == decoded_volume_name) else {
-        return Ok(error_response(StatusCode::NOT_FOUND, format!("Volume not found: {volume_name}")));
+pub async fn page(volume_name: &str, page_number: usize, path: &Path, volumes: &[Volume]) -> Resp {
+    let Some(volume) = volumes.iter().find(|v| v.name == volume_name) else {
+        return error_response(StatusCode::NOT_FOUND, format!("Volume not found: {volume_name}"));
     };
     let Some(page) = page_number.checked_sub(1).and_then(|i| volume.pages.get(i)) else {
-        return Ok(error_response(StatusCode::NOT_FOUND, format!("Page not found: {volume_name} page {page_number}")));
+        return error_response(StatusCode::NOT_FOUND, format!("Page not found: {volume_name} page {page_number}"));
     };
     match page.load_bytes(path.join(&volume.name)).await {
-        Ok(data) => Ok(ok_response(page.mime, data)),
-        Err(err) => Ok(error_response(
+        Ok(data) => ok_response(page.mime, data),
+        Err(err) => error_response(
             StatusCode::INTERNAL_SERVER_ERROR,
             format!("Failed to load volume {volume_name} page {page_number}: {err}"),
-        )),
+        ),
     }
 }
 
-pub async fn mokuro(
-    volume_name: String,
-    path: Arc<PathBuf>,
-    volumes: Arc<Vec<Volume>>,
-) -> Result<Response<Vec<u8>>, warp::Rejection> {
-    let decoded = percent_decode_str(&volume_name).decode_utf8_lossy();
-    let Some(path) = volumes.iter().find(|v| v.name == decoded).and_then(|v| v.mokuro.as_ref()).map(|m| path.join(m))
+pub async fn mokuro(volume_name: &str, path: &Path, volumes: &[Volume]) -> Resp {
+    let Some(path) =
+        volumes.iter().find(|v| v.name == volume_name).and_then(|v| v.mokuro.as_ref()).map(|m| path.join(m))
     else {
-        return Ok(error_response(StatusCode::NOT_FOUND, format!("Mokuro not found: {volume_name}")));
+        return error_response(StatusCode::NOT_FOUND, format!("Mokuro not found: {volume_name}"));
     };
-    match fs::read(&path).await {
-        Ok(data) => Ok(ok_response("application/json", data)),
-        Err(err) => Ok(error_response(
+    match tokio::fs::read(&path).await {
+        Ok(data) => ok_response("application/json", data),
+        Err(err) => error_response(
             StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Failed to load volume {volume_name} mokuro {}: {err}", path.display()),
-        )),
+            format!("Failed to load mokuro {}: {err}", path.display()),
+        ),
     }
 }
 
-fn no_content_response() -> Response<Vec<u8>> {
-    Response::builder().status(StatusCode::NO_CONTENT).body(Vec::new()).unwrap()
+pub fn not_found(path: &str) -> Resp {
+    error_response(StatusCode::NOT_FOUND, format!("Not found: {path}"))
 }
 
-fn error_response(status: StatusCode, message: String) -> Response<Vec<u8>> {
-    Response::builder().status(status).body(message.into_bytes()).unwrap()
+fn no_content_response() -> Resp {
+    Response::builder().status(StatusCode::NO_CONTENT).body(Full::new(Bytes::new())).unwrap()
 }
 
-fn ok_response(mime: &str, data: Vec<u8>) -> Response<Vec<u8>> {
+fn error_response(status: StatusCode, message: String) -> Resp {
+    Response::builder().status(status).body(Full::new(Bytes::from(message))).unwrap()
+}
+
+fn ok_response(mime: &str, data: Vec<u8>) -> Resp {
     Response::builder()
         .header("content-type", mime)
         .header("cache-control", "no-store, no-cache, must-revalidate, max-age=0")
         .header("pragma", "no-cache")
         .header("expires", "0")
-        .body(data)
+        .body(Full::new(Bytes::from(data)))
         .unwrap()
 }
