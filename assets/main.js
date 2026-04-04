@@ -7,10 +7,6 @@ import { scheduleReconcile } from "./reconcile.js";
 import { Viewer } from "./viewer.js";
 import { Volume } from "./volume.js";
 
-/** @typedef {{ name: string, dims: [number, number] }} PageInfo */
-/** @typedef {{ name: string, hasMokuro: boolean, pageInfos: PageInfo[] }} VolumeInfo */
-/** @typedef {{ prefetchBack: number, prefetchForward: number, cursorTimeout: number, saveDebounce: number, zoom: number, zoomMin: number, zoomMax: number, volumeExpandBack: number, volumeExpandForward: number }} Config */
-
 /** @returns {Promise<void>} */
 async function init() {
     const [volumes, config] = await Promise.all([

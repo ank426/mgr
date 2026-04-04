@@ -2,10 +2,24 @@
 
 import { Progress } from "./progress.js";
 
-/** @typedef {import("./main.js").Config} Config */
-/** @typedef {import("./main.js").VolumeInfo} VolumeInfo */
 /** @typedef {import("./page.js").Page} Page */
 /** @typedef {import("./volume.js").Volume} Volume */
+
+/** @typedef {{ name: string, dims: [number, number] }} PageInfo */
+/** @typedef {{ name: string, hasMokuro: boolean, pageInfos: PageInfo[] }} VolumeInfo */
+/**
+ * @typedef {{
+ *     prefetchBack: number,
+ *     prefetchForward: number,
+ *     cursorTimeout: number,
+ *     saveDebounce: number,
+ *     zoom: number,
+ *     zoomMin: number,
+ *     zoomMax: number,
+ *     volumeExpandBack: number,
+ *     volumeExpandForward: number,
+ * }} Config
+ */
 
 export class Viewer {
     /** @param {VolumeInfo[]} volumes @param {Config} config */

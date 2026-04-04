@@ -4,8 +4,8 @@ import { fetchMokuroPages } from "./mokuro.js";
 import { Page } from "./page.js";
 
 /** @typedef {import("./viewer.js").Viewer} Viewer */
-/** @typedef {import("./main.js").PageInfo} PageInfo */
-/** @typedef {import("./main.js").VolumeInfo} VolumeInfo */
+/** @typedef {import("./viewer.js").PageInfo} PageInfo */
+/** @typedef {import("./viewer.js").VolumeInfo} VolumeInfo */
 
 export class Volume {
     /** @param {number} index @param {VolumeInfo} data @param {HTMLElement} section */
