@@ -17,3 +17,4 @@ tokio = { version = "1.50.0", features = ["fs", "macros", "rt-multi-thread", "si
 toml = "0.9.12"
 warp = { version = "0.4.2", features = ["server"] }
 zip = "8.4.0"
+open = "5.3.3"

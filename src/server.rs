@@ -1,5 +1,4 @@
 use std::path::PathBuf;
-use std::process::Command;
 use std::sync::{Arc, RwLock};
 
 use warp::Filter;
@@ -62,18 +61,11 @@ fn with<T: Clone + Send>(value: T) -> impl warp::Filter<Extract = (T,), Error = 
 
 fn opening_port(port: u16, open: bool) {
     let url = format!("http://localhost:{port}");
-    println!("Open {url}");
-    if !open {
-        return;
-    }
-    let result = if cfg!(target_os = "windows") {
-        Command::new("cmd").args(["/C", "start", "", &url]).spawn()
-    } else if cfg!(target_os = "macos") {
-        Command::new("open").arg(&url).spawn()
-    } else {
-        Command::new("xdg-open").arg(&url).spawn()
-    };
-    if let Err(err) = result {
-        eprintln!("Failed to open browser: {err}");
+    println!("Serving on {url}");
+    if open {
+        match open::that(&url) {
+            Ok(()) => println!("Opening in browser"),
+            Err(err) => eprintln!("Failed to open browser: {err}"),
+        }
     }
 }
