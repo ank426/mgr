@@ -9,7 +9,7 @@ import { Volume } from "./volume.js";
 
 /** @typedef {{ name: string, dims: [number, number] }} PageInfo */
 /** @typedef {{ name: string, hasMokuro: boolean, pageInfos: PageInfo[] }} VolumeInfo */
-/** @typedef {{ prefetchBack: number, prefetchForward: number, cursorTimeout: number, saveDebounce: number, zoom: number }} Config */
+/** @typedef {{ prefetchBack: number, prefetchForward: number, cursorTimeout: number, saveDebounce: number, zoom: number, zoomMin: number, zoomMax: number, background: string, inverted: boolean }} Config */
 
 /** @returns {Promise<void>} */
 async function init() {
@@ -34,6 +34,8 @@ function initDom(viewer) {
         fragment.appendChild(article);
     }
     viewer.pagesRoot.replaceChildren(fragment);
+    document.body.style.background = viewer.config.background;
+    if (viewer.config.inverted) document.body.style.filter = "invert(1)";
 }
 
 /** @param {Viewer} viewer */

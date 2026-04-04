@@ -18,4 +18,16 @@ pub struct Config {
 
     #[arg(long, default_value_t = 100)]
     pub zoom: u32,
+
+    #[arg(long, default_value_t = 10)]
+    pub zoom_min: u32,
+
+    #[arg(long, default_value_t = 500)]
+    pub zoom_max: u32,
+
+    #[arg(long, default_value = "black")]
+    pub background: String,
+
+    #[arg(long)]
+    pub inverted: bool,
 }

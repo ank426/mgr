@@ -9,7 +9,7 @@ export async function onKey(viewer, event) {
         case "-": {
             if (event.key === "=") viewer.state.zoom += 5;
             if (event.key === "-") viewer.state.zoom -= 5;
-            viewer.state.zoom = Math.max(10, Math.min(500, viewer.state.zoom));
+            viewer.state.zoom = Math.max(viewer.config.zoomMin, Math.min(viewer.config.zoomMax, viewer.state.zoom));
             const centerRatio = (scrollX + innerWidth / 2) / document.documentElement.scrollWidth;
             viewer.withScrollRestore(() => (viewer.pagesRoot.style.width = `${viewer.state.zoom}%`));
             scrollTo({ left: centerRatio * document.documentElement.scrollWidth - innerWidth / 2 });
