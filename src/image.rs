@@ -19,7 +19,7 @@ pub fn read_image_info(mut reader: impl Read) -> io::Result<Option<(&'static str
 // PNG: width/height as u32 BE at file offsets 16 and 20.
 fn png_dimensions(reader: &mut impl Read) -> io::Result<(u32, u32)> {
     let b = read_arr::<12>(reader)?;
-    Ok((u32_be(&b[4..]), u32_be(&b[8..])))
+    Ok((u32_be(&b[4..8]), u32_be(&b[8..12])))
 }
 
 // WebP: dispatch on VP8 chunk variant (lossy, lossless, extended).
@@ -29,18 +29,18 @@ fn webp_dimensions(reader: &mut impl Read) -> io::Result<(u32, u32)> {
         b' ' => {
             // Lossy: width/height as u16 LE at chunk offsets 6 and 8 (lower 14 bits)
             let b = read_arr::<10>(reader)?;
-            Ok(((u16_le(&b[6..]) & 0x3FFF) as u32, (u16_le(&b[8..]) & 0x3FFF) as u32))
+            Ok(((u16_le(&b[6..8]) & 0x3FFF) as u32, (u16_le(&b[8..10]) & 0x3FFF) as u32))
         }
         b'L' => {
             // Lossless: 1 signature byte + 4 bytes bit-packed dimensions
             let b = read_arr::<5>(reader)?;
-            let bits = u32_le(&b[1..]);
+            let bits = u32_le(&b[1..5]);
             Ok(((bits & 0x3FFF) + 1, ((bits >> 14) & 0x3FFF) + 1))
         }
         b'X' => {
             // Extended: 4 bytes flags + width-1 and height-1 as u24 LE
             let b = read_arr::<10>(reader)?;
-            Ok((u24_le(&b[4..]) + 1, u24_le(&b[7..]) + 1))
+            Ok((u24_le(&b[4..7]) + 1, u24_le(&b[7..10]) + 1))
         }
         _ => Err(invalid("unknown WebP variant")),
     }
@@ -70,7 +70,7 @@ fn jpeg_dimensions(prefix: &[u8], reader: &mut impl Read) -> io::Result<(u32, u3
             0xC0..=0xC3 | 0xC5..=0xC7 | 0xC9..=0xCB | 0xCD..=0xCF => {
                 // length(2) + precision(1) + height(2) + width(2)
                 let d = read_arr::<7>(&mut r)?;
-                return Ok((u16_be(&d[5..]) as u32, u16_be(&d[3..]) as u32));
+                return Ok((u16_be(&d[5..7]) as u32, u16_be(&d[3..5]) as u32));
             }
             // All other markers: read length, skip body
             _ => {
