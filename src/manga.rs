@@ -14,20 +14,21 @@ pub struct Manga {
 
 impl Manga {
     pub fn new(paths: &[PathBuf]) -> anyhow::Result<Self> {
-        ensure!(!paths.is_empty(), "No files provided");
-
-        let mut volumes = Vec::with_capacity(paths.len());
-        for path in paths {
-            ensure!(path.exists(), "Path does not exist: {}", path.display());
-            ensure!(path.is_file(), "Path is not a file: {}", path.display());
-            ensure!(is_cbz(path), "Unsupported file type: {} (expected .cbz)", path.display());
-
-            let mokuro_path = path.with_extension("mokuro");
-            let mokuro = mokuro_path.is_file().then_some(mokuro_path.to_string_lossy().into_owned());
-            volumes.push(Volume::new(path, path.to_string_lossy().into_owned(), mokuro)?);
-        }
-
-        let title = if volumes.len() == 1 { volumes[0].name.clone() } else { "mgr".to_string() };
+        let volumes: Vec<Volume> = paths
+            .iter()
+            .map(|path| {
+                ensure!(path.exists(), "Path does not exist: {}", path.display());
+                ensure!(path.is_file(), "Path is not a file: {}", path.display());
+                ensure!(is_cbz(path), "Unsupported file type: {} (expected .cbz)", path.display());
+                let mokuro_path = path.with_extension("mokuro");
+                let mokuro = mokuro_path.is_file().then_some(mokuro_path.to_string_lossy().into_owned());
+                Volume::new(path, path.to_string_lossy().into_owned(), mokuro)
+            })
+            .collect::<anyhow::Result<_>>()?;
+        let title = match volumes.as_slice() {
+            [volume] => volume.name.clone(),
+            _ => "mgr".to_string(),
+        };
         Ok(Self { path: PathBuf::from("."), title, volumes })
     }
 
