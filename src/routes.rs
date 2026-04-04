@@ -78,7 +78,7 @@ pub async fn page_response(
     state: Arc<Manga>,
 ) -> Result<Response<Vec<u8>>, warp::Rejection> {
     let decoded_volume_name = percent_decode_str(&volume_name).decode_utf8_lossy();
-    let Some(volume) = state.volumes.iter().find(|volume| volume.name == decoded_volume_name) else {
+    let Some(volume) = state.volumes.iter().find(|v| v.name == decoded_volume_name) else {
         return Ok(not_found_response());
     };
     let Some(page) = page_number.checked_sub(1).and_then(|i| volume.pages.get(i as usize)) else {
