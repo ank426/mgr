@@ -41,10 +41,7 @@ pub async fn serve(
             .and(with(shared_readlist.clone()))
             .and_then(routes::save_progress));
 
-    println!("Open http://127.0.0.1:{port}");
-    if open {
-        open_browser(port);
-    }
+    opening_port(port, open);
 
     warp::serve(routes)
         .bind(([127, 0, 0, 1], port))
@@ -63,8 +60,12 @@ fn with<T: Clone + Send>(value: T) -> impl warp::Filter<Extract = (T,), Error = 
     warp::any().map(move || value.clone())
 }
 
-fn open_browser(port: u16) {
+fn opening_port(port: u16, open: bool) {
     let url = format!("http://localhost:{port}");
+    println!("Open {url}");
+    if !open {
+        return;
+    }
     let result = if cfg!(target_os = "windows") {
         Command::new("cmd").args(["/C", "start", "", &url]).spawn()
     } else if cfg!(target_os = "macos") {
@@ -72,7 +73,6 @@ fn open_browser(port: u16) {
     } else {
         Command::new("xdg-open").arg(&url).spawn()
     };
-
     if let Err(err) = result {
         eprintln!("Failed to open browser: {err}");
     }
