@@ -56,7 +56,7 @@ pub async fn asset_response(asset_name: String) -> Result<Response<Vec<u8>>, war
             };
             Ok(ok_response(mime, file.data.into_owned()))
         }
-        None => Ok(not_found_response()),
+        None => Ok(error_response(StatusCode::NOT_FOUND, format!("Asset not found: {asset_name}"))),
     }
 }
 
@@ -83,7 +83,7 @@ pub async fn save_progress(
     };
     match snapshot.save(path).await {
         Ok(()) => Ok(no_content_response()),
-        Err(err) => Ok(server_error_response(format!("Failed to save progress: {err}"))),
+        Err(err) => Ok(error_response(StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to save progress: {err}"))),
     }
 }
 
@@ -94,14 +94,17 @@ pub async fn page_response(
 ) -> Result<Response<Vec<u8>>, warp::Rejection> {
     let decoded_volume_name = percent_decode_str(&volume_name).decode_utf8_lossy();
     let Some(volume) = state.volumes.iter().find(|v| v.name == decoded_volume_name) else {
-        return Ok(not_found_response());
+        return Ok(error_response(StatusCode::NOT_FOUND, format!("Volume not found: {volume_name}")));
     };
     let Some(page) = page_number.checked_sub(1).and_then(|i| volume.pages.get(i)) else {
-        return Ok(not_found_response());
+        return Ok(error_response(StatusCode::NOT_FOUND, format!("Page not found: {volume_name} page {page_number}")));
     };
     match page.load_bytes(state.path.join(&volume.name)).await {
         Ok(data) => Ok(ok_response(page.mime, data)),
-        Err(err) => Ok(server_error_response(format!("Failed to load volume {volume_name} page {page_number}: {err}"))),
+        Err(err) => Ok(error_response(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Failed to load volume {volume_name} page {page_number}: {err}"),
+        )),
     }
 }
 
@@ -114,35 +117,19 @@ pub async fn mokuro_response(volume_name: String, state: Arc<Manga>) -> Result<R
         .and_then(|v| v.mokuro.as_ref())
         .map(|m| state.path.join(m))
     else {
-        return Ok(not_found_response());
+        return Ok(error_response(StatusCode::NOT_FOUND, format!("Mokuro not found: {volume_name}")));
     };
     match fs::read(&mokuro_path).await {
         Ok(data) => Ok(ok_response("application/json; charset=utf-8", data)),
-        Err(err) => Ok(server_error_response(format!(
-            "Failed to load volume {volume_name} mokuro {}: {err}",
-            mokuro_path.display()
-        ))),
+        Err(err) => Ok(error_response(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Failed to load volume {volume_name} mokuro {}: {err}", mokuro_path.display()),
+        )),
     }
 }
 
 fn no_content_response() -> Response<Vec<u8>> {
     Response::builder().status(StatusCode::NO_CONTENT).body(Vec::new()).unwrap()
-}
-
-fn not_found_response() -> Response<Vec<u8>> {
-    Response::builder()
-        .status(StatusCode::NOT_FOUND)
-        .header("content-type", "text/plain; charset=utf-8")
-        .body(b"Not Found".to_vec())
-        .unwrap()
-}
-
-fn server_error_response(message: String) -> Response<Vec<u8>> {
-    Response::builder()
-        .status(StatusCode::INTERNAL_SERVER_ERROR)
-        .header("content-type", "text/plain; charset=utf-8")
-        .body(message.into_bytes())
-        .unwrap()
 }
 
 fn ok_response(mime: &str, data: Vec<u8>) -> Response<Vec<u8>> {
@@ -153,5 +140,13 @@ fn ok_response(mime: &str, data: Vec<u8>) -> Response<Vec<u8>> {
         .header("pragma", "no-cache")
         .header("expires", "0")
         .body(data)
+        .unwrap()
+}
+
+fn error_response(status: StatusCode, message: String) -> Response<Vec<u8>> {
+    Response::builder()
+        .status(status)
+        .header("content-type", "text/plain; charset=utf-8")
+        .body(message.into_bytes())
         .unwrap()
 }
