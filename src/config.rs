@@ -4,14 +4,14 @@ use serde::Serialize;
 #[derive(Args, Serialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Config {
-    #[arg(long, default_value_t = 100)]
-    pub zoom: u32,
+    #[arg(long, default_value_t = 100.0)]
+    pub zoom: f32,
 
-    #[arg(long, default_value_t = 10)]
-    pub zoom_min: u32,
+    #[arg(long, default_value_t = 10.0)]
+    pub zoom_min: f32,
 
-    #[arg(long, default_value_t = 500)]
-    pub zoom_max: u32,
+    #[arg(long, default_value_t = 500.0)]
+    pub zoom_max: f32,
 
     #[arg(long, default_value_t = 500)]
     pub cursor_timeout: u32,
@@ -26,8 +26,8 @@ pub struct Config {
     pub prefetch_forward: f32,
 
     #[arg(long, default_value_t = 1)]
-    pub volume_expand_back: u32,
+    pub volume_expand_back: u8,
 
     #[arg(long, default_value_t = 1)]
-    pub volume_expand_forward: u32,
+    pub volume_expand_forward: u8,
 }
