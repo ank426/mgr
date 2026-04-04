@@ -1,4 +1,5 @@
 mod cbz;
+mod config;
 mod image;
 mod manga;
 mod readlist;
@@ -9,6 +10,7 @@ use anyhow::{bail, ensure};
 use clap::Parser;
 use std::path::PathBuf;
 
+use config::Config;
 use manga::Manga;
 use readlist::ReadList;
 
@@ -56,7 +58,7 @@ async fn run(args: Args) -> anyhow::Result<()> {
     }
 
     ensure!(args.prefetch_back.is_finite() && args.prefetch_forward.is_finite(), "prefetch values must be finite");
-    let prefetch = (args.prefetch_back, args.prefetch_forward);
+    let config = Config { prefetch: (args.prefetch_back, args.prefetch_forward) };
 
     if let Some(path) = args.paths.first()
         && path.is_dir()
@@ -66,8 +68,8 @@ async fn run(args: Args) -> anyhow::Result<()> {
         ensure!(readlist_path.is_file(), "No {} found in {}. Run: mgr -g", args.readlist_file, path.display());
         let readlist = ReadList::new(&readlist_path)?;
         let manga = Manga::from_readlist(path, &readlist)?;
-        return server::serve(manga, args.port, prefetch, args.open, Some(readlist_path), Some(readlist)).await;
+        return server::serve(manga, config, args.port, args.open, Some(readlist_path), Some(readlist)).await;
     }
 
-    server::serve(Manga::new(args.paths.as_slice())?, args.port, prefetch, args.open, None, None).await
+    server::serve(Manga::new(args.paths.as_slice())?, config, args.port, args.open, None, None).await
 }

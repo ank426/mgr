@@ -1,57 +1,61 @@
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
+use std::sync::RwLock;
 
-use anyhow::Context;
 use percent_encoding::percent_decode_str;
 use rust_embed::RustEmbed;
 use serde_json::json;
 use tokio::fs;
 use warp::http::{Response, StatusCode};
 
-use crate::manga::Manga;
+use crate::cbz::Volume;
+use crate::config::Config;
 use crate::readlist::{Progress, ReadList};
 
 #[derive(RustEmbed)]
 #[folder = "assets/"]
 struct Assets;
 
-pub fn build_html(manga: &Manga, prefetch: (f32, f32)) -> anyhow::Result<String> {
-    let volumes_json = serde_json::to_string(
-        &manga
-            .volumes
-            .iter()
-            .map(|volume| {
-                let prefix = Path::new(&volume.name)
-                    .file_stem()
-                    .and_then(|s| s.to_str())
-                    .map(|s| format!("{s}/"))
-                    .unwrap_or_default();
-                let strip = if volume.pages.iter().all(|p| p.name.starts_with(&prefix)) { prefix.len() } else { 0 };
-                json!({
-                    "name": &volume.name,
-                    "hasMokuro": volume.mokuro.is_some(),
-                    "pageInfos": volume.pages.iter().map(|page| json!({
-                        "name": &page.name[strip..],
-                        "dims": page.dimensions,
-                    })).collect::<Vec<_>>()
-                })
-            })
-            .collect::<Vec<_>>(),
-    )?;
-
-    Ok(String::from_utf8(Assets::get("index.html").context("index.html not found")?.data.into_owned())?
-        .replace("{title}", &manga.title)
-        .replace("{volumes}", &volumes_json)
-        .replace("{prefetch}", &format!("[{}, {}]", prefetch.0, prefetch.1)))
+pub fn index(title: Arc<String>) -> Response<Vec<u8>> {
+    let html =
+        String::from_utf8(Assets::get("index.html").unwrap().data.into_owned()).unwrap().replace("{title}", &title);
+    ok_response("text/html", html.into_bytes())
 }
 
-pub async fn asset_response(asset_name: String) -> Result<Response<Vec<u8>>, warp::Rejection> {
+pub fn get_config(config: Arc<Config>) -> Response<Vec<u8>> {
+    ok_response("application/json", serde_json::to_vec(&*config).unwrap())
+}
+
+pub fn get_volumes(volumes: Arc<Vec<Volume>>) -> Response<Vec<u8>> {
+    let volumes = volumes
+        .iter()
+        .map(|volume| {
+            let prefix = Path::new(&volume.name)
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .map(|s| format!("{s}/"))
+                .unwrap_or_default();
+            let strip = if volume.pages.iter().all(|p| p.name.starts_with(&prefix)) { prefix.len() } else { 0 };
+            json!({
+                "name": &volume.name,
+                "hasMokuro": volume.mokuro.is_some(),
+                "pageInfos": volume.pages.iter().map(|page| json!({
+                    "name": &page.name[strip..],
+                    "dims": page.dimensions,
+                })).collect::<Vec<_>>()
+            })
+        })
+        .collect::<Vec<_>>();
+    ok_response("application/json", serde_json::to_vec(&volumes).unwrap())
+}
+
+pub async fn asset(asset_name: String) -> Result<Response<Vec<u8>>, warp::Rejection> {
     match Assets::get(&asset_name) {
         Some(file) => {
             let mime = match Path::new(&asset_name).extension().and_then(|ext| ext.to_str()) {
-                Some("js") => "application/javascript; charset=utf-8",
-                Some("css") => "text/css; charset=utf-8",
-                Some("html") => "text/html; charset=utf-8",
+                Some("js") => "application/javascript",
+                Some("css") => "text/css",
+                Some("html") => "text/html",
                 _ => "application/octet-stream",
             };
             Ok(ok_response(mime, file.data.into_owned()))
@@ -60,13 +64,13 @@ pub async fn asset_response(asset_name: String) -> Result<Response<Vec<u8>>, war
     }
 }
 
-pub fn get_progress(manga: Arc<Manga>, readlist_lock: Arc<RwLock<Option<ReadList>>>) -> warp::reply::Json {
+pub fn get_progress(volumes: Arc<Vec<Volume>>, readlist_lock: Arc<RwLock<Option<ReadList>>>) -> Response<Vec<u8>> {
     let progress = readlist_lock
         .read()
         .unwrap()
         .as_ref()
-        .map_or_else(|| Progress::new(manga.volumes[0].name.clone()), |r| r.progress.clone());
-    warp::reply::json(&progress)
+        .map_or_else(|| Progress::new(volumes[0].name.clone()), |r| r.progress.clone());
+    ok_response("application/json", serde_json::to_vec(&progress).unwrap())
 }
 
 pub async fn save_progress(
@@ -87,19 +91,20 @@ pub async fn save_progress(
     }
 }
 
-pub async fn page_response(
+pub async fn page(
     volume_name: String,
     page_number: usize,
-    state: Arc<Manga>,
+    path: Arc<PathBuf>,
+    volumes: Arc<Vec<Volume>>,
 ) -> Result<Response<Vec<u8>>, warp::Rejection> {
     let decoded_volume_name = percent_decode_str(&volume_name).decode_utf8_lossy();
-    let Some(volume) = state.volumes.iter().find(|v| v.name == decoded_volume_name) else {
+    let Some(volume) = volumes.iter().find(|v| v.name == decoded_volume_name) else {
         return Ok(error_response(StatusCode::NOT_FOUND, format!("Volume not found: {volume_name}")));
     };
     let Some(page) = page_number.checked_sub(1).and_then(|i| volume.pages.get(i)) else {
         return Ok(error_response(StatusCode::NOT_FOUND, format!("Page not found: {volume_name} page {page_number}")));
     };
-    match page.load_bytes(state.path.join(&volume.name)).await {
+    match page.load_bytes(path.join(&volume.name)).await {
         Ok(data) => Ok(ok_response(page.mime, data)),
         Err(err) => Ok(error_response(
             StatusCode::INTERNAL_SERVER_ERROR,
@@ -108,19 +113,19 @@ pub async fn page_response(
     }
 }
 
-pub async fn mokuro_response(volume_name: String, state: Arc<Manga>) -> Result<Response<Vec<u8>>, warp::Rejection> {
+pub async fn mokuro(
+    volume_name: String,
+    path: Arc<PathBuf>,
+    volumes: Arc<Vec<Volume>>,
+) -> Result<Response<Vec<u8>>, warp::Rejection> {
     let decoded_volume_name = percent_decode_str(&volume_name).decode_utf8_lossy();
-    let Some(mokuro_path) = state
-        .volumes
-        .iter()
-        .find(|v| v.name == decoded_volume_name)
-        .and_then(|v| v.mokuro.as_ref())
-        .map(|m| state.path.join(m))
+    let Some(mokuro_path) =
+        volumes.iter().find(|v| v.name == decoded_volume_name).and_then(|v| v.mokuro.as_ref()).map(|m| path.join(m))
     else {
         return Ok(error_response(StatusCode::NOT_FOUND, format!("Mokuro not found: {volume_name}")));
     };
     match fs::read(&mokuro_path).await {
-        Ok(data) => Ok(ok_response("application/json; charset=utf-8", data)),
+        Ok(data) => Ok(ok_response("application/json", data)),
         Err(err) => Ok(error_response(
             StatusCode::INTERNAL_SERVER_ERROR,
             format!("Failed to load volume {volume_name} mokuro {}: {err}", mokuro_path.display()),
@@ -132,21 +137,16 @@ fn no_content_response() -> Response<Vec<u8>> {
     Response::builder().status(StatusCode::NO_CONTENT).body(Vec::new()).unwrap()
 }
 
+fn error_response(status: StatusCode, message: String) -> Response<Vec<u8>> {
+    Response::builder().status(status).body(message.into_bytes()).unwrap()
+}
+
 fn ok_response(mime: &str, data: Vec<u8>) -> Response<Vec<u8>> {
     Response::builder()
-        .status(StatusCode::OK)
         .header("content-type", mime)
         .header("cache-control", "no-store, no-cache, must-revalidate, max-age=0")
         .header("pragma", "no-cache")
         .header("expires", "0")
         .body(data)
-        .unwrap()
-}
-
-fn error_response(status: StatusCode, message: String) -> Response<Vec<u8>> {
-    Response::builder()
-        .status(status)
-        .header("content-type", "text/plain; charset=utf-8")
-        .body(message.into_bytes())
         .unwrap()
 }

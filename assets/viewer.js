@@ -3,15 +3,19 @@
 import { Progress } from "./progress.js";
 
 /** @typedef {import("./main.js").Config} Config */
+/** @typedef {import("./main.js").VolumeInfo} VolumeInfo */
 /** @typedef {import("./page.js").Page} Page */
 /** @typedef {import("./volume.js").Volume} Volume */
 
 export class Viewer {
-    /** @param {Config} config */
-    constructor(config) {
+    /** @param {VolumeInfo[]} volumes @param {Config} config */
+    constructor(volumes, config) {
         const pagesRoot = document.querySelector("main");
         const progressOverlay = document.getElementById("progress-overlay");
         if (!pagesRoot || !progressOverlay) throw new Error();
+
+        /** @type {VolumeInfo[]} */
+        this.volumes = volumes;
 
         /** @type {Config} */
         this.config = config;
@@ -89,7 +93,7 @@ export class Viewer {
 
     /** @param {number} index @returns {Volume | undefined} */
     getVolumeByIndex(index) {
-        const volumeInfo = this.config.volumes[index];
+        const volumeInfo = this.volumes[index];
         if (!volumeInfo) return;
         return this.volumeByName.get(volumeInfo.name);
     }

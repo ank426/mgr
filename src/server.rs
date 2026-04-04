@@ -2,55 +2,54 @@ use std::path::PathBuf;
 use std::sync::{Arc, RwLock};
 
 use warp::Filter;
-use warp::Reply;
 
+use crate::config::Config;
 use crate::manga::Manga;
 use crate::readlist::ReadList;
 use crate::routes;
 
 pub async fn serve(
     manga: Manga,
+    config: Config,
     port: u16,
-    prefetch: (f32, f32),
     open: bool,
     readlist_path: Option<PathBuf>,
     readlist: Option<ReadList>,
 ) -> anyhow::Result<()> {
-    let html = warp::hyper::body::Bytes::from(routes::build_html(&manga, prefetch)?);
-    let manga = Arc::new(manga);
-    let readlist_path = Arc::new(readlist_path);
-    let readlist_lock = Arc::new(RwLock::new(readlist));
+    let path = with(manga.path);
+    let vols = with(manga.volumes);
+    let readlist_lock = with(RwLock::new(readlist));
 
-    let routes = warp::path::end()
-        .map(move || warp::reply::html(html.clone()).into_response())
-        .or(warp::path!("assets" / String).and_then(routes::asset_response))
-        .or(warp::path!("volume" / String / "page" / usize).and(with(manga.clone())).and_then(routes::page_response))
-        .or(warp::path!("volume" / String / "mokuro").and(with(manga.clone())).and_then(routes::mokuro_response))
+    let routes = (warp::path::end().and(with(manga.title)).map(routes::index))
+        .or(warp::path!("assets" / String).and_then(routes::asset))
+        .or(warp::path!("volume" / String / "page" / usize).and(path.clone()).and(vols.clone()).and_then(routes::page))
+        .or(warp::path!("volume" / String / "mokuro").and(path).and(vols.clone()).and_then(routes::mokuro))
+        .or(warp::path!("api" / "config").and(warp::get()).and(with(config)).map(routes::get_config))
+        .or(warp::path!("api" / "volumes").and(warp::get()).and(vols.clone()).map(routes::get_volumes))
         .or(warp::path!("api" / "progress")
             .and(warp::get())
-            .and(with(manga.clone()))
-            .and(with(readlist_lock.clone()))
+            .and(vols)
+            .and(readlist_lock.clone())
             .map(routes::get_progress))
         .or(warp::path!("api" / "progress")
             .and(warp::put())
             .and(warp::body::json())
-            .and(with(readlist_path.clone()))
-            .and(with(readlist_lock.clone()))
+            .and(with(readlist_path))
+            .and(readlist_lock)
             .and_then(routes::save_progress));
 
     opening_port(port, open);
 
-    warp::serve(routes)
-        .bind(([127, 0, 0, 1], port))
-        .await
-        .graceful(async { tokio::signal::ctrl_c().await.unwrap() })
-        .run()
-        .await;
+    let shutdown = async { tokio::signal::ctrl_c().await.unwrap() };
+    warp::serve(routes).bind(([127, 0, 0, 1], port)).await.graceful(shutdown).run().await;
     Ok(())
 }
 
-fn with<T: Clone + Send>(value: T) -> impl warp::Filter<Extract = (T,), Error = std::convert::Infallible> + Clone {
-    warp::any().map(move || value.clone())
+fn with<T: Send + Sync + 'static>(
+    value: T,
+) -> impl warp::Filter<Extract = (Arc<T>,), Error = std::convert::Infallible> + Clone {
+    let arc = Arc::new(value);
+    warp::any().map(move || arc.clone())
 }
 
 fn opening_port(port: u16, open: bool) {
