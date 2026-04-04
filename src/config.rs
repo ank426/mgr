@@ -25,4 +25,9 @@ pub struct Config {
     #[arg(long, default_value_t = 500)]
     pub zoom_max: u32,
 
+    #[arg(long, default_value_t = 1)]
+    pub volume_expand_back: u32,
+
+    #[arg(long, default_value_t = 1)]
+    pub volume_expand_forward: u32,
 }
