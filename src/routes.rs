@@ -1,6 +1,7 @@
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
 
+use anyhow::Context;
 use percent_encoding::percent_decode_str;
 use rust_embed::RustEmbed;
 use serde_json::json;
@@ -14,7 +15,7 @@ use crate::readlist::{Progress, ReadList};
 #[folder = "assets/"]
 struct Assets;
 
-pub fn build_html(manga: &Manga, prefetch: (f32, f32)) -> String {
+pub fn build_html(manga: &Manga, prefetch: (f32, f32)) -> anyhow::Result<String> {
     let volumes_json = serde_json::to_string(
         &manga
             .volumes
@@ -43,15 +44,12 @@ pub fn build_html(manga: &Manga, prefetch: (f32, f32)) -> String {
                 })
             })
             .collect::<Vec<_>>(),
-    )
-    .expect("valid viewer volumes json");
+    )?;
 
-    Assets::get("index.html")
-        .and_then(|file| String::from_utf8(file.data.into_owned()).ok())
-        .expect("index.html is valid utf-8")
+    Ok(String::from_utf8(Assets::get("index.html").context("index.html not found")?.data.into_owned())?
         .replace("{title}", &manga.title)
         .replace("{volumes}", &volumes_json)
-        .replace("{prefetch}", &format!("[{}, {}]", prefetch.0, prefetch.1))
+        .replace("{prefetch}", &format!("[{}, {}]", prefetch.0, prefetch.1)))
 }
 
 pub fn get_progress(manga: &Manga, shared_readlist: &RwLock<Option<ReadList>>) -> Progress {

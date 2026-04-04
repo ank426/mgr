@@ -15,8 +15,8 @@ pub async fn serve(
     open: bool,
     readlist_path: Option<PathBuf>,
     readlist: Option<ReadList>,
-) {
-    let html = warp::hyper::body::Bytes::from(routes::build_html(&manga, prefetch));
+) -> anyhow::Result<()> {
+    let html = warp::hyper::body::Bytes::from(routes::build_html(&manga, prefetch)?);
     let manga = Arc::new(manga);
     let readlist_path = Arc::new(readlist_path);
     let shared_readlist = Arc::new(RwLock::new(readlist));
@@ -48,6 +48,7 @@ pub async fn serve(
         .graceful(async { tokio::signal::ctrl_c().await.unwrap() })
         .run()
         .await;
+    Ok(())
 }
 
 fn with<T: Clone + Send>(value: T) -> impl warp::Filter<Extract = (T,), Error = std::convert::Infallible> + Clone {

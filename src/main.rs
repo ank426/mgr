@@ -70,10 +70,8 @@ async fn run(args: Args) -> anyhow::Result<()> {
         ensure!(readlist_path.is_file(), "No {} found in {}. Run: mgr -g", args.readlist_file, path.display());
         let readlist = ReadList::new(&readlist_path)?;
         let manga = Manga::from_readlist(path, &readlist)?;
-        server::serve(manga, args.port, prefetch, args.open, Some(readlist_path), Some(readlist)).await;
-        return Ok(());
+        return server::serve(manga, args.port, prefetch, args.open, Some(readlist_path), Some(readlist)).await;
     }
 
-    server::serve(Manga::new(args.paths.as_slice())?, args.port, prefetch, args.open, None, None).await;
-    Ok(())
+    server::serve(Manga::new(args.paths.as_slice())?, args.port, prefetch, args.open, None, None).await
 }
