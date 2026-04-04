@@ -68,7 +68,7 @@ pub async fn save_progress(
     };
     match snapshot.save(path).await {
         Ok(()) => Ok(no_content_response()),
-        Err(err) => Ok(internal_server_error_response(format!("Failed to save progress: {err}"))),
+        Err(err) => Ok(server_error_response(format!("Failed to save progress: {err}"))),
     }
 }
 
@@ -86,9 +86,7 @@ pub async fn page_response(
     };
     match page.load_bytes(state.path.join(&volume.name)).await {
         Ok(data) => Ok(ok_response(page.mime, data)),
-        Err(err) => {
-            Ok(internal_server_error_response(format!("Failed to load volume {volume_name} page {page_number}: {err}")))
-        }
+        Err(err) => Ok(server_error_response(format!("Failed to load volume {volume_name} page {page_number}: {err}"))),
     }
 }
 
@@ -105,9 +103,7 @@ pub async fn mokuro_response(volume_name: String, state: Arc<Manga>) -> Result<R
     match fs::read(&mokuro_path).await {
         Ok(data) => Ok(ok_response("application/json; charset=utf-8", data)),
         Err(err) if err.kind() == std::io::ErrorKind::NotFound => Ok(not_found_response()),
-        Err(err) => {
-            Ok(internal_server_error_response(format!("Failed to load mokuro file {}: {err}", mokuro_path.display())))
-        }
+        Err(err) => Ok(server_error_response(format!("Failed to load mokuro file {}: {err}", mokuro_path.display()))),
     }
 }
 
@@ -139,7 +135,7 @@ fn no_content_response() -> Response<Vec<u8>> {
     Response::builder().status(StatusCode::NO_CONTENT).body(Vec::new()).expect("valid response")
 }
 
-fn internal_server_error_response(message: String) -> Response<Vec<u8>> {
+fn server_error_response(message: String) -> Response<Vec<u8>> {
     Response::builder()
         .status(StatusCode::INTERNAL_SERVER_ERROR)
         .header("content-type", "text/plain; charset=utf-8")
