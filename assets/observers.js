@@ -9,7 +9,7 @@ import { scheduleReconcile } from "./reconcile.js";
 export function initObservers(viewer) {
     viewer.observers.nearPage = new IntersectionObserver((entries) => onNearIntersect(viewer, entries), {
         root: null,
-        rootMargin: `${viewer.config.prefetch[0] * 100}% 0px ${viewer.config.prefetch[1] * 100}% 0px`,
+        rootMargin: `${viewer.config.prefetchBack * 100}% 0px ${viewer.config.prefetchForward * 100}% 0px`,
         threshold: 0,
     });
     viewer.observers.activePage = new IntersectionObserver((entries) => onActiveIntersect(viewer, entries), {

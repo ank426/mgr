@@ -28,14 +28,11 @@ struct Args {
     #[arg(short, long, default_value_t = 7169)]
     port: u16,
 
-    #[arg(short = 'o', long = "open")]
+    #[arg(short, long)]
     open: bool,
 
-    #[arg(long, default_value_t = 6.0)]
-    prefetch_back: f32,
-
-    #[arg(long, default_value_t = 8.0)]
-    prefetch_forward: f32,
+    #[command(flatten)]
+    config: Config,
 
     #[arg(default_value = ".")]
     paths: Vec<PathBuf>,
@@ -57,8 +54,10 @@ async fn run(args: Args) -> anyhow::Result<()> {
         return Ok(());
     }
 
-    ensure!(args.prefetch_back.is_finite() && args.prefetch_forward.is_finite(), "prefetch values must be finite");
-    let config = Config { prefetch: (args.prefetch_back, args.prefetch_forward) };
+    ensure!(
+        args.config.prefetch_back.is_finite() && args.config.prefetch_forward.is_finite(),
+        "prefetch values must be finite"
+    );
 
     if let Some(path) = args.paths.first()
         && path.is_dir()
@@ -68,8 +67,8 @@ async fn run(args: Args) -> anyhow::Result<()> {
         ensure!(readlist_path.is_file(), "No {} found in {}. Run: mgr -g", args.readlist_file, path.display());
         let readlist = ReadList::new(&readlist_path)?;
         let manga = Manga::from_readlist(path, &readlist)?;
-        return server::serve(manga, config, args.port, args.open, Some(readlist_path), Some(readlist)).await;
+        return server::serve(manga, args.config, args.port, args.open, Some(readlist_path), Some(readlist)).await;
     }
 
-    server::serve(Manga::new(args.paths.as_slice())?, config, args.port, args.open, None, None).await
+    server::serve(Manga::new(args.paths.as_slice())?, args.config, args.port, args.open, None, None).await
 }

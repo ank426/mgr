@@ -9,7 +9,7 @@ import { Volume } from "./volume.js";
 
 /** @typedef {{ name: string, dims: [number, number] }} PageInfo */
 /** @typedef {{ name: string, hasMokuro: boolean, pageInfos: PageInfo[] }} VolumeInfo */
-/** @typedef {{ prefetch: [number, number] }} Config */
+/** @typedef {{ prefetchBack: number, prefetchForward: number, cursorTimeout: number, saveDebounce: number }} Config */
 
 /** @returns {Promise<void>} */
 async function init() {
@@ -44,7 +44,10 @@ function addEventListeners(viewer) {
     addEventListener("mousemove", () => {
         document.body.style.cursor = "auto";
         clearTimeout(viewer.timeouts.cursor);
-        viewer.timeouts.cursor = window.setTimeout(() => (document.body.style.cursor = "none"), 500);
+        viewer.timeouts.cursor = window.setTimeout(
+            () => (document.body.style.cursor = "none"),
+            viewer.config.cursorTimeout,
+        );
     });
 }
 
