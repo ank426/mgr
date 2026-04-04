@@ -54,10 +54,7 @@ async fn run(args: Args) -> anyhow::Result<()> {
         return Ok(());
     }
 
-    ensure!(
-        args.config.prefetch_back.is_finite() && args.config.prefetch_forward.is_finite(),
-        "prefetch values must be finite"
-    );
+    args.config.validate()?;
 
     if let Some(path) = args.paths.first()
         && path.is_dir()

@@ -1,3 +1,4 @@
+use anyhow::ensure;
 use clap::Args;
 use serde::Serialize;
 
@@ -30,4 +31,23 @@ pub struct Config {
 
     #[arg(long, default_value_t = 1)]
     pub volume_expand_forward: u8,
+}
+
+impl Config {
+    pub fn validate(&self) -> anyhow::Result<()> {
+        ensure!(self.zoom.is_finite() && self.zoom > 0.0, "zoom must be finite and positive");
+        ensure!(self.zoom_min.is_finite() && self.zoom_min > 0.0, "zoom-min must be finite and positive");
+        ensure!(self.zoom_max.is_finite() && self.zoom_max > 0.0, "zoom-max must be finite and positive");
+        ensure!(self.zoom_min <= self.zoom_max, "zoom-min must be <= zoom-max");
+        ensure!((self.zoom_min..=self.zoom_max).contains(&self.zoom), "zoom must be between zoom-min and zoom-max");
+        ensure!(
+            self.prefetch_back.is_finite() && self.prefetch_back >= 0.0,
+            "prefetch-back must be finite and non-negative"
+        );
+        ensure!(
+            self.prefetch_forward.is_finite() && self.prefetch_forward >= 0.0,
+            "prefetch-forward must be finite and non-negative"
+        );
+        Ok(())
+    }
 }
