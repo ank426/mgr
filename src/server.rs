@@ -19,7 +19,7 @@ pub async fn serve(
     let html = warp::hyper::body::Bytes::from(routes::build_html(&manga, prefetch)?);
     let manga = Arc::new(manga);
     let readlist_path = Arc::new(readlist_path);
-    let shared_readlist = Arc::new(RwLock::new(readlist));
+    let readlist_lock = Arc::new(RwLock::new(readlist));
 
     let routes = warp::path::end()
         .map(move || warp::reply::html(html.clone()).into_response())
@@ -29,13 +29,13 @@ pub async fn serve(
         .or(warp::path!("api" / "progress")
             .and(warp::get())
             .and(with(manga.clone()))
-            .and(with(shared_readlist.clone()))
+            .and(with(readlist_lock.clone()))
             .map(|m: Arc<Manga>, rl: Arc<RwLock<Option<ReadList>>>| warp::reply::json(&routes::get_progress(&m, &rl))))
         .or(warp::path!("api" / "progress")
             .and(warp::put())
             .and(warp::body::json())
             .and(with(readlist_path.clone()))
-            .and(with(shared_readlist.clone()))
+            .and(with(readlist_lock.clone()))
             .and_then(routes::save_progress));
 
     opening_port(port, open);

@@ -45,8 +45,8 @@ pub fn build_html(manga: &Manga, prefetch: (f32, f32)) -> anyhow::Result<String>
         .replace("{prefetch}", &format!("[{}, {}]", prefetch.0, prefetch.1)))
 }
 
-pub fn get_progress(manga: &Manga, shared_readlist: &RwLock<Option<ReadList>>) -> Progress {
-    shared_readlist
+pub fn get_progress(manga: &Manga, readlist_lock: &RwLock<Option<ReadList>>) -> Progress {
+    readlist_lock
         .read()
         .unwrap()
         .as_ref()
@@ -56,9 +56,9 @@ pub fn get_progress(manga: &Manga, shared_readlist: &RwLock<Option<ReadList>>) -
 pub async fn save_progress(
     progress: Progress,
     readlist_path: Arc<Option<PathBuf>>,
-    shared_readlist: Arc<RwLock<Option<ReadList>>>,
+    readlist_lock: Arc<RwLock<Option<ReadList>>>,
 ) -> Result<StatusCode, warp::Rejection> {
-    let save_data = if let Ok(mut guard) = shared_readlist.write()
+    let save_data = if let Ok(mut guard) = readlist_lock.write()
         && let Some(readlist) = guard.as_mut()
         && let Some(path) = readlist_path.as_ref()
     {
