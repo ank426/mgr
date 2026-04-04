@@ -21,7 +21,7 @@ pub fn build_html(manga: &Manga, prefetch: (f32, f32)) -> anyhow::Result<String>
             .volumes
             .iter()
             .map(|volume| {
-                let stem = Path::new(&volume.name).file_stem().and_then(|s| s.to_str()).unwrap_or("");
+                let stem = Path::new(&volume.name).file_stem().and_then(|s| s.to_str()).unwrap_or_default();
                 let prefix = format!("{stem}/");
                 let strip = if !stem.is_empty() && volume.pages.iter().all(|p| p.name.starts_with(&prefix)) {
                     prefix.len()
@@ -31,16 +31,10 @@ pub fn build_html(manga: &Manga, prefetch: (f32, f32)) -> anyhow::Result<String>
                 json!({
                     "name": &volume.name,
                     "mokuro": &volume.mokuro,
-                    "pageInfos": volume
-                        .pages
-                        .iter()
-                        .map(|page| {
-                            json!({
-                                "name": &page.name[strip..],
-                                "dims": page.dimensions,
-                            })
-                        })
-                        .collect::<Vec<_>>()
+                    "pageInfos": volume.pages.iter().map(|page| json!({
+                        "name": &page.name[strip..],
+                        "dims": page.dimensions,
+                    })).collect::<Vec<_>>()
                 })
             })
             .collect::<Vec<_>>(),
