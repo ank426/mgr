@@ -14,6 +14,12 @@ pub struct Progress {
     pub scroll: f64,
 }
 
+impl Progress {
+    pub fn new(file: String) -> Self {
+        Self { file, page: 1, scroll: 0.0 }
+    }
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct FileEntry {
     pub name: String,
@@ -56,7 +62,7 @@ pub async fn generate(dir: &Path, readlist_file_name: &str) -> anyhow::Result<Pa
     let mut readlist = if output_path.is_file() {
         ReadList::new(&output_path)?
     } else {
-        ReadList { progress: Progress { file: cbz_files[0].clone(), page: 1, scroll: 0.0 }, files: Vec::new() }
+        ReadList { progress: Progress::new(cbz_files[0].clone()), files: Vec::new() }
     };
 
     readlist.files = cbz_files

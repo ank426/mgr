@@ -46,13 +46,11 @@ pub fn build_html(manga: &Manga, prefetch: (f32, f32)) -> anyhow::Result<String>
 }
 
 pub fn get_progress(manga: &Manga, shared_readlist: &RwLock<Option<ReadList>>) -> Progress {
-    if let Ok(readlist) = shared_readlist.read()
-        && let Some(readlist) = readlist.as_ref()
-    {
-        return readlist.progress.clone();
-    }
-
-    Progress { file: manga.volumes.first().map(|volume| volume.name.clone()).unwrap_or_default(), page: 1, scroll: 0.0 }
+    shared_readlist
+        .read()
+        .unwrap()
+        .as_ref()
+        .map_or_else(|| Progress::new(manga.volumes[0].name.clone()), |r| r.progress.clone())
 }
 
 pub async fn save_progress(

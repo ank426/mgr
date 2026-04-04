@@ -30,9 +30,7 @@ pub async fn serve(
             .and(warp::get())
             .and(with(manga.clone()))
             .and(with(shared_readlist.clone()))
-            .map(|manga: Arc<Manga>, rl: Arc<RwLock<Option<ReadList>>>| {
-                warp::reply::json(&routes::get_progress(&manga, &rl))
-            }))
+            .map(|m: Arc<Manga>, rl: Arc<RwLock<Option<ReadList>>>| warp::reply::json(&routes::get_progress(&m, &rl))))
         .or(warp::path!("api" / "progress")
             .and(warp::put())
             .and(warp::body::json())
