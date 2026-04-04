@@ -62,7 +62,7 @@ pub async fn save_progress(
     let Some(path) = readlist_path.as_ref() else { return Ok(no_content_response()) };
     let snapshot = {
         let mut guard = readlist_lock.write().unwrap();
-        let Some(readlist) = guard.as_mut() else { return Ok(no_content_response()) };
+        let readlist = guard.as_mut().unwrap();
         readlist.progress = progress;
         readlist.clone()
     };
