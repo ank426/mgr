@@ -45,6 +45,22 @@ pub fn build_html(manga: &Manga, prefetch: (f32, f32)) -> anyhow::Result<String>
         .replace("{prefetch}", &format!("[{}, {}]", prefetch.0, prefetch.1)))
 }
 
+pub async fn asset_response(asset_name: String) -> Result<Response<Vec<u8>>, warp::Rejection> {
+    match Assets::get(&asset_name) {
+        Some(file) => Ok(ok_response(asset_mime(&asset_name), file.data.into_owned())),
+        None => Ok(not_found_response()),
+    }
+}
+
+fn asset_mime(asset_name: &str) -> &'static str {
+    match Path::new(asset_name).extension().and_then(|ext| ext.to_str()) {
+        Some("js") => "application/javascript; charset=utf-8",
+        Some("css") => "text/css; charset=utf-8",
+        Some("html") => "text/html; charset=utf-8",
+        _ => "application/octet-stream",
+    }
+}
+
 pub fn get_progress(manga: Arc<Manga>, readlist_lock: Arc<RwLock<Option<ReadList>>>) -> warp::reply::Json {
     let progress = readlist_lock
         .read()
@@ -107,22 +123,6 @@ pub async fn mokuro_response(volume_name: String, state: Arc<Manga>) -> Result<R
             "Failed to load volume {volume_name} mokuro {}: {err}",
             mokuro_path.display()
         ))),
-    }
-}
-
-pub async fn asset_response(asset_name: String) -> Result<Response<Vec<u8>>, warp::Rejection> {
-    match Assets::get(&asset_name) {
-        Some(file) => Ok(ok_response(asset_mime(&asset_name), file.data.into_owned())),
-        None => Ok(not_found_response()),
-    }
-}
-
-fn asset_mime(asset_name: &str) -> &'static str {
-    match Path::new(asset_name).extension().and_then(|extension| extension.to_str()) {
-        Some("js") => "application/javascript; charset=utf-8",
-        Some("css") => "text/css; charset=utf-8",
-        Some("html") => "text/html; charset=utf-8",
-        _ => "application/octet-stream",
     }
 }
 
