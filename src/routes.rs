@@ -64,12 +64,9 @@ pub async fn asset(asset_name: String) -> Result<Response<Vec<u8>>, warp::Reject
     }
 }
 
-pub fn get_progress(volumes: Arc<Vec<Volume>>, readlist_lock: Arc<RwLock<Option<ReadList>>>) -> Response<Vec<u8>> {
-    let progress = readlist_lock
-        .read()
-        .unwrap()
-        .as_ref()
-        .map_or_else(|| Progress::new(volumes[0].name.clone()), |r| r.progress.clone());
+pub fn get_progress(volumes: Arc<Vec<Volume>>, rl_lock: Arc<RwLock<Option<ReadList>>>) -> Response<Vec<u8>> {
+    let progress =
+        rl_lock.read().unwrap().as_ref().map_or_else(|| Progress::new(volumes[0].name.clone()), |r| r.progress.clone());
     ok_response("application/json", serde_json::to_vec(&progress).unwrap())
 }
 
