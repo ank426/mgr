@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 
-use anyhow::{bail, ensure};
-use rayon::iter::{IntoParallelIterator, ParallelIterator};
+use anyhow::ensure;
+use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 use crate::cbz::{Volume, is_cbz};
 use crate::readlist::ReadList;
@@ -33,50 +33,35 @@ impl Manga {
 
     pub fn from_readlist(dir_path: &Path, readlist: &ReadList) -> anyhow::Result<Self> {
         ensure!(!readlist.files.is_empty(), "Readlist has no files");
-
+        ensure!(readlist.progress.page >= 1, "progress.page must be >= 1");
+        ensure!(
+            (0.0..=1.0).contains(&readlist.progress.scroll),
+            "progress.scroll must be in [0.0, 1.0], found {}",
+            readlist.progress.scroll,
+        );
         ensure!(
             readlist.files.iter().any(|entry| entry.name == readlist.progress.file),
             "progress.file '{}' is not present in files",
             readlist.progress.file,
         );
-
-        ensure!(
-            readlist.progress.scroll.is_finite() && (0.0..=1.0).contains(&readlist.progress.scroll),
-            "progress.scroll must be a finite value in [0.0, 1.0], found {}",
-            readlist.progress.scroll,
-        );
-
-        ensure!(readlist.progress.page >= 1, "progress.page must be >= 1");
-
-        let mut resolved = Vec::with_capacity(readlist.files.len());
-        for entry in &readlist.files {
-            let file_path = dir_path.join(&entry.name);
-            ensure!(file_path.is_file(), "No file exists at: {}", file_path.display());
-            ensure!(is_cbz(&file_path), "Readlist file '{}' is not a supported archive (.cbz)", file_path.display());
-            resolved.push((entry, file_path));
-        }
-
-        let results: Vec<_> = resolved
-            .into_par_iter()
-            .map(|(entry, file_path)| (entry, Volume::new(&file_path, entry.name.clone(), entry.mokuro.clone())))
-            .collect();
-
-        let mut volumes = Vec::with_capacity(results.len());
-        for (entry, result) in results {
-            let volume = result?;
-
-            if entry.name == readlist.progress.file && readlist.progress.page > volume.pages.len() as u32 {
-                bail!(
+        let volumes: Vec<_> = readlist
+            .files
+            .par_iter()
+            .map(|entry| {
+                let file_path = dir_path.join(&entry.name);
+                ensure!(file_path.is_file(), "No file exists at: {}", file_path.display());
+                ensure!(is_cbz(&file_path), "Unsupported file type: {} (expected .cbz)", file_path.display());
+                let volume = Volume::new(&file_path, entry.name.clone(), entry.mokuro.clone())?;
+                ensure!(
+                    entry.name != readlist.progress.file || readlist.progress.page <= volume.pages.len() as u32,
                     "progress.page {} is out of range for '{}' (has {} pages)",
                     readlist.progress.page,
                     entry.name,
                     volume.pages.len(),
                 );
-            }
-
-            volumes.push(volume);
-        }
-
+                Ok(volume)
+            })
+            .collect::<anyhow::Result<_>>()?;
         let title = dir_path.file_name().and_then(|name| name.to_str()).unwrap_or("mgr").to_string();
         Ok(Self { path: dir_path.to_path_buf(), title, volumes })
     }
