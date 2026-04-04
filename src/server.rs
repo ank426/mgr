@@ -22,33 +22,30 @@ pub async fn serve(
     let readlist_path = Arc::new(readlist_path);
     let shared_readlist = Arc::new(RwLock::new(readlist));
 
-    let html_route = warp::path::end().map(move || warp::reply::html(html.clone()).into_response());
-    let assets_route = warp::path!("assets" / String).and_then(routes::asset_response);
-    let page_route =
-        warp::path!("volume" / String / "page" / u32).and(with(manga.clone())).and_then(routes::page_response);
-    let mokuro_route =
-        warp::path!("volume" / String / "mokuro").and(with(manga.clone())).and_then(routes::mokuro_response);
-    let get_progress_route = warp::path!("api" / "progress")
-        .and(warp::get())
-        .and(with(manga.clone()))
-        .and(with(shared_readlist.clone()))
-        .map(|manga: Arc<Manga>, rl: Arc<RwLock<Option<ReadList>>>| {
-            warp::reply::json(&routes::get_progress(&manga, &rl))
-        });
-    let save_progress_route = warp::path!("api" / "progress")
-        .and(warp::put())
-        .and(warp::body::json())
-        .and(with(readlist_path.clone()))
-        .and(with(shared_readlist.clone()))
-        .and_then(routes::save_progress);
+    let routes = warp::path::end()
+        .map(move || warp::reply::html(html.clone()).into_response())
+        .or(warp::path!("assets" / String).and_then(routes::asset_response))
+        .or(warp::path!("volume" / String / "page" / u32).and(with(manga.clone())).and_then(routes::page_response))
+        .or(warp::path!("volume" / String / "mokuro").and(with(manga.clone())).and_then(routes::mokuro_response))
+        .or(warp::path!("api" / "progress")
+            .and(warp::get())
+            .and(with(manga.clone()))
+            .and(with(shared_readlist.clone()))
+            .map(|manga: Arc<Manga>, rl: Arc<RwLock<Option<ReadList>>>| {
+                warp::reply::json(&routes::get_progress(&manga, &rl))
+            }))
+        .or(warp::path!("api" / "progress")
+            .and(warp::put())
+            .and(warp::body::json())
+            .and(with(readlist_path.clone()))
+            .and(with(shared_readlist.clone()))
+            .and_then(routes::save_progress));
 
     println!("Open http://127.0.0.1:{port}");
     if open {
         open_browser(port);
     }
 
-    let routes =
-        html_route.or(page_route).or(mokuro_route).or(assets_route).or(get_progress_route).or(save_progress_route);
     warp::serve(routes)
         .bind(([127, 0, 0, 1], port))
         .await
