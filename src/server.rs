@@ -45,12 +45,7 @@ pub async fn serve(
     warp::serve(routes)
         .bind(([127, 0, 0, 1], port))
         .await
-        .graceful(async {
-            match tokio::signal::ctrl_c().await {
-                Ok(()) => println!("\nShutting down..."),
-                Err(err) => eprintln!("Failed to install CTRL+C handler: {err}"),
-            }
-        })
+        .graceful(async { tokio::signal::ctrl_c().await.unwrap() })
         .run()
         .await;
 }
