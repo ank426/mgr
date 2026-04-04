@@ -17,7 +17,7 @@ pub struct Config {
     #[arg(long, default_value = ".mgr.toml")]
     pub readlist_file: String,
 
-    #[arg(long, default_value_t = 100.0)]
+    #[arg(short, long, default_value_t = 100.0)]
     pub zoom: f32,
 
     #[arg(long, default_value_t = 10.0)]
