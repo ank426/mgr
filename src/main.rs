@@ -49,9 +49,7 @@ async fn main() {
 
 async fn run(args: Args) -> anyhow::Result<()> {
     if args.generate {
-        let [path] = args.paths.as_slice() else {
-            bail!("--generate expects a single directory path");
-        };
+        let [path] = args.paths.as_slice() else { bail!("--generate expects a single directory path") };
         ensure!(path.is_dir(), "No directory exists at: {}", path.display());
         println!("Generated {}", readlist::generate(path, &args.readlist_file).await?.display());
         return Ok(());
@@ -63,9 +61,7 @@ async fn run(args: Args) -> anyhow::Result<()> {
     if let Some(path) = args.paths.first()
         && path.is_dir()
     {
-        let [path] = args.paths.as_slice() else {
-            bail!("Directory path must be provided alone");
-        };
+        let [path] = args.paths.as_slice() else { bail!("Directory path must be provided alone") };
         let readlist_path = path.join(&args.readlist_file);
         ensure!(readlist_path.is_file(), "No {} found in {}. Run: mgr -g", args.readlist_file, path.display());
         let readlist = ReadList::new(&readlist_path)?;
