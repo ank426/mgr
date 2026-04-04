@@ -1,10 +1,7 @@
-use std::io::{self, Read};
+use std::io::{self, Error, ErrorKind, Read};
 
-// Reads image MIME type and dimensions from format headers.
-// Returns None for unsupported formats, Err for corrupt images.
 pub fn read_image_info(mut reader: impl Read) -> io::Result<Option<(&'static str, (u32, u32))>> {
     let h = read_arr::<12>(&mut reader)?;
-
     if h[..3] == [0xFF, 0xD8, 0xFF] {
         Ok(Some(("image/jpeg", jpeg_dimensions(&h[2..], &mut reader)?)))
     } else if h[..4] == [0x89, 0x50, 0x4E, 0x47] {
@@ -42,7 +39,7 @@ fn webp_dimensions(reader: &mut impl Read) -> io::Result<(u32, u32)> {
             let b = read_arr::<10>(reader)?;
             Ok((u24_le(&b[4..7]) + 1, u24_le(&b[7..10]) + 1))
         }
-        _ => Err(invalid("unknown WebP variant")),
+        _ => Err(Error::new(ErrorKind::InvalidData, "unknown WebP variant")),
     }
 }
 
@@ -52,7 +49,7 @@ fn jpeg_dimensions(prefix: &[u8], reader: &mut impl Read) -> io::Result<(u32, u3
     let mut r = prefix.chain(reader);
     loop {
         let [0xFF, mut marker] = read_arr::<2>(&mut r)? else {
-            return Err(invalid("invalid JPEG marker"));
+            return Err(Error::new(ErrorKind::InvalidData, "invalid JPEG marker"));
         };
         // Skip fill bytes (consecutive FF padding between markers)
         while marker == 0xFF {
@@ -64,8 +61,8 @@ fn jpeg_dimensions(prefix: &[u8], reader: &mut impl Read) -> io::Result<(u32, u3
             // Standalone markers (no length): TEM, RST0-7, SOI
             0x01 | 0xD0..=0xD8 => continue,
             // EOI / SOS — dimensions should have been found before these
-            0xD9 => return Err(invalid("reached EOI without finding dimensions")),
-            0xDA => return Err(invalid("reached SOS without finding dimensions")),
+            0xD9 => return Err(Error::new(ErrorKind::InvalidData, "reached EOI without finding dimensions")),
+            0xDA => return Err(Error::new(ErrorKind::InvalidData, "reached SOS without finding dimensions")),
             // SOF markers contain dimensions
             0xC0..=0xC3 | 0xC5..=0xC7 | 0xC9..=0xCB | 0xCD..=0xCF => {
                 // length(2) + precision(1) + height(2) + width(2)
@@ -76,10 +73,10 @@ fn jpeg_dimensions(prefix: &[u8], reader: &mut impl Read) -> io::Result<(u32, u3
             _ => {
                 let len = u16_be(&read_arr::<2>(&mut r)?) as u64;
                 if len < 2 {
-                    return Err(invalid("invalid JPEG marker length"));
+                    return Err(Error::new(ErrorKind::InvalidData, "invalid JPEG marker length"));
                 }
                 if io::copy(&mut r.by_ref().take(len - 2), &mut io::sink())? < len - 2 {
-                    return Err(io::Error::from(io::ErrorKind::UnexpectedEof));
+                    return Err(Error::from(ErrorKind::UnexpectedEof));
                 }
             }
         }
@@ -106,8 +103,4 @@ fn u24_le(b: &[u8]) -> u32 {
 }
 fn u16_le(b: &[u8]) -> u16 {
     u16::from_le_bytes([b[0], b[1]])
-}
-
-fn invalid(msg: &str) -> io::Error {
-    io::Error::new(io::ErrorKind::InvalidData, msg)
 }
