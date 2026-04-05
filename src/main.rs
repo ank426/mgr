@@ -14,9 +14,6 @@ use config::Config;
 use manga::Manga;
 use readlist::ReadList;
 
-#[global_allocator]
-static ALLOC: tikv_jemallocator::Jemalloc = tikv_jemallocator::Jemalloc;
-
 #[derive(Parser, Debug)]
 struct Args {
     #[arg(short, long)]
