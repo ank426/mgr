@@ -27,11 +27,9 @@ struct Args {
 }
 
 #[tokio::main]
-async fn main() {
-    if let Err(err) = run(Args::parse()).await {
-        eprintln!("{err}");
-        std::process::exit(1);
-    }
+async fn main() -> anyhow::Result<()> {
+    let mut args = std::env::args();
+    run(Args::parse_from(std::iter::once(args.next().unwrap()).chain(config::file_args()?).chain(args))).await
 }
 
 async fn run(args: Args) -> anyhow::Result<()> {

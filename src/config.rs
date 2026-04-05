@@ -1,3 +1,6 @@
+use std::env;
+use std::path::PathBuf;
+
 use anyhow::ensure;
 use clap::Args;
 use serde::Serialize;
@@ -10,7 +13,7 @@ pub struct Config {
     pub port: u16,
 
     #[serde(skip)]
-    #[arg(short, long)]
+    #[arg(short, long, num_args = 0..=1, default_missing_value = "true", default_value_t = false)]
     pub open: bool,
 
     #[serde(skip)]
@@ -62,4 +65,17 @@ impl Config {
         );
         Ok(())
     }
+}
+
+pub fn file_args() -> anyhow::Result<Vec<String>> {
+    let path = PathBuf::from(env::var("XDG_CONFIG_HOME").or_else(|_| env::var("HOME").map(|h| h + "/.config"))?)
+        .join("mgr/config.toml");
+    if !path.exists() {
+        return Ok(vec![]);
+    }
+    Ok(std::fs::read_to_string(&path)?
+        .parse::<toml::Table>()?
+        .into_iter()
+        .flat_map(|(key, value)| [format!("--{}", key.replace('_', "-")), value.to_string()])
+        .collect())
 }
