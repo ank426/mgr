@@ -66,7 +66,7 @@ The reader is available at `http://localhost:7169` by default.
 
 ## Configuration
 
-Options may be passed on the command line or placed in `~/.config/mgr/config.toml`:
+Options may be passed on the command line or placed in `$XDG_CONFIG_HOME/mgr/config.toml`:
 
 ```toml
 port = 7169
