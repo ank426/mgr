@@ -6,7 +6,7 @@ Local web reader for `.cbz` manga volumes with mokuro support, written in Rust.
 
 - Read one or more `.cbz` volumes in a browser, served on `localhost`.
 - Generate a directory read list with saved reading position.
-- Show selectable Japanese text from adjacent `.mokuro` files (best used with `yomitan`).
+- Show selectable Japanese text from adjacent `.mokuro` files (goes well with `yomitan`).
 - Keyboard controls for navigation, zoom, inversion, and progress.
 - Extensive cli and file configuration.
 
