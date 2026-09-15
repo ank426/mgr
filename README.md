@@ -83,18 +83,17 @@ Arguments:
 
 Options:
   -g, --generate
-  -p, --port <PORT>                              [default: 7169]
-  -o, --open [<OPEN>]                            [default: false]
-      --readlist-file <READLIST_FILE>            [default: .mgr.toml]
-  -z, --zoom <ZOOM>                              [default: 100]
-      --zoom-min <ZOOM_MIN>                      [default: 10]
-      --zoom-max <ZOOM_MAX>                      [default: 500]
-      --cursor-timeout <CURSOR_TIMEOUT>          [default: 500]
-      --save-debounce <SAVE_DEBOUNCE>            [default: 200]
-      --prefetch-back <PREFETCH_BACK>            [default: 6]
-      --prefetch-forward <PREFETCH_FORWARD>      [default: 8]
-      --volume-expand-back <VOLUME_EXPAND_BACK>  [default: 1]
-      --volume-expand-forward <VOLUME_EXPAND_FORWARD>
-                                                    [default: 1]
-  -h, --help                                     Print help
+  -p, --port <PORT>                                    [default: 7169]
+  -o, --open [<OPEN>]                                  [default: false]
+      --readlist-file <READLIST_FILE>                  [default: .mgr.toml]
+  -z, --zoom <ZOOM>                                    [default: 100]
+      --zoom-min <ZOOM_MIN>                            [default: 10]
+      --zoom-max <ZOOM_MAX>                            [default: 500]
+      --cursor-timeout <CURSOR_TIMEOUT>                [default: 500]
+      --save-debounce <SAVE_DEBOUNCE>                  [default: 200]
+      --prefetch-back <PREFETCH_BACK>                  [default: 6]
+      --prefetch-forward <PREFETCH_FORWARD>            [default: 8]
+      --volume-expand-back <VOLUME_EXPAND_BACK>        [default: 1]
+      --volume-expand-forward <VOLUME_EXPAND_FORWARD>  [default: 1]
+  -h, --help                                           Print help
 ```
