@@ -19,6 +19,20 @@ import { Progress } from "./progress.js";
  *     prefetchForward: number,
  *     volumeExpandBack: number,
  *     volumeExpandForward: number,
+ *     keybindings: {
+ *         zoomIn: string,
+ *         zoomOut: string,
+ *         scrollDown: string,
+ *         scrollUp: string,
+ *         previousVolume: string,
+ *         nextVolume: string,
+ *         firstPage: string,
+ *         lastPage: string,
+ *         invertColors: string,
+ *         pageProgress: string,
+ *         scrollProgress: string,
+ *         volumeProgress: string,
+ *     },
  * }} Config
  */
 

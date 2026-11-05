@@ -29,7 +29,12 @@ struct Args {
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let mut args = std::env::args();
-    run(Args::parse_from(std::iter::once(args.next().unwrap()).chain(config::file_args()?).chain(args))).await
+    let (file_args, keybindings) = config::file_args()?;
+    let mut parsed = Args::parse_from(std::iter::once(args.next().unwrap()).chain(file_args).chain(args));
+    if let Some(keybindings) = keybindings {
+        parsed.config.keybindings = keybindings;
+    }
+    run(parsed).await
 }
 
 async fn run(args: Args) -> anyhow::Result<()> {

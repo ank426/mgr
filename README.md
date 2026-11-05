@@ -67,6 +67,8 @@ The reader is available at `http://localhost:7169` by default.
 | `d` | Scroll progress overlay |
 | `S` | Volume progress overlay |
 
+These bindings are defaults and can be changed in the configuration file.
+
 ## Configuration
 
 Options may be passed on the command line or placed in `$XDG_CONFIG_HOME/mgr/config.toml`:
@@ -76,7 +78,14 @@ port = 7169
 open = true
 zoom = 100
 dynamic_colors = false
+
+[keybindings]
+scroll_down = "ArrowDown"
+scroll_up = "ArrowUp"
+next_volume = "n"
 ```
+
+The `[keybindings]` table supports `zoom_in`, `zoom_out`, `scroll_down`, `scroll_up`, `previous_volume`, `next_volume`, `first_page`, `last_page`, `invert_colors`, `page_progress`, `scroll_progress`, and `volume_progress`. Unspecified actions keep their default keys from the Controls table. Set a binding to an empty string (`""`) to disable it. Key names are case-sensitive and follow the browser's `KeyboardEvent.key` values (for example, `"ArrowDown"`); duplicate non-empty keys are rejected. Keybindings are configured only in `config.toml`, not via command-line options.
 
 You can also add an optional `$XDG_CONFIG_HOME/mgr/styles.css` stylesheet. It is loaded after the built-in styles, so its rules can override them. When `XDG_CONFIG_HOME` is unset, both files are read from `~/.config/mgr/` instead. For example:
 
