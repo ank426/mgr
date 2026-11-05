@@ -1,6 +1,6 @@
 # mgr
 
-`mgr` is a local web reader for `.cbz` and `.zip` manga volumes, with optional [Mokuro](https://github.com/kha-white/mokuro) OCR support.
+A configurable local web reader for manga with [Mokuro](https://github.com/kha-white/mokuro) support, written in Rust.
 
 ## Install
 
@@ -29,26 +29,70 @@ mgr volume.zip
 Or open a directory of volumes:
 
 ```sh
-mgr --generate manga/
-mgr --open manga/
+mgr -g
+mgr
 ```
 
-`--generate` creates or updates a `.mgr.toml` read list in the directory. Directory mode saves reading progress to that file. Archive extensions are matched case-insensitively; supported page images are JPEG, PNG, and WebP.
+`-g`/`--generate` creates or updates a `.mgr.toml` read list in the directory. Directory mode saves reading progress to that file. Archive extensions are matched case-insensitively; supported page images are JPEG, PNG, and WebP.
 
-Mokuro sidecars are detected when they share an archive's filename stem:
+Mokuro files are detected when they share an archive's filename stem:
 
 ```text
 volume.cbz
 volume.mokuro
 ```
 
-The same convention applies to `.zip` volumes. The reader serves on `http://localhost:7169` by default.
+The reader serves on `http://localhost:7169` by default.
 
-## Keybindings
+```console
+$ mgr --help
+Usage: mgr [OPTIONS] [PATHS]...
 
-Keybindings are configured in the `[keybindings]` table in `config.toml`; they do not have command-line options. This table shows every action and its default binding:
+Arguments:
+  [PATHS]...  [default: .]
+
+Options:
+  -g, --generate
+  -p, --port <PORT>                   [default: 7169]
+  -o, --open [<OPEN>]                 [default: false] [possible values: true, false]
+      --readlist-file <READLIST_FILE> [default: .mgr.toml]
+  -z, --zoom <ZOOM>                   [default: 100]
+      --dynamic-colors <DYNAMIC_COLORS>
+                                      [default: true] [possible values: true, false]
+      --zoom-min <ZOOM_MIN>           [default: 10]
+      --zoom-max <ZOOM_MAX>           [default: 500]
+      --cursor-timeout <CURSOR_TIMEOUT>
+                                      [default: 500]
+      --save-debounce <SAVE_DEBOUNCE> [default: 200]
+      --prefetch-back <PREFETCH_BACK> [default: 6]
+      --prefetch-forward <PREFETCH_FORWARD>
+                                      [default: 8]
+      --volume-expand-back <VOLUME_EXPAND_BACK>
+                                      [default: 1]
+      --volume-expand-forward <VOLUME_EXPAND_FORWARD>
+                                      [default: 1]
+  -h, --help                          Print help
+```
+
+## Configuration and keybindings
+
+Configuration files live in `$XDG_CONFIG_HOME/mgr/config.toml`. If `XDG_CONFIG_HOME` is unset, `mgr` uses `~/.config/mgr/config.toml`. All settings are optional; this is the complete default configuration:
 
 ```toml
+port = 7169                  # Local web server port
+open = false                 # Open the reader in a browser
+readlist_file = ".mgr.toml"  # Read-list filename used in directory mode
+zoom = 100                   # Initial page width, as a percentage
+dynamic_colors = true        # Infer Mokuro text-box colors
+zoom_min = 10                # Minimum zoom percentage
+zoom_max = 500               # Maximum zoom percentage
+cursor_timeout = 500         # Delay before hiding an idle cursor, in milliseconds (0 disables)
+save_debounce = 200          # Delay before saving changed reading progress, in milliseconds
+prefetch_back = 6            # Prefetch distance behind the view, in viewport heights
+prefetch_forward = 8         # Prefetch distance ahead of the view, in viewport heights
+volume_expand_back = 1       # Previous volumes to keep expanded
+volume_expand_forward = 1    # Following volumes to keep expanded
+
 [keybindings]
 zoom_in = "="           # Increase zoom
 zoom_out = "-"          # Decrease zoom
@@ -64,52 +108,10 @@ scroll_progress = "d"   # Toggle scroll progress
 volume_progress = "S"   # Toggle volume progress
 ```
 
-You can include only the bindings you want to change; omitted actions keep their defaults. Set a binding to `""` to disable it. Key names are case-sensitive and follow the browser's `KeyboardEvent.key` values, such as `"ArrowDown"`. Duplicate non-empty keys are rejected.
+Create `config.toml` in that directory and include only the settings you want to change; omitted settings use the defaults shown above. Command-line options override values in the file. Set `dynamic_colors = false` to use black text on white Mokuro boxes instead of inferred colors.
 
-## Configuration
-
-Configuration files live in `$XDG_CONFIG_HOME/mgr/`. If `XDG_CONFIG_HOME` is unset, `mgr` uses `~/.config/mgr/`.
-
-Options can be set in `config.toml` or passed on the command line. Command-line values override values from the file. For example:
-
-```toml
-port = 7169
-open = true
-zoom = 100
-dynamic_colors = false
-```
-
-See [Keybindings](#keybindings) for the complete keybinding table and defaults.
-
-| TOML key | CLI option | Default | Description |
-| --- | --- | ---: | --- |
-| `port` | `-p`, `--port` | `7169` | Local web server port |
-| `open` | `-o`, `--open` | `false` | Open the reader in a browser; `--open false` disables it |
-| `readlist_file` | `--readlist-file` | `.mgr.toml` | Read-list filename used in directory mode |
-| `zoom` | `-z`, `--zoom` | `100` | Initial page width as a percentage |
-| `dynamic_colors` | `--dynamic-colors` | `true` | Infer Mokuro text-box colors; set to `false` for black text on white boxes |
-| `zoom_min` | `--zoom-min` | `10` | Minimum zoom |
-| `zoom_max` | `--zoom-max` | `500` | Maximum zoom |
-| `cursor_timeout` | `--cursor-timeout` | `500` ms | Delay before hiding an idle cursor; `0` disables auto-hide |
-| `save_debounce` | `--save-debounce` | `200` ms | Delay before saving reading progress after it changes |
-| `prefetch_back` | `--prefetch-back` | `6` | Prefetch distance behind the view, in viewport heights |
-| `prefetch_forward` | `--prefetch-forward` | `8` | Prefetch distance ahead of the view, in viewport heights |
-| `volume_expand_back` | `--volume-expand-back` | `1` | Number of previous volumes to keep expanded |
-| `volume_expand_forward` | `--volume-expand-forward` | `1` | Number of following volumes to keep expanded |
-
-`--open` can also be written as `--open true` or `--open false`. `--dynamic-colors` takes an explicit boolean value, such as `--dynamic-colors false`. Zoom values must be positive, and the initial zoom must be between the configured minimum and maximum.
+Keybindings are set in the `[keybindings]` table and have no command-line options. Omitted actions keep their defaults; set a binding to `""` to disable it. Key names are case-sensitive and follow the browser's `KeyboardEvent.key` values, such as `"ArrowDown"`. Duplicate non-empty keys are rejected.
 
 ### Custom stylesheet
 
-You can optionally create `styles.css` in the configuration directory. It loads after the built-in stylesheet, so rules with sufficient CSS specificity can override the built-in styles. Changes are picked up when the page is refreshed; restarting `mgr` is not required.
-
-For example, to use a dark page background:
-
-```css
-body,
-article > section {
-    background: #181818;
-}
-```
-
-Run `mgr --help` for the current command-line usage and options.
+You can create a `styles.css` in the configuration directory. It loads after the built-in stylesheet, so rules with sufficient CSS specificity can override the built-in styles. Changes are picked up when the page is refreshed; restarting `mgr` is not required.
