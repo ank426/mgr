@@ -7,8 +7,9 @@ export class Page {
      ** @param {number} pageNumber
      ** @param {[number, number]} dimensions
      ** @param {HTMLElement} slot
-     ** @param {MokuroPage | null} mokuroPage */
-    constructor(volumeName, pageNumber, dimensions, slot, mokuroPage) {
+     ** @param {MokuroPage | null} mokuroPage
+     ** @param {boolean} dynamicColors */
+    constructor(volumeName, pageNumber, dimensions, slot, mokuroPage, dynamicColors) {
         /** @type {string} */
         this.volumeName = volumeName;
 
@@ -45,7 +46,7 @@ export class Page {
                 this.slot.append(overlay);
                 const mokuroPage = this.mokuroPage;
                 img.decode()
-                    .then(() => mokuroPage.createOverlay(overlay, img))
+                    .then(() => mokuroPage.createOverlay(overlay, img, dynamicColors))
                     .catch(() => {});
             }
         };

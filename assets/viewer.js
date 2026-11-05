@@ -12,6 +12,7 @@ import { Progress } from "./progress.js";
  *     zoom: number,
  *     zoomMin: number,
  *     zoomMax: number,
+ *     dynamicColors: boolean,
  *     cursorTimeout: number,
  *     saveDebounce: number,
  *     prefetchBack: number,

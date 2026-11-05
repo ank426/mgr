@@ -75,6 +75,7 @@ Options may be passed on the command line or placed in `$XDG_CONFIG_HOME/mgr/con
 port = 7169
 open = true
 zoom = 100
+dynamic_colors = false
 ```
 
 ```text
@@ -90,6 +91,7 @@ Options:
   -o, --open [<OPEN>]                                  [default: false]
       --readlist-file <READLIST_FILE>                  [default: .mgr.toml]
   -z, --zoom <ZOOM>                                    [default: 100]
+      --dynamic-colors <DYNAMIC_COLORS>                [default: true]
       --zoom-min <ZOOM_MIN>                            [default: 10]
       --zoom-max <ZOOM_MAX>                            [default: 500]
       --cursor-timeout <CURSOR_TIMEOUT>                [default: 500]

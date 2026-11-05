@@ -23,6 +23,9 @@ pub struct Config {
     #[arg(short, long, default_value_t = 100.0)]
     pub zoom: f32,
 
+    #[arg(long, default_value_t = true, action = clap::ArgAction::Set)]
+    pub dynamic_colors: bool,
+
     #[arg(long, default_value_t = 10.0)]
     pub zoom_min: f32,
 

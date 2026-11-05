@@ -62,7 +62,10 @@ export class Volume {
 
             fragment.appendChild(slot);
             const mokuroPage = mokuroPagesByName?.get(pageInfo.name) ?? null;
-            this.pages.set(pageNumber, new Page(this.name, pageNumber, pageInfo.dims, slot, mokuroPage));
+            this.pages.set(
+                pageNumber,
+                new Page(this.name, pageNumber, pageInfo.dims, slot, mokuroPage, viewer.config.dynamicColors),
+            );
             viewer.observers.nearPage.observe(slot);
             viewer.observers.activePage.observe(slot);
         }

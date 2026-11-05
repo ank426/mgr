@@ -23,9 +23,9 @@ export class MokuroPage {
             }));
     }
 
-    /** @param {HTMLDivElement} overlay @param {HTMLImageElement} img @returns {void} */
-    createOverlay(overlay, img) {
-        this.computeThemes(img);
+    /** @param {HTMLDivElement} overlay @param {HTMLImageElement} img @param {boolean} dynamicColors @returns {void} */
+    createOverlay(overlay, img, dynamicColors) {
+        if (dynamicColors) this.computeThemes(img);
 
         for (const block of this.blocks) {
             const [x1, y1, x2, y2] = block.box;
