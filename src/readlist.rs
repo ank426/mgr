@@ -1,11 +1,15 @@
+use std::ffi::OsString;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicU64, Ordering};
 
 use alphanumeric_sort::compare_str;
 use anyhow::{Context, ensure};
+use serde::{Deserialize, Serialize};
 
 use crate::cbz::is_archive;
-use serde::{Deserialize, Serialize};
+
+static TEMP_FILE_COUNTER: AtomicU64 = AtomicU64::new(0);
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Progress {
@@ -39,8 +43,30 @@ impl ReadList {
     }
 
     pub async fn save(&self, path: &Path) -> anyhow::Result<()> {
-        Ok(tokio::fs::write(path, toml::to_string(self).context("Failed to serialize readlist")?).await?)
+        let contents = toml::to_string(self).context("Failed to serialize readlist")?;
+        write_atomic(path, contents.as_bytes()).await
     }
+}
+
+async fn write_atomic(path: &Path, contents: &[u8]) -> anyhow::Result<()> {
+    let file_name = path.file_name().context("Readlist path has no filename")?;
+    let mut temp_name = OsString::from(".");
+    temp_name.push(file_name);
+    temp_name.push(format!(".{}.{}.tmp", std::process::id(), TEMP_FILE_COUNTER.fetch_add(1, Ordering::Relaxed)));
+    let temp_path = path.with_file_name(temp_name);
+
+    let result = async {
+        tokio::fs::write(&temp_path, contents).await?;
+        tokio::fs::rename(&temp_path, path).await?;
+        Ok::<_, std::io::Error>(())
+    }
+    .await;
+
+    if let Err(err) = result {
+        let _ = tokio::fs::remove_file(&temp_path).await;
+        return Err(err).with_context(|| format!("Failed to save readlist {}", path.display()));
+    }
+    Ok(())
 }
 
 pub async fn generate(dir: &Path, readlist_file_name: &str) -> anyhow::Result<PathBuf> {
