@@ -44,20 +44,27 @@ volume.mokuro
 
 The same convention applies to `.zip` volumes. The reader serves on `http://localhost:7169` by default.
 
-## Controls
+## Keybindings
 
-| Default key | Action |
-| --- | --- |
-| `j` / `k` | Scroll down / up by half a screen |
-| `h` / `l` | Previous / next volume |
-| `g` / `G` | First / last page |
-| `=` / `-` | Zoom in / out |
-| `i` | Invert colors |
-| `s` | Toggle page progress |
-| `d` | Toggle scroll progress |
-| `S` | Toggle volume progress |
+Keybindings are configured in the `[keybindings]` table in `config.toml`; they do not have command-line options. This table shows every action and its default binding:
 
-These keys are defaults and can be customized in `config.toml` as described below.
+```toml
+[keybindings]
+zoom_in = "="           # Increase zoom
+zoom_out = "-"          # Decrease zoom
+scroll_down = "j"       # Scroll down by half a screen
+scroll_up = "k"         # Scroll up by half a screen
+previous_volume = "h"   # Go to the previous volume
+next_volume = "l"       # Go to the next volume
+first_page = "g"        # Go to the first page
+last_page = "G"         # Go to the last page
+invert_colors = "i"     # Toggle inverted colors
+page_progress = "s"     # Toggle page progress
+scroll_progress = "d"   # Toggle scroll progress
+volume_progress = "S"   # Toggle volume progress
+```
+
+You can include only the bindings you want to change; omitted actions keep their defaults. Set a binding to `""` to disable it. Key names are case-sensitive and follow the browser's `KeyboardEvent.key` values, such as `"ArrowDown"`. Duplicate non-empty keys are rejected.
 
 ## Configuration
 
@@ -70,12 +77,9 @@ port = 7169
 open = true
 zoom = 100
 dynamic_colors = false
-
-[keybindings]
-scroll_down = "ArrowDown"
-scroll_up = "ArrowUp"
-next_volume = "n"
 ```
+
+See [Keybindings](#keybindings) for the complete keybinding table and defaults.
 
 | TOML key | CLI option | Default | Description |
 | --- | --- | ---: | --- |
@@ -94,12 +98,6 @@ next_volume = "n"
 | `volume_expand_forward` | `--volume-expand-forward` | `1` | Number of following volumes to keep expanded |
 
 `--open` can also be written as `--open true` or `--open false`. `--dynamic-colors` takes an explicit boolean value, such as `--dynamic-colors false`. Zoom values must be positive, and the initial zoom must be between the configured minimum and maximum.
-
-### Keybindings
-
-Keybindings are configured in the `[keybindings]` table in `config.toml`; they do not have command-line options. Supported actions are `zoom_in`, `zoom_out`, `scroll_down`, `scroll_up`, `previous_volume`, `next_volume`, `first_page`, `last_page`, `invert_colors`, `page_progress`, `scroll_progress`, and `volume_progress`.
-
-Any action omitted from the table keeps its default key from the Controls table. Set a binding to `""` to disable it. Key names are case-sensitive and follow the browser's `KeyboardEvent.key` values, such as `"ArrowDown"`. Duplicate non-empty keys are rejected.
 
 ### Custom stylesheet
 
