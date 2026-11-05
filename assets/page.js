@@ -50,7 +50,9 @@ export class Page {
                 const mokuroPage = this.mokuroPage;
                 img.decode()
                     .then(() => mokuroPage.createOverlay(overlay, img, this.dynamicColors))
-                    .catch(() => {});
+                    .catch((error) => {
+                        console.error(`Failed to create Mokuro overlay for volume ${this.volumeName} page ${this.pageNumber}:`, error);
+                    });
             }
         };
         img.onerror = () => {
