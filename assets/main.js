@@ -37,15 +37,22 @@ function addEventListeners(viewer) {
     addEventListener("scroll", () => viewer.state.progress.update(viewer), { passive: true });
     addEventListener("resize", () => viewer.withScrollRestore(() => scheduleReconcile(viewer)));
     addEventListener("keydown", (event) => onKey(viewer, event));
-    if (viewer.config.cursorTimeout > 0)
-        addEventListener("mousemove", () => {
-            document.body.style.cursor = "auto";
+    if (viewer.config.cursorTimeout > 0) {
+        const resetCursorTimeout = () => {
             clearTimeout(viewer.timeouts.cursor);
             viewer.timeouts.cursor = window.setTimeout(
                 () => (document.body.style.cursor = "none"),
                 viewer.config.cursorTimeout,
             );
+        };
+
+        document.body.style.cursor = "auto";
+        resetCursorTimeout();
+        addEventListener("mousemove", () => {
+            document.body.style.cursor = "auto";
+            resetCursorTimeout();
         });
+    }
 }
 
 init().catch((error) => console.error(error));
