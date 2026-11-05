@@ -13,7 +13,7 @@ pub struct Config {
     pub port: u16,
 
     #[serde(skip)]
-    #[arg(short, long, num_args = 0..=1, default_missing_value = "true", default_value_t = false)]
+    #[arg(short, long, num_args = 0..=1, default_missing_value = "true", default_value_t = false, hide_possible_values = true)]
     pub open: bool,
 
     #[serde(skip)]
@@ -23,7 +23,7 @@ pub struct Config {
     #[arg(short, long, default_value_t = 100.0)]
     pub zoom: f32,
 
-    #[arg(long, default_value_t = true, action = clap::ArgAction::Set)]
+    #[arg(long, default_value_t = true, action = clap::ArgAction::Set, hide_possible_values = true)]
     pub dynamic_colors: bool,
 
     #[arg(long, default_value_t = 10.0)]
