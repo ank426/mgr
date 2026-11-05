@@ -30,6 +30,9 @@ export class Page {
 
         /** @type {MokuroPage | null} */
         this.mokuroPage = mokuroPage;
+
+        /** @type {boolean} */
+        this.dynamicColors = dynamicColors;
     }
 
     /** @returns {void} */
@@ -46,7 +49,7 @@ export class Page {
                 this.slot.append(overlay);
                 const mokuroPage = this.mokuroPage;
                 img.decode()
-                    .then(() => mokuroPage.createOverlay(overlay, img, dynamicColors))
+                    .then(() => mokuroPage.createOverlay(overlay, img, this.dynamicColors))
                     .catch(() => {});
             }
         };
