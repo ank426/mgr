@@ -41,16 +41,24 @@ function addEventListeners(viewer) {
         const resetCursorTimeout = () => {
             clearTimeout(viewer.timeouts.cursor);
             viewer.timeouts.cursor = window.setTimeout(
-                () => (document.body.style.cursor = "none"),
+                () => {
+                    document.body.style.cursor = "none";
+                    document.body.classList.add("cursor-hidden");
+                },
                 viewer.config.cursorTimeout,
             );
         };
 
         document.body.style.cursor = "auto";
+        document.body.classList.remove("cursor-hidden");
         resetCursorTimeout();
-        addEventListener("mousemove", () => {
+        addEventListener("mousemove", (event) => {
             document.body.style.cursor = "auto";
+            document.body.classList.remove("cursor-hidden");
             resetCursorTimeout();
+
+            const target = document.elementFromPoint(event.clientX, event.clientY);
+            target?.closest(".mokuro-box")?.classList.add("mokuro-box--active");
         });
     }
 }

@@ -34,8 +34,15 @@ export class MokuroPage {
             if (boxW <= 0 || boxH <= 0) continue;
 
             const div = document.createElement("p");
+            div.classList.add("mokuro-box");
             this.setBlockText(div, block);
-            div.addEventListener("mouseleave", () => getSelection()?.removeAllRanges());
+            div.addEventListener("pointerenter", () => {
+                if (!document.body.classList.contains("cursor-hidden")) div.classList.add("mokuro-box--active");
+            });
+            div.addEventListener("pointerleave", () => {
+                div.classList.remove("mokuro-box--active");
+                getSelection()?.removeAllRanges();
+            });
 
             if (block.darkTheme) div.classList.add("theme-dark");
             if (block.vertical) div.classList.add("vertical");

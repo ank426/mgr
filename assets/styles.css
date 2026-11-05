@@ -59,14 +59,14 @@ article > section > div > p.vertical {
     font-feature-settings: "vhal" 1;
 }
 
-article > section > div > p:hover {
+article > section > div > p.mokuro-box--active {
     color: black;
     background: white;
     user-select: text;
     -webkit-user-select: text;
 }
 
-article > section > div > p.theme-dark:hover {
+article > section > div > p.theme-dark.mokuro-box--active {
     color: white;
     background: black;
 }
