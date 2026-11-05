@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use alphanumeric_sort::compare_str;
 use anyhow::{Context, ensure};
 
-use crate::cbz::is_cbz;
+use crate::cbz::is_archive;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -46,26 +46,26 @@ impl ReadList {
 pub async fn generate(dir: &Path, readlist_file_name: &str) -> anyhow::Result<PathBuf> {
     let output_path = dir.join(readlist_file_name);
 
-    let mut cbz_files: Vec<String> = fs::read_dir(dir)?
+    let mut archive_files: Vec<String> = fs::read_dir(dir)?
         .filter_map(|entry| {
             let entry = entry.ok()?;
             let path = entry.path();
             entry.file_type().ok()?.is_file().then_some(())?;
-            is_cbz(&path).then_some(())?;
+            is_archive(&path).then_some(())?;
             Some(path.file_name()?.to_str()?.to_owned())
         })
         .collect();
 
-    ensure!(!cbz_files.is_empty(), "No .cbz files found in {}", dir.display());
-    cbz_files.sort_by(|a, b| compare_str(a, b));
+    ensure!(!archive_files.is_empty(), "No .cbz or .zip files found in {}", dir.display());
+    archive_files.sort_by(|a, b| compare_str(a, b));
 
     let mut readlist = if output_path.is_file() {
         ReadList::new(&output_path)?
     } else {
-        ReadList { progress: Progress::new(cbz_files[0].clone()), files: Vec::new() }
+        ReadList { progress: Progress::new(archive_files[0].clone()), files: Vec::new() }
     };
 
-    readlist.files = cbz_files
+    readlist.files = archive_files
         .into_iter()
         .map(|file_name| {
             let mokuro_name = Path::new(&file_name).with_extension("mokuro");

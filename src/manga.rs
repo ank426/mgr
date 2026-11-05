@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use anyhow::ensure;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
-use crate::cbz::{Volume, is_cbz};
+use crate::cbz::{Volume, is_archive};
 use crate::readlist::ReadList;
 
 pub struct Manga {
@@ -18,7 +18,7 @@ impl Manga {
             .par_iter()
             .map(|path| {
                 ensure!(path.is_file(), "No file exists at: {}", path.display());
-                ensure!(is_cbz(path), "Unsupported file type: {} (expected .cbz)", path.display());
+                ensure!(is_archive(path), "Unsupported file type: {} (expected .cbz or .zip)", path.display());
                 let mokuro_path = path.with_extension("mokuro");
                 let mokuro = mokuro_path.is_file().then_some(mokuro_path.to_string_lossy().into_owned());
                 Volume::new(path, path.to_string_lossy().into_owned(), mokuro)
@@ -50,7 +50,11 @@ impl Manga {
             .map(|entry| {
                 let file_path = dir_path.join(&entry.name);
                 ensure!(file_path.is_file(), "No file exists at: {}", file_path.display());
-                ensure!(is_cbz(&file_path), "Unsupported file type: {} (expected .cbz)", file_path.display());
+                ensure!(
+                    is_archive(&file_path),
+                    "Unsupported file type: {} (expected .cbz or .zip)",
+                    file_path.display()
+                );
                 let volume = Volume::new(&file_path, entry.name.clone(), entry.mokuro.clone())?;
                 ensure!(
                     entry.name != readlist.progress.file || readlist.progress.page <= volume.pages.len(),

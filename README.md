@@ -1,10 +1,10 @@
 # mgr
 
-Local web reader for `.cbz` manga volumes with [Mokuro](https://github.com/kha-white/mokuro) OCR support, written in Rust.
+Local web reader for `.cbz` and `.zip` manga volumes with [Mokuro](https://github.com/kha-white/mokuro) OCR support, written in Rust.
 
 ## Features
 
-- Read one or more `.cbz` volumes in a browser, served on `localhost`.
+- Read one or more `.cbz` or `.zip` image archives in a browser, served on `localhost`.
 - Generate a directory read list with saved reading position.
 - Show selectable Japanese text from adjacent `.mokuro` files (goes well with [Yomitan](https://github.com/themoeway/yomitan)).
 - Keyboard controls for navigation, zoom, inversion, and progress.
@@ -31,6 +31,7 @@ Open one or more volumes:
 ```bash
 mgr volume.cbz
 mgr volume1.cbz volume2.cbz volume3.cbz
+mgr volume.zip
 ```
 
 Open a directory of volumes:
@@ -40,14 +41,16 @@ mgr --generate manga/
 mgr --open manga/
 ```
 
-`--generate` creates a `.mgr.toml` read list from the directory's CBZ files, in natural sort order. Directory mode saves reading progress to this file.
+`--generate` creates a `.mgr.toml` read list from the directory's `.cbz` and `.zip` files, in natural sort order. Directory mode saves reading progress to this file.
 
-Mokuro files are detected automatically when they share a CBZ volume's name:
+Mokuro files are detected automatically when they share an archive's name:
 
 ```text
 volume.cbz
 volume.mokuro
 ```
+
+The same naming convention applies to `.zip` volumes.
 
 The reader is available at `http://localhost:7169` by default.
 
