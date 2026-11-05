@@ -78,6 +78,16 @@ zoom = 100
 dynamic_colors = false
 ```
 
+You can also add an optional `$XDG_CONFIG_HOME/mgr/styles.css` stylesheet. It is loaded after the built-in styles, so its rules can override them. When `XDG_CONFIG_HOME` is unset, both files are read from `~/.config/mgr/` instead. For example:
+
+```css
+/* Use a dark page background. */
+body,
+article > section {
+    background: #181818;
+}
+```
+
 ```text
 > mgr --help
 Usage: mgr [OPTIONS] [PATHS]...

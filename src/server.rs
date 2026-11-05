@@ -57,6 +57,7 @@ async fn route(req: Request<Incoming>, state: Arc<State>) -> Result<Resp, std::c
         (&Method::GET, "/api/volumes") => routes::get_volumes(&state.manga.volumes),
         (&Method::GET, "/api/progress") => routes::get_progress(&state.manga.volumes, &state.readlist),
         (&Method::PUT, "/api/progress") => routes::save_progress(req, &state.readlist_path, &state.readlist).await,
+        (&Method::GET, "/custom/styles.css") => routes::custom_stylesheet().await,
         (&Method::GET, _) if path.starts_with("/assets/") => routes::asset(&path["/assets/".len()..]),
         (&Method::GET, _) if path.starts_with("/volume/") => route_volume(&path["/volume/".len()..], &state).await,
         _ => routes::not_found(path),

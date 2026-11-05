@@ -8,7 +8,7 @@ use rust_embed::RustEmbed;
 use serde_json::json;
 
 use crate::cbz::Volume;
-use crate::config::Config;
+use crate::config::{self, Config};
 use crate::readlist::{Progress, ReadList};
 
 pub type Resp = Response<Full<Bytes>>;
@@ -59,6 +59,20 @@ pub fn asset(name: &str) -> Resp {
             ok_response(mime, file.data.into_owned())
         }
         None => error_response(StatusCode::NOT_FOUND, format!("Asset not found: {name}")),
+    }
+}
+
+pub async fn custom_stylesheet() -> Resp {
+    let path = match config::config_dir() {
+        Ok(dir) => dir.join("styles.css"),
+        Err(_) => return ok_response("text/css", Vec::new()),
+    };
+    match tokio::fs::read(&path).await {
+        Ok(stylesheet) => ok_response("text/css", stylesheet),
+        Err(err) if err.kind() == std::io::ErrorKind::NotFound => ok_response("text/css", Vec::new()),
+        Err(err) => {
+            error_response(StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to load {}: {err}", path.display()))
+        }
     }
 }
 

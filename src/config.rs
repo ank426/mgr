@@ -71,8 +71,7 @@ impl Config {
 }
 
 pub fn file_args() -> anyhow::Result<Vec<String>> {
-    let path = PathBuf::from(env::var("XDG_CONFIG_HOME").or_else(|_| env::var("HOME").map(|h| h + "/.config"))?)
-        .join("mgr/config.toml");
+    let path = config_dir()?.join("config.toml");
     if !path.exists() {
         return Ok(vec![]);
     }
@@ -81,4 +80,8 @@ pub fn file_args() -> anyhow::Result<Vec<String>> {
         .into_iter()
         .flat_map(|(key, value)| [format!("--{}", key.replace('_', "-")), value.to_string()])
         .collect())
+}
+
+pub fn config_dir() -> anyhow::Result<PathBuf> {
+    Ok(PathBuf::from(env::var("XDG_CONFIG_HOME").or_else(|_| env::var("HOME").map(|h| h + "/.config"))?).join("mgr"))
 }
